@@ -1,0 +1,104 @@
+---
+import type { Locale } from '../consts';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getAllPostsByLocale, postUrl, type LocalizedEntry } from '../lib/i18n';
+import { formatDate, isoDate, t } from '../lib/ui';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const entries = await getAllPostsByLocale(locale);
+
+// 已按 pubDate 倒序，分组不改变组内顺序。
+const byYear = new Map<number, LocalizedEntry[]>();
+for (const item of entries) {
+  const year = item.entry.data.pubDate.getUTCFullYear();
+  const list = byYear.get(year) ?? [];
+  list.push(item);
+  byYear.set(year, list);
+}
+const years = [...byYear.keys()].sort((a, b) => b - a);
+---
+
+<BaseLayout
+  {locale}
+  path="archive"
+  title={t(locale, 'archiveTitle')}
+  description={t(locale, 'archiveDescription')}
+  width="wide"
+>
+  <h1>{t(locale, 'archiveTitle')}</h1>
+
+  {
+    years.map((year) => (
+      <section class="year-group">
+        <h2>{year}</h2>
+        <ul class="entries">
+          {byYear.get(year)!.map(({ entry, collection, slug }) => (
+            <li>
+              <time datetime={isoDate(entry.data.pubDate)}>
+                {formatDate(entry.data.pubDate, locale)}
+              </time>
+              <a href={postUrl(locale, collection, slug)}>{entry.data.title}</a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+</BaseLayout>
+
+<style>
+  h1 {
+    font-size: var(--size-h1);
+    line-height: var(--lh-display);
+    border-left: 3px solid var(--brand);
+    padding-left: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+  }
+
+  .year-group + .year-group {
+    margin-top: var(--space-2xl);
+  }
+
+  .year-group h2 {
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: var(--size-lead);
+    color: var(--text-4);
+    margin-bottom: var(--space-md);
+  }
+
+  .entries {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .entries li {
+    display: flex;
+    gap: var(--space-md);
+    align-items: baseline;
+  }
+
+  .entries time {
+    flex-shrink: 0;
+    width: 8em;
+    font-size: var(--size-caption);
+    color: var(--text-4);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .entries a {
+    color: var(--text-1);
+    text-decoration: none;
+  }
+
+  .entries a:hover {
+    color: var(--brand);
+  }
+</style>

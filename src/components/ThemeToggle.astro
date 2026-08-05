@@ -1,0 +1,62 @@
+---
+import type { Locale } from '../consts';
+import { t } from '../lib/ui';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<button type="button" class="theme-toggle" data-theme-toggle aria-label={t(locale, 'themeToggle')}>
+  <span aria-hidden="true" class="glyph"></span>
+</button>
+
+<style>
+  .theme-toggle {
+    background: none;
+    border: 0;
+    padding: var(--space-xs) var(--space-sm);
+    cursor: pointer;
+    color: var(--text-4);
+    font-size: var(--size-caption);
+    border-radius: var(--radius-sm);
+    transition: color var(--dur) var(--ease);
+  }
+
+  .theme-toggle:hover {
+    color: var(--brand);
+  }
+
+  /* 暖黑与羊皮纸各用一个字形，纯文本无图标依赖。 */
+  .glyph::before {
+    content: '◑';
+  }
+</style>
+
+<script>
+  const KEY = 'theme';
+
+  function currentTheme(): 'light' | 'dark' {
+    const explicit = document.documentElement.dataset.theme;
+    if (explicit === 'light' || explicit === 'dark') return explicit;
+    return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function toggle() {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try {
+      localStorage.setItem(KEY, next);
+    } catch {
+      /* 隐私模式下不持久化，本次会话仍然生效 */
+    }
+  }
+
+  // View Transitions 会替换 DOM，故用事件委托而非直接绑定。
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('[data-theme-toggle]')) toggle();
+  });
+</script>

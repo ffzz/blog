@@ -1,0 +1,202 @@
+/*
+ * Markdown 正文排版。
+ *
+ * 核心是把 Markdown 的 `**` 和 `*` 重映射到 Kami 的强调体系 ——
+ * Kami 铁律 5 禁加粗、铁律 10 禁斜体，但这两个是 Markdown 基本语法，
+ * 必须有归宿。全部用 CSS 完成，不需要 remark/rehype 插件。
+ */
+
+.prose {
+  max-width: var(--measure);
+  font-size: var(--size-body);
+  line-height: var(--lh-reading);
+  color: var(--text-1);
+}
+
+.prose > * + * {
+  margin-top: var(--space-lg);
+}
+
+/* ── 强调映射（PRD §3.4） ───────────────────────────── */
+
+/*
+ * `**粗体**` → 油墨蓝，字重不变。
+ * font-weight: inherit 覆盖浏览器默认的 bolder；放在标题内会继承标题的 500。
+ */
+.prose strong,
+.prose b {
+  font-weight: inherit;
+  color: var(--brand);
+}
+
+/*
+ * `*斜体*` → 中文走着重号。
+ * 浏览器对中文的 italic 是伪斜体（字形强行倾斜），非常难看；
+ * 着重号才是中文印刷传统的正统强调方式。
+ * 简体中文横排时着重号在字下方，故 position 为 under。
+ */
+.prose em,
+.prose i {
+  font-style: normal;
+  -webkit-text-emphasis: filled dot var(--brand);
+  text-emphasis: filled dot var(--brand);
+  -webkit-text-emphasis-position: under right;
+  text-emphasis-position: under right;
+}
+
+/* 英文页面保留 Charter 真斜体 —— Kami 自己的 landing page 也为屏幕破了这一例。 */
+:lang(en) .prose em,
+:lang(en) .prose i {
+  font-style: italic;
+  font-family: var(--font-serif-en);
+  -webkit-text-emphasis: none;
+  text-emphasis: none;
+}
+
+/* ── 标题层级 ──────────────────────────────────────── */
+
+.prose h2 {
+  font-size: var(--size-h2);
+  margin-top: var(--space-2xl);
+  /* 铁律 9：加重靠单边竖线，不靠字重也不靠投影。
+     单边边框不加圆角 —— 圆角只在四边完整时成立。 */
+  border-left: 2px solid var(--brand);
+  padding-left: var(--space-md);
+}
+
+.prose h3 {
+  font-size: var(--size-h3);
+  margin-top: var(--space-xl);
+}
+
+.prose h4 {
+  font-size: var(--size-body);
+  margin-top: var(--space-lg);
+  color: var(--text-2);
+}
+
+/* ── 列表 ──────────────────────────────────────────── */
+
+.prose ul,
+.prose ol {
+  padding-left: 1.4em;
+}
+
+.prose li + li {
+  margin-top: var(--space-sm);
+}
+
+.prose li::marker {
+  color: var(--text-4);
+}
+
+/* ── 引用：填充色即浮起，不画闭合边框（铁律 9） ────────── */
+
+.prose blockquote {
+  background: var(--ivory);
+  border-left: 2px solid var(--brand);
+  border-radius: 0;
+  padding: var(--space-md) var(--space-lg);
+  color: var(--text-3);
+}
+
+.prose blockquote > * + * {
+  margin-top: var(--space-md);
+}
+
+/* ── 代码 ──────────────────────────────────────────── */
+
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--brand-tint);
+  padding: 0.12em 0.36em;
+  border-radius: var(--radius-sm);
+  letter-spacing: normal;
+}
+
+/* 代码块。语法高亮的 Kami 主题在 P2 接入，此处先定版式。 */
+.prose pre {
+  font-family: var(--font-mono);
+  font-size: var(--size-small);
+  line-height: var(--lh-dense);
+  background: var(--ivory);
+  border-left: 2px solid var(--brand);
+  border-radius: 0;
+  padding: var(--space-md) var(--space-lg);
+  overflow-x: auto;
+  letter-spacing: normal;
+}
+
+.prose pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* ── 表格 ──────────────────────────────────────────── */
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--size-small);
+  line-height: var(--lh-dense);
+}
+
+.prose th {
+  text-align: left;
+  font-weight: inherit;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.prose th,
+.prose td {
+  padding: var(--space-sm) var(--space-md);
+  vertical-align: top;
+}
+
+.prose tbody tr + tr td {
+  border-top: 1px solid var(--border-soft);
+}
+
+/* ── 图与图注 ──────────────────────────────────────── */
+
+.prose img {
+  border-radius: var(--radius);
+  margin-inline: auto;
+}
+
+.prose figcaption {
+  margin-top: var(--space-sm);
+  font-size: var(--size-caption);
+  color: var(--text-3);
+  text-align: center;
+}
+
+/* ── 分隔线：细、暖、不居中装饰 ─────────────────────── */
+
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin-block: var(--space-2xl);
+}
+
+/* ── 脚注（GFM）。边注版式在 P2 接入。 ─────────────────── */
+
+.prose .footnotes {
+  margin-top: var(--space-2xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border);
+  font-size: var(--size-small);
+  color: var(--text-3);
+}
+
+.prose .footnotes h2 {
+  font-size: var(--size-caption);
+  letter-spacing: var(--ls-label);
+  color: var(--text-4);
+  border-left: 0;
+  padding-left: 0;
+  margin-top: 0;
+}

@@ -1,0 +1,12 @@
+---
+import type { GetStaticPaths } from 'astro';
+
+import PostLayout from '../../../layouts/PostLayout.astro';
+import { postRoutes } from '../../../lib/i18n';
+
+export const getStaticPaths = (() => postRoutes('notes', 'zh')) satisfies GetStaticPaths;
+
+const { entry, slug, collection, locale } = Astro.props;
+---
+
+<PostLayout {entry} {slug} {collection} {locale} />

@@ -1,0 +1,78 @@
+---
+import type { Locale } from '../consts';
+import { postUrl, type LocalizedEntry } from '../lib/i18n';
+import { formatDate, isoDate, t } from '../lib/ui';
+
+interface Props {
+  locale: Locale;
+  entries: LocalizedEntry[];
+}
+
+const { locale, entries } = Astro.props;
+---
+
+<ul class="list">
+  {
+    entries.map(({ entry, collection, slug }) => (
+      <li class="item">
+        <a class="title" href={postUrl(locale, collection, slug)}>
+          {entry.data.title}
+        </a>
+        <p class="desc">{entry.data.description}</p>
+        <p class="meta">
+          <time datetime={isoDate(entry.data.pubDate)}>
+            {formatDate(entry.data.pubDate, locale)}
+          </time>
+          <span aria-hidden="true"> · </span>
+          <span class="kind">{t(locale, collection === 'posts' ? 'kindPost' : 'kindNote')}</span>
+        </p>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+  }
+
+  .title {
+    font-family: var(--font-serif-cn);
+    font-weight: 500;
+    font-size: var(--size-h3);
+    line-height: var(--lh-heading);
+    color: var(--text-1);
+    text-decoration: none;
+    transition: color var(--dur) var(--ease);
+  }
+
+  :global(:lang(en)) .title {
+    font-family: var(--font-serif-en);
+  }
+
+  .title:hover {
+    color: var(--brand);
+  }
+
+  .desc {
+    margin-top: var(--space-xs);
+    color: var(--text-3);
+    line-height: var(--lh-dense);
+  }
+
+  .meta {
+    margin-top: var(--space-sm);
+    font-size: var(--size-caption);
+    color: var(--text-4);
+    letter-spacing: var(--ls-label);
+  }
+
+  /* 类型标记走油墨蓝。铁律 2 的 5% 预算里，这是列表页唯一的强调用途。 */
+  .kind {
+    color: var(--brand);
+  }
+</style>

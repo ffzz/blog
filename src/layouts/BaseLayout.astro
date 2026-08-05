@@ -1,0 +1,69 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { LANG_TAG, LOCALES, type Locale } from '../consts';
+import { t } from '../lib/ui';
+
+import '../styles/base.css';
+
+interface Props {
+  locale: Locale;
+  /** 站内路径，不含语言前缀，不带首尾斜杠。首页传 ''。 */
+  path: string;
+  title: string;
+  description: string;
+  /** 该页面实际存在的语言版本。固定页面传全集，文章页传 getAvailableLocales() 的结果。 */
+  alternates?: Locale[];
+  /** 正文最大宽度。列表页用 wide。 */
+  width?: 'reading' | 'wide';
+  ogImage?: string;
+}
+
+const {
+  locale,
+  path,
+  title,
+  description,
+  alternates = [...LOCALES],
+  width = 'reading',
+  ogImage,
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang={LANG_TAG[locale]}>
+  <head>
+    <BaseHead {locale} {path} {title} {description} {alternates} {ogImage} />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{t(locale, 'skipToContent')}</a>
+
+    <div class="shell" data-width={width}>
+      <Header {locale} {path} {alternates} />
+      <main id="main">
+        <slot />
+      </main>
+      <Footer {locale} />
+    </div>
+
+    <style>
+      .shell {
+        max-width: var(--measure);
+        margin-inline: auto;
+        padding-inline: var(--space-lg);
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .shell[data-width='wide'] {
+        max-width: var(--measure-wide);
+      }
+
+      main {
+        flex: 1;
+      }
+    </style>
+  </body>
+</html>

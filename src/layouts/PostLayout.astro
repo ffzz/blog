@@ -1,0 +1,142 @@
+---
+import { render } from 'astro:content';
+
+import type { CollectionName, Locale } from '../consts';
+import JsonLd from '../components/JsonLd.astro';
+import { getAvailableLocales, postPath, type PostEntry } from '../lib/i18n';
+import { ogImagePath } from '../lib/og';
+import { blogPosting, breadcrumbList } from '../lib/schema';
+import { getPageableTags, tagLabel, tagUrl } from '../lib/tags';
+import { formatDate, isoDate, t } from '../lib/ui';
+import BaseLayout from './BaseLayout.astro';
+
+import '../styles/prose.css';
+
+interface Props {
+  entry: PostEntry;
+  collection: CollectionName;
+  locale: Locale;
+  slug: string;
+}
+
+const { entry, collection, locale, slug } = Astro.props;
+const { Content } = await render(entry);
+
+// hreflang、语言切换器都吃这个结果。只上报实际存在的语言版本。
+const alternates = await getAvailableLocales(collection, slug);
+const { title, description, pubDate, updatedDate, tags } = entry.data;
+const path = postPath(collection, slug);
+
+// 薄内容护栏（PRD §4.2）：未达标签页门槛的标签不能链接到一个不存在的页面，
+// 只在这里作纯文本展示。
+// 变量名不用 t —— 会遮蔽上面从 lib/ui 导入的翻译函数 t()。
+const pageableTags = new Set((await getPageableTags(locale)).map((tc) => tc.tag));
+
+const sectionLabel = t(locale, collection === 'posts' ? 'kindPost' : 'kindNote');
+const postingSchema = blogPosting({
+  locale,
+  path,
+  title,
+  description,
+  pubDate,
+  updatedDate,
+  image: ogImagePath(locale, path),
+});
+const breadcrumbSchema = breadcrumbList(locale, sectionLabel, title, path);
+---
+
+<BaseLayout {locale} {path} {title} {description} {alternates}>
+  <JsonLd data={postingSchema} />
+  <JsonLd data={breadcrumbSchema} />
+  <article>
+    <header class="head">
+      <h1>{title}</h1>
+      <p class="meta">
+        <time datetime={isoDate(pubDate)}>{formatDate(pubDate, locale)}</time>
+        <span aria-hidden="true"> · </span>
+        <span class="kind">{t(locale, collection === 'posts' ? 'kindPost' : 'kindNote')}</span>
+        {
+          updatedDate && (
+            <>
+              <span aria-hidden="true"> · </span>
+              <span>
+                {t(locale, 'updatedOn')}{' '}
+                <time datetime={isoDate(updatedDate)}>{formatDate(updatedDate, locale)}</time>
+              </span>
+            </>
+          )
+        }
+      </p>
+    </header>
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    {
+      tags.length > 0 && (
+        <footer class="tags">
+          <span class="meta">{t(locale, 'tagged')}</span>
+          {tags.map((tag) =>
+            pageableTags.has(tag) ? (
+              <a class="tag" href={tagUrl(locale, tag)}>
+                {tagLabel(tag, locale)}
+              </a>
+            ) : (
+              <span class="tag">{tagLabel(tag, locale)}</span>
+            ),
+          )}
+        </footer>
+      )
+    }
+  </article>
+</BaseLayout>
+
+<style>
+  .head {
+    /* 铁律 9：标题的重量来自单边竖线，不是字重也不是投影。 */
+    border-left: 3px solid var(--brand);
+    padding-left: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+  }
+
+  h1 {
+    font-size: var(--size-h1);
+    line-height: var(--lh-display);
+  }
+
+  .head .meta {
+    margin-top: var(--space-md);
+  }
+
+  .kind {
+    color: var(--brand);
+  }
+
+  .tags {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--border);
+  }
+
+  /* 铁律 8：标签底色实色 hex，不用 rgba。可链接（a）与不可链接（span）
+     共用外观 —— 薄内容护栏不应该在视觉上暴露哪些标签没有独立页面。 */
+  .tag {
+    background: var(--tag-bg);
+    color: var(--brand);
+    font-size: var(--size-caption);
+    padding: 0.15em 0.6em;
+    border-radius: var(--radius-sm);
+    letter-spacing: normal;
+    text-decoration: none;
+    transition: background var(--dur) var(--ease);
+  }
+
+  a.tag:hover {
+    background: var(--warm-sand);
+  }
+</style>

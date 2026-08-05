@@ -1,0 +1,28 @@
+# build output
+dist/
+# generated types
+.astro/
+
+# OG 图渲染用的 ttf：build 时从已提交的 woff2 确定性解压生成，不提交。
+# 见 scripts/og-fonts.mjs。
+public/fonts/og/*.ttf
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+
+# jetbrains setting folder
+.idea/

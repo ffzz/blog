@@ -1,0 +1,202 @@
+/*
+ * Kami 设计语言 · 屏幕移植版
+ * 源规范：https://github.com/tw93/Kami （MIT）
+ *
+ * 十条铁律中与本文件相关的：
+ *   1  底色羊皮纸，永不纯白
+ *   2  唯一强调色油墨蓝，≤5% 版面
+ *   3  所有灰色暖调（R≥G>B），禁冷灰 —— 暗色模式同样适用
+ *   6  行距：标题 1.1–1.3 / 密排 1.4–1.45 / 阅读 1.5–1.55
+ *   8  标签底色实色 hex，禁 rgba
+ *   9  层次靠填充色与单边竖线，禁硬投影
+ *
+ * 唯一刻意偏离：字号阶。
+ * Kami 的阶梯是印刷 pt 值，按官方 `px ≈ pt × 1.33` 换算正文只有 13px ——
+ * 那是纸上的密排值，屏幕上中文正文读不了。这里保留 Kami 的比例关系
+ * （Display/Body = 3.6、H1 = 2.2、H2 = 1.6、H3 = 1.3、Lead = 1.1），
+ * 把正文锚定在 17px 重算整个阶梯。
+ */
+
+/*
+ * 全站唯一自托管的字体：中文标题衬线。
+ * 由 scripts/heading-font.mjs 精确子集化，只含实际出现过的标题字。
+ *
+ * font-display: optional 而非 swap —— optional 没有 swap 期，
+ * 字体没能及时到达就整页用回退字体，永远不会中途替换，故 CLS 恒为 0。
+ * 配合 BaseHead 里的 preload，同源 6KB 基本都能在首绘前到达。
+ * CLS 是排名信号，首访偶尔看不到衬线不是。
+ *
+ * unicode-range 限定 CJK：英文页面不含中日韩字符，故完全不会下载它。
+ */
+@font-face {
+  font-family: 'Noto Serif SC Subset';
+  font-style: normal;
+  font-weight: 500;
+  font-display: optional;
+  src: url('/fonts/noto-serif-sc-subset.woff2') format('woff2');
+  unicode-range: U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF;
+}
+
+:root {
+  color-scheme: light;
+
+  /* ── 表面 ───────────────────────────────────────── */
+  --parchment: #f5f4ed; /* 页面底。铁律 1：永不 #ffffff */
+  --ivory: #faf9f5; /* 卡片 / 代码块底。填充色即浮起 */
+  --warm-sand: #e8e6dc; /* 交互面 */
+
+  /* ── 强调 ───────────────────────────────────────── */
+  --brand: #1b365d; /* 铁律 2：唯一色相，≤5% 版面 */
+  --brand-tint: #eef2f7; /* 最浅填充。实色，非 rgba（铁律 8） */
+  --tag-bg: #e4ecf5; /* 标签底。实色 */
+  --warm-brown: #8b4513; /* Kami 唯一批准的第二色。本站用于代码字符串 */
+
+  /* ── 文字（四级到底，不设第五级） ─────────────────── */
+  --text-1: #141413; /* 正文 */
+  --text-2: #3d3d3a; /* 次级、表头 */
+  --text-3: #504e49; /* 描述、图注 */
+  --text-4: #6b6a64; /* 元信息、日期 */
+
+  /* ── 边框 ───────────────────────────────────────── */
+  --border: #e8e6dc;
+  --border-soft: #e5e3d8;
+
+  /* ── 选区 ───────────────────────────────────────── */
+  --selection-bg: #e4ecf5;
+  --selection-fg: #141413;
+}
+
+/* 暗色。跟随系统，除非用户显式选了浅色。 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    /* 铁律 3 在暗色下同样成立：以下每个灰都满足 R≥G>B。
+       不得替换为 #1a1a1a 之类中性黑 —— 那是暗色版还能认出是 Kami 的唯一线索。 */
+    --parchment: #141413; /* 暖黑，带橄榄底调 */
+    --ivory: #1e1e1c;
+    --warm-sand: #30302e;
+
+    /* Kami 定义的 Ink Light #2D5A8A 对暗色羊皮纸只有 2.58:1 对比度，
+       不过 WCAG AA 的 4.5:1（Lighthouse 实测发现）。同色相提亮，
+       且要同时满足两处背景：对 --parchment 6.99:1，对更亮的
+       --tag-bg 4.92:1 —— 后者是更紧的约束，标签背景更浅，同一
+       前景色贴着它对比度反而更低。 */
+    --brand: #75a3d6;
+    --brand-tint: #1c2836;
+    --tag-bg: #24333f;
+    --warm-brown: #c8813f; /* 提亮以在暗底上保持可读，仍为 R>G>B */
+
+    --text-1: #f5f4ed;
+    --text-2: #b8b5ab;
+    --text-3: #96938a;
+    --text-4: #8a8880;
+
+    --border: #30302e;
+    --border-soft: #292927;
+
+    --selection-bg: #24333f;
+    --selection-fg: #f5f4ed;
+  }
+}
+
+/* 手动切换到暗色。与上面的值保持一致 —— 修改时两处必须同步。 */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --parchment: #141413;
+  --ivory: #1e1e1c;
+  --warm-sand: #30302e;
+
+  --brand: #75a3d6;
+  --brand-tint: #1c2836;
+  --tag-bg: #24333f;
+  --warm-brown: #c8813f;
+
+  --text-1: #f5f4ed;
+  --text-2: #b8b5ab;
+  --text-3: #96938a;
+  --text-4: #8a8880;
+
+  --border: #30302e;
+  --border-soft: #292927;
+
+  --selection-bg: #24333f;
+  --selection-fg: #f5f4ed;
+}
+
+:root {
+  /* ── 字体 ───────────────────────────────────────── */
+
+  /* 英文衬线。不自托管 —— macOS 自带 Charter，Windows 有 Georgia，
+     两者都是正经衬线，fallback 栈已覆盖全平台。省下约 100KB 与一套构建步骤。 */
+  --font-serif-en: Charter, 'Bitstream Charter', Georgia, Palatino, 'Times New Roman', serif;
+
+  /* 中文标题衬线。唯一自托管的字体，由 scripts/heading-font.mjs 按实际
+     出现过的标题字精确子集化（见该脚本）。
+     不用仓耳今楷 02：不在其免费商用清单内，且 webfont 分发需单独授权。 */
+  --font-serif-cn: 'Noto Serif SC Subset', 'Source Han Serif SC', 'Noto Serif SC', 'Songti SC',
+    STSong, Georgia, serif;
+
+  /* 正文无衬线。铁律 4 原文即「中文：衬线标题 + 无衬线正文」。
+     走系统栈，字体加载成本为零。 */
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+
+  /* 等宽同样走系统栈，不自托管。 */
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'PingFang SC', monospace;
+
+  /* ── 字号（正文 17px 锚定，保留 Kami 比例） ────────── */
+  --size-display: 3.6rem; /* Kami 36pt */
+  --size-h1: 2.2rem; /* Kami 22pt */
+  --size-h2: 1.6rem; /* Kami 16pt */
+  --size-h3: 1.3rem; /* Kami 13pt */
+  --size-lead: 1.1rem; /* Kami 11pt */
+  --size-body: 1rem; /* = 17px，见文件头说明 */
+  --size-small: 0.88rem;
+  --size-caption: 0.8rem;
+  --size-label: 0.72rem;
+
+  /* ── 行距（铁律 6，正文按屏幕放宽） ────────────────── */
+  --lh-display: 1.1;
+  --lh-heading: 1.25;
+  --lh-dense: 1.45;
+  --lh-reading: 1.75; /* Kami 印刷值 1.55，屏幕上中文长文偏紧，故放宽 */
+
+  /* ── 字距（铁律 7） ─────────────────────────────── */
+  --ls-cn-body: 0.02em;
+  --ls-label: 0.06em; /* 小标签与全大写才加 tracking */
+
+  /* ── 间距（4px 基） ─────────────────────────────── */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1.25rem;
+  --space-xl: 2rem;
+  --space-2xl: 3.5rem;
+  --space-3xl: 6rem;
+
+  /* ── 圆角。Kami 的卡片是 4pt，屏幕上保持克制。 ───────── */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 12px;
+
+  /* ── 版心 ───────────────────────────────────────── */
+  --measure: 34rem; /* 正文行宽。中文约 40 字/行 */
+  --measure-wide: 52rem; /* 列表页 / 带边注的文章 */
+
+  /* ── 动效（PRD §3.6：极克制） ─────────────────────── */
+  --dur: 150ms;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 根字号 17px：让 rem 阶梯直接落到设计值上。 */
+html {
+  font-size: 17px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur: 0ms;
+  }
+}

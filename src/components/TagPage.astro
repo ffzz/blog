@@ -1,0 +1,51 @@
+---
+import PostList from '../components/PostList.astro';
+import type { Locale } from '../consts';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t } from '../lib/ui';
+import type { LocalizedEntry } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+  tag: string;
+  label: string;
+  entries: LocalizedEntry[];
+}
+
+const { locale, tag, label, entries } = Astro.props;
+---
+
+<BaseLayout
+  {locale}
+  path={`tags/${tag}`}
+  title={label}
+  description={`${t(locale, 'tagPageDescription')} ${label}`}
+  width="wide"
+>
+  <p class="eyebrow">{t(locale, 'tagged')}</p>
+  <h1>{label}</h1>
+
+  {entries.length > 0 ? <PostList {locale} {entries} /> : <p class="empty">{t(locale, 'emptyTag')}</p>}
+</BaseLayout>
+
+<style>
+  .eyebrow {
+    font-size: var(--size-caption);
+    letter-spacing: var(--ls-label);
+    color: var(--text-4);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-size: var(--size-h1);
+    line-height: var(--lh-display);
+    border-left: 3px solid var(--brand);
+    padding-left: var(--space-lg);
+    margin-top: var(--space-sm);
+    margin-bottom: var(--space-2xl);
+  }
+
+  .empty {
+    color: var(--text-3);
+  }
+</style>

@@ -1,0 +1,104 @@
+---
+import { getAbsoluteLocaleUrl } from 'astro:i18n';
+
+import { DEFAULT_LOCALE, LANG_TAG, SITE, type Locale } from '../consts';
+import { ogImagePath } from '../lib/og';
+
+interface Props {
+  locale: Locale;
+  /** 站内路径，不含语言前缀，不带首尾斜杠。首页传 ''。 */
+  path: string;
+  title: string;
+  description: string;
+  /**
+   * 这个页面实际存在哪些语言版本。
+   * 必须包含当前语言（自引用）—— 漏掉自引用 Google 会忽略整组 hreflang。
+   * 文章页由 getAvailableLocales() 提供；固定页面两种语言都有，传全集。
+   */
+  alternates: Locale[];
+  /** 显式传入以覆盖默认约定；不传则用 ogImagePath(locale, path) 的自动生成图。 */
+  ogImage?: string;
+}
+
+const { locale, path, title, description, alternates, ogImage } = Astro.props;
+
+const canonical = getAbsoluteLocaleUrl(locale, path);
+const site = SITE[locale];
+const fullTitle = title === site.name ? title : `${title} · ${site.name}`;
+
+// x-default 指向默认语言；该页面若无默认语言版本则不输出，
+// 而不是随便指一个 —— 指错比不指更糟。
+const hasDefault = alternates.includes(DEFAULT_LOCALE);
+const ogImageUrl = new URL(ogImage ?? ogImagePath(locale, path), Astro.site);
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="generator" content={Astro.generator} />
+
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+
+{/* hreflang：只输出实际存在的语言版本。PRD §6。 */}
+{
+  alternates.map((alt) => (
+    <link rel="alternate" hreflang={LANG_TAG[alt]} href={getAbsoluteLocaleUrl(alt, path)} />
+  ))
+}
+{
+  hasDefault && (
+    <link
+      rel="alternate"
+      hreflang="x-default"
+      href={getAbsoluteLocaleUrl(DEFAULT_LOCALE, path)}
+    />
+  )
+}
+
+<meta property="og:type" content="website" />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:site_name" content={site.name} />
+<meta property="og:locale" content={LANG_TAG[locale].replace('-', '_')} />
+<meta property="og:image" content={ogImageUrl.href} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImageUrl.href} />
+
+{/* 中文页面才预加载标题衬线；英文页面不含 CJK，加载它是纯浪费。 */}
+{
+  locale === 'zh' && (
+    <link
+      rel="preload"
+      href="/fonts/noto-serif-sc-subset.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+  )
+}
+
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+{/* 每种语言指向自己的 feed —— 中文页面之前误指向英文 rss.xml。 */}
+<link
+  rel="alternate"
+  type="application/rss+xml"
+  title={site.name}
+  href={new URL(locale === 'zh' ? 'zh/rss.xml' : 'rss.xml', Astro.site).href}
+/>
+
+{/* 在首次绘制前恢复主题，避免明暗闪烁。必须 inline 且阻塞。 */}
+<script is:inline>
+  try {
+    const stored = localStorage.getItem('theme');
+    if (stored === 'dark' || stored === 'light') {
+      document.documentElement.dataset.theme = stored;
+    }
+  } catch {
+    /* localStorage 被禁用时静默跟随系统 */
+  }
+</script>

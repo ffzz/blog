@@ -1,0 +1,66 @@
+---
+import { getRelativeLocaleUrl } from 'astro:i18n';
+
+import { LOCALES, LOCALE_NAME, type Locale } from '../consts';
+import { t } from '../lib/ui';
+
+interface Props {
+  locale: Locale;
+  /** 站内路径，不含语言前缀。 */
+  path: string;
+  /** 该页面实际存在的语言版本。 */
+  alternates: Locale[];
+}
+
+const { locale, path, alternates } = Astro.props;
+
+// 目标语言不存在时渲染为禁用文本，绝不给出会 404 的链接。PRD §6。
+const targets = LOCALES.filter((it) => it !== locale).map((it) => ({
+  locale: it,
+  label: LOCALE_NAME[it],
+  href: alternates.includes(it) ? getRelativeLocaleUrl(it, path) : null,
+}));
+---
+
+<nav class="lang" aria-label={t(locale, 'langSwitch')}>
+  {
+    targets.map(({ locale: target, label, href }) =>
+      href ? (
+        <a href={href} hreflang={target} lang={target}>
+          {label}
+        </a>
+      ) : (
+        <span class="unavailable" lang={target} title={t(locale, 'langUnavailable')}>
+          {label}
+        </span>
+      ),
+    )
+  }
+</nav>
+
+<style>
+  .lang {
+    display: flex;
+    gap: var(--space-sm);
+    font-size: var(--size-caption);
+  }
+
+  .lang a {
+    color: var(--text-4);
+    text-decoration: none;
+    transition: color var(--dur) var(--ease);
+  }
+
+  .lang a:hover {
+    color: var(--brand);
+  }
+
+  /* 用删除线而非仅降低透明度：透明度在暖底上区分度不够，
+     且单靠颜色传达状态对色觉障碍读者不可达。 */
+  .unavailable {
+    color: var(--text-4);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+    cursor: not-allowed;
+  }
+</style>

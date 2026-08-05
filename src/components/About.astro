@@ -1,0 +1,92 @@
+---
+import { getEntry, render } from 'astro:content';
+
+import JsonLd from './JsonLd.astro';
+import { AUTHOR, type Locale } from '../consts';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { personPage } from '../lib/schema';
+
+import '../styles/prose.css';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+const page = await getEntry('pages', `${locale}/about`);
+if (!page) {
+  throw new Error(
+    `缺少 src/content/pages/${locale}/about.md。/about 两种语言都必须存在 —— ` +
+      `它承载 Person 结构化数据，是 Google 识别作者实体的主要依据。`,
+  );
+}
+
+const { Content } = await render(page);
+const schema = personPage(locale);
+---
+
+<BaseLayout {locale} path="about" title={page.data.title} description={page.data.description}>
+  <JsonLd data={schema} />
+  <article>
+    <h1>{page.data.title}</h1>
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <dl class="contact">
+      <dt>Email</dt>
+      <dd><a href={`mailto:${AUTHOR.email}`}>{AUTHOR.email}</a></dd>
+      {
+        AUTHOR.sameAs.length > 0 && (
+          <>
+            <dt>Elsewhere</dt>
+            <dd class="links">
+              {AUTHOR.sameAs.map((url) => (
+                <a href={url} rel="me">
+                  {new URL(url).hostname.replace(/^www\./, '')}
+                </a>
+              ))}
+            </dd>
+          </>
+        )
+      }
+    </dl>
+  </article>
+</BaseLayout>
+
+<style>
+  h1 {
+    font-size: var(--size-h1);
+    line-height: var(--lh-display);
+    border-left: 3px solid var(--brand);
+    padding-left: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+  }
+
+  .contact {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--space-sm) var(--space-lg);
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--border);
+    font-size: var(--size-small);
+  }
+
+  dt {
+    color: var(--text-4);
+    letter-spacing: var(--ls-label);
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+  }
+</style>

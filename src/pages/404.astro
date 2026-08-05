@@ -1,0 +1,54 @@
+---
+import { LOCALES, SITE } from '../consts';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { localeUrl } from '../lib/i18n';
+import { t } from '../lib/ui';
+
+// 静态托管只会有一个 404.html，它无从得知访客期望的语言，
+// 所以两种语言都给出 —— 而不是猜一个。
+---
+
+<BaseLayout
+  locale="en"
+  path="404"
+  title={t('en', 'notFoundTitle')}
+  description={t('en', 'notFoundBody')}
+>
+  <div class="not-found">
+    {
+      LOCALES.map((locale) => (
+        <section lang={locale}>
+          <h1>{t(locale, 'notFoundTitle')}</h1>
+          <p>{t(locale, 'notFoundBody')}</p>
+          <a href={localeUrl(locale)}>
+            {t(locale, 'backHome')} · {SITE[locale].name}
+          </a>
+        </section>
+      ))
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .not-found {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xl);
+    padding-block: var(--space-2xl);
+  }
+
+  h1 {
+    font-size: var(--size-h2);
+  }
+
+  p {
+    margin-top: var(--space-md);
+    color: var(--text-3);
+  }
+
+  a {
+    display: inline-block;
+    margin-top: var(--space-lg);
+    font-size: var(--size-small);
+  }
+</style>

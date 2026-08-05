@@ -1,0 +1,66 @@
+---
+import { SITE, type Locale } from '../consts';
+import { localeUrl } from '../lib/i18n';
+import { t } from '../lib/ui';
+import LangSwitch from './LangSwitch.astro';
+import ThemeToggle from './ThemeToggle.astro';
+
+interface Props {
+  locale: Locale;
+  path: string;
+  alternates: Locale[];
+}
+
+const { locale, path, alternates } = Astro.props;
+---
+
+<header class="header">
+  <a class="brand" href={localeUrl(locale)}>{SITE[locale].name}</a>
+
+  <div class="right">
+    <a class="nav-link" href={localeUrl(locale, 'archive')}>{t(locale, 'navArchive')}</a>
+    <a class="nav-link" href={localeUrl(locale, 'about')}>{t(locale, 'navAbout')}</a>
+    <LangSwitch {locale} {path} {alternates} />
+    <ThemeToggle {locale} />
+  </div>
+</header>
+
+<style>
+  .header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-lg);
+    padding-block: var(--space-xl);
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    font-family: var(--font-serif-cn);
+    font-weight: 500;
+    font-size: var(--size-h3);
+    color: var(--text-1);
+    text-decoration: none;
+  }
+
+  :global(:lang(en)) .brand {
+    font-family: var(--font-serif-en);
+  }
+
+  .right {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-lg);
+  }
+
+  .nav-link {
+    font-size: var(--size-caption);
+    color: var(--text-4);
+    text-decoration: none;
+    transition: color var(--dur) var(--ease);
+  }
+
+  .nav-link:hover {
+    color: var(--brand);
+  }
+</style>

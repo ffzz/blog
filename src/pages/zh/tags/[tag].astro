@@ -1,0 +1,12 @@
+---
+import type { GetStaticPaths } from 'astro';
+
+import TagPage from '../../../components/TagPage.astro';
+import { tagRoutes } from '../../../lib/tags';
+
+export const getStaticPaths = (() => tagRoutes('zh')) satisfies GetStaticPaths;
+
+const { locale, tag, label, entries } = Astro.props;
+---
+
+<TagPage {locale} {tag} {label} {entries} />
