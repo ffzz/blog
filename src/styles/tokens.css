@@ -146,6 +146,39 @@
   /* 等宽同样走系统栈，不自托管。 */
   --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'PingFang SC', monospace;
 
+  /* ── 代码高亮（Shiki css-variables 主题，PRD §3.5） ──────
+     变量名来自 @shikijs/core 的 createCssVariablesTheme 源码实测
+     （Astro 把默认前缀 --shiki- 换成了 --astro-code-），不是猜的。
+     全部转发到已有的 Kami token，不新增色值 —— 明暗模式因此自动
+     生效，不需要为代码块再写一套 @media / [data-theme] 覆盖。 */
+  --astro-code-background: var(--ivory);
+  --astro-code-foreground: var(--text-1); /* 其余 → near-black */
+  --astro-code-token-keyword: var(--brand); /* 关键字 / 控制流 */
+  --astro-code-token-string: var(--warm-brown); /* 字符串 */
+  --astro-code-token-string-expression: var(--warm-brown);
+  --astro-code-token-constant: var(--warm-brown); /* 数字 / 常量，与字符串同色 */
+  --astro-code-token-comment: var(--text-4); /* 注释 → stone */
+  --astro-code-token-function: var(--text-2); /* 函数名 → dark-warm */
+  --astro-code-token-parameter: var(--text-3); /* 参数 → olive */
+  --astro-code-token-punctuation: var(--text-1);
+  --astro-code-token-link: var(--brand);
+  /* diff 高亮：内容里目前不用 diff 代码块，给合理默认避免变量未定义。
+     Kami 只批准 warm-brown 一个第二色，故不引入红/绿。 */
+  --astro-code-token-inserted: var(--warm-brown);
+  --astro-code-token-deleted: var(--text-4);
+  --astro-code-token-changed: var(--text-3);
+
+  /* ── Mermaid（beautiful-mermaid，PRD §8.1） ──────────
+     构建期渲染成 SVG，颜色写成这些变量名而非硬编码 hex ——
+     暗色模式因此不需要重新渲染图表，浏览器切主题时颜色跟着变。 */
+  --mermaid-bg: var(--ivory);
+  --mermaid-fg: var(--text-1);
+  --mermaid-line: var(--border);
+  --mermaid-accent: var(--brand);
+  --mermaid-muted: var(--text-4);
+  --mermaid-surface: var(--ivory);
+  --mermaid-border: var(--border);
+
   /* ── 字号（正文 17px 锚定，保留 Kami 比例） ────────── */
   --size-display: 3.6rem; /* Kami 36pt */
   --size-h1: 2.2rem; /* Kami 22pt */

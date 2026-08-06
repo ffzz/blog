@@ -1,0 +1,138 @@
+# yaml-language-server: $schema=https://unpkg.com/@sveltia/cms/schema/sveltia-cms.json
+#
+# 中英各自独立的 collection，不用 Sveltia 官方推荐的字段级 i18n
+# （title/body 等字段在同一个 entry 里按 locale 切 tab 编辑）——
+# 那个模型假设每篇文章强制有对应的多语言版本，跟本站「文件系统即真相，
+# 不强制配对」的架构（PRD §6）矛盾。用四个独立 collection 直接映射
+# 语言目录，编辑英文文章不会被要求同时填中文版，反之亦然。
+
+backend:
+  name: github
+  # TODO(上线前)：换成真实仓库 owner/name。
+  repo: TODO/TODO
+  branch: main
+
+# 认证走 PAT（Personal Access Token），不需要额外的 OAuth 代理服务 ——
+# 登录界面点 "Sign In with Token"，按提示生成一个仅 repo scope 的
+# token 即可，config.yml 不需要为此再加任何字段。PRD §8.6。
+# 注意：GitHub PAT 默认 90 天过期，需要定期重新生成。
+
+media_folder: public/images
+public_folder: /images
+
+collections:
+  - name: posts_en
+    label: Posts (EN)
+    folder: src/content/posts/en
+    create: true
+    slug: '{{fields.slug}}'
+    fields:
+      - name: slug
+        label: 'Slug (URL, lowercase-with-hyphens)'
+        widget: string
+        hint: '决定文件名与 URL，例如 rag-chunking。发布后不要改，会丢外链权重。'
+      - { name: title, label: Title, widget: string }
+      - { name: description, label: Description, widget: text, hint: '直接用作 meta description，必填。' }
+      - { name: pubDate, label: Publish Date, widget: datetime }
+      - { name: updatedDate, label: Updated Date, widget: datetime, required: false }
+      - { name: tags, label: Tags, widget: list, required: false, hint: '全小写连字符，如 vector-search。' }
+      - { name: heroImage, label: Hero Image, widget: image, required: false }
+      - { name: draft, label: Draft, widget: boolean, default: false }
+      - { name: body, label: Body, widget: markdown }
+
+  - name: posts_zh
+    label: Posts (中文)
+    folder: src/content/posts/zh
+    create: true
+    slug: '{{fields.slug}}'
+    fields:
+      - name: slug
+        label: 'Slug（URL，英文小写连字符）'
+        widget: string
+        hint: '决定文件名与 URL，例如 rag-chunking。发布后不要改，会丢外链权重。'
+      - { name: title, label: 标题, widget: string }
+      - { name: description, label: 描述, widget: text, hint: '直接用作 meta description，必填。' }
+      - { name: pubDate, label: 发布日期, widget: datetime }
+      - { name: updatedDate, label: 更新日期, widget: datetime, required: false }
+      - { name: tags, label: 标签, widget: list, required: false, hint: '全小写连字符，如 vector-search。' }
+      - { name: heroImage, label: 头图, widget: image, required: false }
+      - { name: draft, label: 草稿, widget: boolean, default: false }
+      - { name: body, label: 正文, widget: markdown }
+
+  - name: notes_en
+    label: Notes (EN)
+    folder: src/content/notes/en
+    create: true
+    slug: '{{fields.slug}}'
+    fields:
+      - name: slug
+        label: 'Slug (URL, lowercase-with-hyphens)'
+        widget: string
+      - { name: title, label: Title, widget: string }
+      - { name: description, label: Description, widget: text }
+      - { name: pubDate, label: Publish Date, widget: datetime }
+      - { name: updatedDate, label: Updated Date, widget: datetime, required: false }
+      - { name: tags, label: Tags, widget: list, required: false }
+      - { name: heroImage, label: Hero Image, widget: image, required: false }
+      - { name: draft, label: Draft, widget: boolean, default: false }
+      - { name: body, label: Body, widget: markdown }
+
+  - name: notes_zh
+    label: Notes (中文)
+    folder: src/content/notes/zh
+    create: true
+    slug: '{{fields.slug}}'
+    fields:
+      - name: slug
+        label: 'Slug（URL，英文小写连字符）'
+        widget: string
+      - { name: title, label: 标题, widget: string }
+      - { name: description, label: 描述, widget: text }
+      - { name: pubDate, label: 发布日期, widget: datetime }
+      - { name: updatedDate, label: 更新日期, widget: datetime, required: false }
+      - { name: tags, label: 标签, widget: list, required: false }
+      - { name: heroImage, label: 头图, widget: image, required: false }
+      - { name: draft, label: 草稿, widget: boolean, default: false }
+      - { name: body, label: 正文, widget: markdown }
+
+  # 固定页面用 file collection（几个固定文件，不是自由创建的多篇），
+  # 对应 pages collection 的 schema：title + description + updatedDate?
+  - name: pages_en
+    label: Pages (EN)
+    files:
+      - name: about
+        label: About
+        file: src/content/pages/en/about.md
+        fields:
+          - { name: title, label: Title, widget: string }
+          - { name: description, label: Description, widget: text }
+          - { name: updatedDate, label: Updated Date, widget: datetime, required: false }
+          - { name: body, label: Body, widget: markdown }
+      - name: privacy
+        label: Privacy
+        file: src/content/pages/en/privacy.md
+        fields:
+          - { name: title, label: Title, widget: string }
+          - { name: description, label: Description, widget: text }
+          - { name: updatedDate, label: Updated Date, widget: datetime, required: false }
+          - { name: body, label: Body, widget: markdown }
+
+  - name: pages_zh
+    label: Pages (中文)
+    files:
+      - name: about
+        label: 关于
+        file: src/content/pages/zh/about.md
+        fields:
+          - { name: title, label: 标题, widget: string }
+          - { name: description, label: 描述, widget: text }
+          - { name: updatedDate, label: 更新日期, widget: datetime, required: false }
+          - { name: body, label: 正文, widget: markdown }
+      - name: privacy
+        label: 隐私政策
+        file: src/content/pages/zh/privacy.md
+        fields:
+          - { name: title, label: 标题, widget: string }
+          - { name: description, label: 描述, widget: text }
+          - { name: updatedDate, label: 更新日期, widget: datetime, required: false }
+          - { name: body, label: 正文, widget: markdown }

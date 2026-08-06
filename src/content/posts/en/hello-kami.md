@@ -27,6 +27,17 @@ async def embed(chunks: list[str]) -> Vectors:
 
 > Blockquotes lift off the page through fill colour, with no closed border — the single left rule carries the weight.
 
+### Diagrams
+
+Mermaid diagrams render to SVG at build time — no diagram library ships to the browser:
+
+```mermaid
+graph TD
+  A[Markdown source] --> B{beautiful-mermaid}
+  B --> C[SVG with var colours]
+  C --> D[Static HTML]
+```
+
 ## Lists and tables
 
 - Never pure white as page background

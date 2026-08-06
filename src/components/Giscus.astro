@@ -1,0 +1,77 @@
+---
+import { GISCUS, type Locale } from '../consts';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+const GISCUS_LANG: Record<Locale, string> = { en: 'en', zh: 'zh-CN' };
+const lang = GISCUS_LANG[locale];
+
+// GISCUS 为 null 时（仓库还没开 Discussions，见 consts.ts 的 TODO）
+// 整个组件不渲染任何东西 —— 跟 Analytics.astro 的 CF_ANALYTICS_TOKEN
+// 是同一个模式：未配置就静默跳过，不产生指向不存在端点的失败请求。
+---
+
+{
+  GISCUS && (
+    <section class="comments" aria-label="Comments">
+      <div id="giscus-container" />
+      <script define:vars={{ giscus: GISCUS, lang }}>
+        /**
+         * 用 JS 动态创建 giscus 的 <script> 标签，而不是静态写死在模板里 ——
+         * 需要在运行时才能决定用哪个 data-theme CSS URL（取决于当前明暗
+         * 状态），且要能在主题切换时通过 postMessage 通知已加载的 iframe。
+         * PRD §8.2：自定义 CSS 对齐 Kami 配色。
+         */
+        const LIGHT_THEME = new URL('/giscus-theme-light.css', location.origin).href;
+        const DARK_THEME = new URL('/giscus-theme-dark.css', location.origin).href;
+
+        function isDark() {
+          const explicit = document.documentElement.dataset.theme;
+          if (explicit === 'dark') return true;
+          if (explicit === 'light') return false;
+          return matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+
+        const container = document.getElementById('giscus-container');
+        const script = document.createElement('script');
+        script.src = 'https://giscus.app/client.js';
+        script.async = true;
+        script.crossOrigin = 'anonymous';
+        script.setAttribute('data-repo', giscus.repo);
+        script.setAttribute('data-repo-id', giscus.repoId);
+        script.setAttribute('data-category', giscus.category);
+        script.setAttribute('data-category-id', giscus.categoryId);
+        script.setAttribute('data-mapping', 'pathname');
+        script.setAttribute('data-reactions-enabled', '1');
+        script.setAttribute('data-emit-metadata', '0');
+        script.setAttribute('data-input-position', 'top');
+        script.setAttribute('data-lang', lang);
+        script.setAttribute('data-loading', 'lazy');
+        script.setAttribute('data-theme', isDark() ? DARK_THEME : LIGHT_THEME);
+        container.appendChild(script);
+
+        // 跟随站内明暗切换：iframe 是独立文档，没法用 CSS 变量跨 frame
+        // 感知父页面状态，只能用 giscus 官方支持的 postMessage 协议
+        // 主动告诉它换一个主题 CSS URL。
+        document.addEventListener('kami:theme-change', (event) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          const theme = event.detail.theme === 'dark' ? DARK_THEME : LIGHT_THEME;
+          iframe.contentWindow?.postMessage({ giscus: { setConfig: { theme } } }, 'https://giscus.app');
+        });
+      </script>
+    </section>
+  )
+}
+
+<style>
+  .comments {
+    margin-top: var(--space-3xl);
+    padding-top: var(--space-xl);
+    border-top: 1px solid var(--border);
+  }
+</style>

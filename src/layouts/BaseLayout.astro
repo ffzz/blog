@@ -1,4 +1,5 @@
 ---
+import Analytics from '../components/Analytics.astro';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
@@ -15,9 +16,15 @@ interface Props {
   description: string;
   /** 该页面实际存在的语言版本。固定页面传全集，文章页传 getAvailableLocales() 的结果。 */
   alternates?: Locale[];
-  /** 正文最大宽度。列表页用 wide。 */
-  width?: 'reading' | 'wide';
+  /**
+   * 正文宽度。reading 是默认单栏；wide 用于列表页；article 专给文章页 ——
+   * ≥1280px 时 main 展开成 TOC / 正文 / 边注三栏网格，窄屏退化为单栏。
+   * Header / Footer 始终保持阅读宽度，不随 main 变宽，见下方 .bar。
+   */
+  width?: 'reading' | 'wide' | 'article';
   ogImage?: string;
+  /** 中间态/工具页不该被收录，见 BaseHead。默认 false。 */
+  noindex?: boolean;
 }
 
 const {
@@ -28,41 +35,70 @@ const {
   alternates = [...LOCALES],
   width = 'reading',
   ogImage,
+  noindex = false,
 } = Astro.props;
 ---
 
 <!doctype html>
 <html lang={LANG_TAG[locale]}>
   <head>
-    <BaseHead {locale} {path} {title} {description} {alternates} {ogImage} />
+    <BaseHead {locale} {path} {title} {description} {alternates} {ogImage} {noindex} />
   </head>
   <body>
     <a class="skip-link" href="#main">{t(locale, 'skipToContent')}</a>
 
-    <div class="shell" data-width={width}>
-      <Header {locale} {path} {alternates} />
-      <main id="main">
+    <div class="shell">
+      <div class="bar">
+        <Header {locale} {path} {alternates} />
+      </div>
+      <main id="main" data-width={width}>
         <slot />
       </main>
-      <Footer {locale} />
+      <div class="bar">
+        <Footer {locale} />
+      </div>
     </div>
+
+    <Analytics />
 
     <style>
       .shell {
-        max-width: var(--measure);
-        margin-inline: auto;
-        padding-inline: var(--space-lg);
         min-height: 100dvh;
         display: flex;
         flex-direction: column;
       }
 
-      .shell[data-width='wide'] {
-        max-width: var(--measure-wide);
+      /* Header / Footer 的阅读宽度，与 main 的宽度变体无关。 */
+      .bar {
+        width: 100%;
+        max-width: var(--measure);
+        margin-inline: auto;
+        padding-inline: var(--space-lg);
       }
 
       main {
         flex: 1;
+        width: 100%;
+        max-width: var(--measure);
+        margin-inline: auto;
+        padding-inline: var(--space-lg);
+      }
+
+      main[data-width='wide'] {
+        max-width: var(--measure-wide);
+      }
+
+      /* 文章页三栏：TOC / 正文 / 边注，居中作为一个整体，
+         而不是拉满整个视口 —— 侧栏是给内容用的余量，不是新的版心。 */
+      @media (min-width: 1280px) {
+        main[data-width='article'] {
+          max-width: none;
+          display: grid;
+          grid-template-columns: minmax(0, 220px) minmax(0, var(--measure)) minmax(0, 280px);
+          justify-content: center;
+          align-items: start;
+          gap: var(--space-xl);
+        }
       }
     </style>
   </body>

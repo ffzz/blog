@@ -2,7 +2,10 @@
 import { render } from 'astro:content';
 
 import type { CollectionName, Locale } from '../consts';
+import Giscus from '../components/Giscus.astro';
 import JsonLd from '../components/JsonLd.astro';
+import Sidenotes from '../components/Sidenotes.astro';
+import TableOfContents from '../components/TableOfContents.astro';
 import { getAvailableLocales, postPath, type PostEntry } from '../lib/i18n';
 import { ogImagePath } from '../lib/og';
 import { blogPosting, breadcrumbList } from '../lib/schema';
@@ -20,7 +23,7 @@ interface Props {
 }
 
 const { entry, collection, locale, slug } = Astro.props;
-const { Content } = await render(entry);
+const { Content, headings } = await render(entry);
 
 // hreflang、语言切换器都吃这个结果。只上报实际存在的语言版本。
 const alternates = await getAvailableLocales(collection, slug);
@@ -45,10 +48,11 @@ const postingSchema = blogPosting({
 const breadcrumbSchema = breadcrumbList(locale, sectionLabel, title, path);
 ---
 
-<BaseLayout {locale} {path} {title} {description} {alternates}>
+<BaseLayout {locale} {path} {title} {description} {alternates} width="article">
   <JsonLd data={postingSchema} />
   <JsonLd data={breadcrumbSchema} />
-  <article>
+  <TableOfContents {locale} {headings} />
+  <article data-pagefind-body>
     <header class="head">
       <h1>{title}</h1>
       <p class="meta">
@@ -89,10 +93,18 @@ const breadcrumbSchema = breadcrumbList(locale, sectionLabel, title, path);
         </footer>
       )
     }
+
+    <Giscus {locale} />
   </article>
+  <Sidenotes />
 </BaseLayout>
 
 <style>
+  article {
+    /* 网格项默认 min-width:auto，代码块或长表格能把这一列撑宽过头。 */
+    min-width: 0;
+  }
+
   .head {
     /* 铁律 9：标题的重量来自单边竖线，不是字重也不是投影。 */
     border-left: 3px solid var(--brand);

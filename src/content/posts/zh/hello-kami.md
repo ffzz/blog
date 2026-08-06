@@ -27,6 +27,17 @@ async def embed(chunks: list[str]) -> Vectors:
 
 > 引用块靠填充色浮起，不画闭合边框 —— 单边竖线承担重量。
 
+### 图表
+
+Mermaid 图表在构建期渲染成 SVG，浏览器里不加载任何图表库：
+
+```mermaid
+graph TD
+  A[Markdown 源码] --> B{beautiful-mermaid}
+  B --> C[带 CSS 变量的 SVG]
+  C --> D[静态 HTML]
+```
+
 ## 清单与表格
 
 - 底色永不纯白

@@ -52,6 +52,9 @@ const { locale } = Astro.props;
     } catch {
       /* 隐私模式下不持久化，本次会话仍然生效 */
     }
+    // 派发自定义事件而不是让别的组件（比如 Giscus）直接依赖这个组件的
+    // 实现细节 —— 谁关心主题变化就自己监听，这里不需要知道谁在听。
+    document.dispatchEvent(new CustomEvent('kami:theme-change', { detail: { theme: next } }));
   }
 
   // View Transitions 会替换 DOM，故用事件委托而非直接绑定。

@@ -1,0 +1,175 @@
+---
+import type { Locale } from '../consts';
+import { t } from '../lib/ui';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<form class="subscribe" data-subscribe-form novalidate>
+  <label for="subscribe-email">{t(locale, 'subscribeLabel')}</label>
+  <div class="row">
+    <input
+      id="subscribe-email"
+      type="email"
+      name="email"
+      required
+      placeholder={t(locale, 'subscribePlaceholder')}
+      data-subscribe-email
+    />
+    <button type="submit" data-subscribe-submit>{t(locale, 'subscribeButton')}</button>
+  </div>
+  <p class="status" data-subscribe-status role="status" aria-live="polite"></p>
+</form>
+
+<script>
+  /**
+   * /api/subscribe 只在 Cloudflare 部署里存在（wrangler.jsonc 的
+   * run_worker_first 把 /api/* 路由到 worker/index.ts）。本地
+   * `astro dev` 下这个端点不存在，提交会拿到网络错误 —— 按"服务暂时
+   * 不可用"文案处理，不专门为开发环境做特殊分支，那是本地验证时
+   * 用 `wrangler dev` 单独跑 worker 的事，不该反过来污染生产代码。
+   *
+   * script 标签是纯客户端代码，访问不到 Astro 的 t()，这里就地维护
+   * 一份小字典 —— 只有 5 个状态短句，不值得为此设计一套跨 script
+   * 边界传文案的机制（之前设计的 dataset 传递方案就是这么绕出问题的：
+   * 脚本读的属性模板里从来没真正写过，状态提示永远是空的）。
+   */
+  const LABELS = {
+    en: {
+      sending: 'Sending…',
+      ok: 'Check your inbox to confirm.',
+      invalid_email: 'That email address looks off.',
+      rate_limited: 'Too many attempts — try again in an hour.',
+      error: "Couldn't send that — try again shortly.",
+    },
+    zh: {
+      sending: '发送中…',
+      ok: '去邮箱里点确认链接。',
+      invalid_email: '这个邮箱地址看着不太对。',
+      rate_limited: '尝试太多次了，一小时后再试。',
+      error: '没发送成功，稍后再试。',
+    },
+  } as const;
+
+  document.querySelectorAll<HTMLFormElement>('[data-subscribe-form]').forEach((form) => {
+    const emailInput = form.querySelector<HTMLInputElement>('[data-subscribe-email]');
+    const submitBtn = form.querySelector<HTMLButtonElement>('[data-subscribe-submit]');
+    const status = form.querySelector<HTMLParagraphElement>('[data-subscribe-status]');
+    if (!emailInput || !submitBtn || !status) return;
+
+    const locale = document.documentElement.lang.startsWith('zh') ? 'zh' : 'en';
+    const labels = LABELS[locale];
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const email = emailInput.value.trim();
+      if (!email) return;
+
+      submitBtn.disabled = true;
+      const originalLabel = submitBtn.textContent;
+      submitBtn.textContent = labels.sending;
+      status.textContent = '';
+      status.dataset.state = '';
+
+      let key: keyof typeof labels = 'error';
+      try {
+        const res = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, locale }),
+        });
+        const responseBody = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+
+        if (res.ok && responseBody.ok) {
+          key = 'ok';
+          emailInput.value = '';
+        } else if (responseBody.error === 'invalid_email' || responseBody.error === 'rate_limited') {
+          key = responseBody.error;
+        }
+      } catch {
+        key = 'error';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalLabel;
+        status.dataset.state = key === 'ok' ? 'success' : 'error';
+        status.textContent = labels[key];
+      }
+    });
+  });
+</script>
+
+<style>
+  .subscribe {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  label {
+    font-size: var(--size-caption);
+    color: var(--text-4);
+  }
+
+  .row {
+    display: flex;
+    gap: var(--space-sm);
+  }
+
+  input[type='email'] {
+    flex: 1;
+    min-width: 0;
+    background: var(--ivory);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--size-small);
+    color: var(--text-1);
+  }
+
+  input[type='email']::placeholder {
+    color: var(--text-4);
+  }
+
+  input[type='email']:focus {
+    outline: 2px solid var(--brand);
+    outline-offset: 1px;
+  }
+
+  button[type='submit'] {
+    background: var(--brand);
+    color: var(--parchment);
+    border: 0;
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm) var(--space-lg);
+    font-size: var(--size-small);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity var(--dur) var(--ease);
+  }
+
+  button[type='submit']:hover {
+    opacity: 0.85;
+  }
+
+  button[type='submit']:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .status {
+    font-size: var(--size-caption);
+    min-height: 1.2em;
+  }
+
+  .status[data-state='success'] {
+    color: var(--brand);
+  }
+
+  .status[data-state='error'] {
+    color: var(--warm-brown);
+  }
+</style>

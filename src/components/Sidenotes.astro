@@ -1,0 +1,46 @@
+---
+// 边注（PRD §8.1）：≥1280px 时脚注显示在右侧栏，窄屏降级为文末列表。
+//
+// 真正逐条对齐到引用点旁边的 Tufte 式边注需要持续的位置同步 JS
+// （量每个引用的滚动位置、处理重叠），复杂度和脆弱性都明显更高。
+// 这里选择更简单也更稳的做法：脚注整体作为第三栏的常驻列表出现，
+// 跟左侧 TOC 是同一种模式，不逐条对齐正文引用点。
+//
+// 实现是一次性 DOM 搬移：GFM 脚注默认渲染在 .prose 内部的
+// <section data-footnotes>，脚本把它整体挪进这个 <aside>。
+// main[data-width='article'] 的网格规则只在 ≥1280px 生效，
+// 窄屏下 main 仍是普通块级流，这个 aside 作为 article 之后的
+// 下一个兄弟元素，天然就落在文章下方 —— 不需要额外的响应式判断。
+// 没有 JS 时，脚注保持在 .prose 原位，样式不受影响（见 prose.css）。
+---
+
+<aside class="sidenotes" data-sidenotes></aside>
+
+<style>
+  .sidenotes:empty {
+    display: none;
+  }
+
+  @media (min-width: 1280px) {
+    .sidenotes:not(:empty) {
+      position: sticky;
+      top: var(--space-xl);
+      max-height: calc(100dvh - var(--space-2xl));
+      overflow-y: auto;
+    }
+
+    /* 已经是独立侧栏，不再需要顶部分隔线和大间距 —— 那是给"文末列表"
+       这个语境准备的，搬到侧栏后视觉语境变了。 */
+    :global(.sidenotes .footnotes) {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+  }
+</style>
+
+<script>
+  const footnotes = document.querySelector('.prose [data-footnotes]');
+  const rail = document.querySelector('[data-sidenotes]');
+  if (footnotes && rail) rail.appendChild(footnotes);
+</script>

@@ -20,6 +20,10 @@ pnpm-debug.log*
 # environment variables
 .env
 .env.production
+.dev.vars
+
+# wrangler local state (local KV/D1 simulation, logs)
+.wrangler/
 
 # macOS-specific files
 .DS_Store

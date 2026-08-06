@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin</title>
+    <!-- 后台管理页，不给搜索引擎收录。robots.txt 里也已经 Disallow: /admin（P1）。 -->
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+  <body>
+    <!--
+      零 npm 依赖：直接从 CDN 加载，PRD §8.6。
+      锁定具体版本号 + SRI 完整性校验，而不是官方文档默认建议的不带版本号 URL
+      （那样每次都加载 CDN 上"当下"的最新内容，没法配 SRI，等于无条件信任
+      每一次第三方发布）。这是后台管理入口，认证凭据在这里过一遍，对供应链
+      完整性认真一点是合理的取舍——代价是版本不会跟着 CDN 自动升级，
+      需要手动升级版本号并重新算一次 hash（下面这条命令）：
+        curl -sL https://unpkg.com/@sveltia/cms@<new-version>/dist/sveltia-cms.js \
+          | openssl dgst -sha384 -binary | openssl base64 -A
+    -->
+    <script
+      src="https://unpkg.com/@sveltia/cms@0.179.0/dist/sveltia-cms.js"
+      type="module"
+      integrity="sha384-mVjEYeNjgFrDMldKYRXtGqYoTQX7l0LLf7wSUABCSIcQqRQPQckldCncpzRv0zHF"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>

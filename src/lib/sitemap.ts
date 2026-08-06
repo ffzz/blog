@@ -10,7 +10,9 @@ export interface SitemapUrl {
   alternates: Partial<Record<Locale, string>>;
 }
 
-const STATIC_PATHS = ['', 'about', 'archive'];
+// subscribe/confirm 故意不在这里：它是订阅流程的中间跳转页，不是内容，
+// 见 BaseHead 的 noindex 处理。
+const STATIC_PATHS = ['', 'about', 'archive', 'privacy'];
 
 /**
  * 汇总全站 sitemap 条目。

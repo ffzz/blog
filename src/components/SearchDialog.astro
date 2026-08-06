@@ -1,0 +1,282 @@
+---
+import type { Locale } from '../consts';
+import { t } from '../lib/ui';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<button type="button" class="search-trigger" data-search-open aria-label={t(locale, 'searchOpen')}>
+  <span aria-hidden="true">⌕</span>
+</button>
+
+<dialog class="search-dialog" data-search-dialog aria-label={t(locale, 'searchOpen')}>
+  <form method="dialog" class="search-form">
+    <input
+      type="search"
+      class="search-input"
+      placeholder={t(locale, 'searchPlaceholder')}
+      data-search-input
+      autocomplete="off"
+    />
+    <button type="submit" class="search-close" aria-label={t(locale, 'searchClose')}>×</button>
+  </form>
+  <ul class="search-results" data-search-results></ul>
+</dialog>
+
+<style>
+  .search-trigger {
+    background: none;
+    border: 0;
+    padding: var(--space-xs) var(--space-sm);
+    cursor: pointer;
+    color: var(--text-4);
+    font-size: var(--size-body);
+    line-height: 1;
+    border-radius: var(--radius-sm);
+    transition: color var(--dur) var(--ease);
+  }
+
+  .search-trigger:hover {
+    color: var(--brand);
+  }
+
+  .search-dialog {
+    width: min(560px, calc(100vw - var(--space-xl)));
+    max-height: min(560px, 80dvh);
+    margin: auto;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--ivory);
+    color: var(--text-1);
+    overflow: hidden;
+  }
+
+  /* <dialog> 未打开时浏览器默认是 display:none —— 之前这条 flex 规则
+     写在无条件的 .search-dialog 上，把这条默认行为覆盖掉了，导致
+     搜索框在页面刚加载、根本没点开的情况下就直接显示在页面中间，
+     挤压了 Header 和首屏内容（Lighthouse 因此在移动端报了触摸目标
+     尺寸不足）。限定在 [open] 状态下才切 flex 布局。 */
+  .search-dialog[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 原生 <dialog> 的 backdrop 伪元素，用 Kami 暖色调而不是浏览器默认的冷灰。 */
+  .search-dialog::backdrop {
+    background: color-mix(in srgb, var(--text-1) 40%, transparent);
+  }
+
+  .search-form {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .search-input {
+    flex: 1;
+    border: 0;
+    background: none;
+    padding: var(--space-lg);
+    font-size: var(--size-body);
+    font-family: var(--font-body);
+    color: var(--text-1);
+  }
+
+  .search-input:focus {
+    outline: none;
+  }
+
+  .search-input::placeholder {
+    color: var(--text-4);
+  }
+
+  .search-close {
+    background: none;
+    border: 0;
+    padding: 0 var(--space-lg);
+    font-size: var(--size-h2);
+    line-height: 1;
+    color: var(--text-4);
+    cursor: pointer;
+  }
+
+  .search-close:hover {
+    color: var(--brand);
+  }
+
+  /* .search-results 这个 <ul> 本身是模板渲染的，scoped 没问题；
+     但它的全部子节点都是脚本用 innerHTML 运行时注入的（见下面的
+     <script>），不会带 Astro 编译期加的 data-astro-cid 属性 ——
+     scoped 选择器根本选不中它们。这里往下所有命中列表内容的规则
+     都要用 :global()，之前漏了这一点，结果整个结果列表（标题、
+     摘要、连 <mark> 高亮）在真机测试前全部没有样式生效。 */
+  .search-results {
+    list-style: none;
+    margin: 0;
+    padding: var(--space-sm);
+    overflow-y: auto;
+  }
+
+  .search-results:empty {
+    display: none;
+  }
+
+  .search-results :global(li + li) {
+    margin-top: var(--space-xs);
+  }
+
+  .search-results :global(a) {
+    display: block;
+    padding: var(--space-md);
+    border-radius: var(--radius);
+    text-decoration: none;
+    transition: background var(--dur) var(--ease);
+  }
+
+  .search-results :global(a:hover),
+  .search-results :global(a:focus-visible) {
+    background: var(--brand-tint);
+  }
+
+  .search-results :global(.result-title) {
+    font-family: var(--font-serif-cn);
+    font-weight: 500;
+    color: var(--text-1);
+    font-size: var(--size-small);
+  }
+
+  :global(:lang(en)) .search-results :global(.result-title) {
+    font-family: var(--font-serif-en);
+  }
+
+  .search-results :global(.result-excerpt) {
+    margin-top: var(--space-xs);
+    font-size: var(--size-caption);
+    color: var(--text-3);
+    line-height: var(--lh-dense);
+  }
+
+  /* Pagefind 在匹配词外包一层 <mark>，改用油墨蓝而不是浏览器默认的黄底。 */
+  .search-results :global(.result-excerpt mark) {
+    background: none;
+    color: var(--brand);
+    font-weight: 500;
+  }
+
+  .search-results :global(.search-empty) {
+    padding: var(--space-lg);
+    text-align: center;
+    color: var(--text-4);
+    font-size: var(--size-small);
+  }
+</style>
+
+<script>
+  /**
+   * 用 Pagefind 底层 JS API 自己搭 UI（而不是默认的 PagefindUI），
+   * 这样才能对齐 Kami 视觉。PRD §8.3。
+   *
+   * /pagefind/pagefind.js 是构建期由 `pagefind --site dist` 生成的，
+   * `astro dev` 下不存在 —— import 失败时直接把触发按钮禁用，
+   * 而不是假装搜索能用。语言过滤不需要自己写：Pagefind 按每页
+   * <html lang> 自动分索引，浏览器端默认只搜当前语言。
+   *
+   * 用 new Function 包一层间接调用，不能直接写 import('/pagefind/...')。
+   * 实测过两种更常见的写法都不行：
+   *   1) `import(/* @vite-ignore *\/ '/pagefind/pagefind.js')`
+   *   2) `const p = '/pagefind/pagefind.js'; import(p)`
+   * 两者生产构建后都抛 `ReferenceError: __VITE_PRELOAD__ is not defined`。
+   * 根因：Vite 只要在 AST 里看到 import() 表达式就会无条件套一层
+   * __vitePreload() 预加载包装，不管参数是字面量还是变量 —— @vite-ignore
+   * 只影响"是否报警告"，并不影响这层包装是否被插入。而 pagefind.js 是
+   * 运行时才由 `pagefind --site dist` 生成的文件，构建期根本不在 Vite
+   * 的模块图里，它算不出预加载依赖清单，包装调用里对应的
+   * __VITE_PRELOAD__ 常量也就从未被定义，一用就炸。
+   * new Function 的函数体是纯字符串，Vite/Rollup 的 AST 遍历完全看不到
+   * 里面写了 import()，这层包装因此根本不会被插入 —— 这是"引用一个
+   * 构建期不存在的外部模块"场景下唯一验证有效的写法。
+   * 代价：等价于局部 eval，如果站点以后加了严格 CSP（当前没有）
+   * 需要给这段放行 unsafe-eval，或者换個不依赖动态 import 的加载方式。
+   */
+  const importPagefind = new Function(
+    'path',
+    'return import(path)',
+  ) as (path: string) => Promise<typeof import('/pagefind/pagefind.js')>;
+
+  let pagefindPromise: ReturnType<typeof importPagefind> | null = null;
+  const loadPagefind = () => {
+    pagefindPromise ??= importPagefind('/pagefind/pagefind.js')
+      .then(async (mod) => {
+        await mod.init();
+        return mod;
+      })
+      // 失败（网络抖动等）不能把这个 rejected promise 永久缓存住 ——
+      // ??= 只在变量是 null 时才重新赋值，一次失败会让之后所有调用
+      // 永远复用同一个死掉的 promise，用户重新点击搜索也救不回来。
+      // 清空缓存，让下一次调用重新尝试。
+      .catch((err) => {
+        pagefindPromise = null;
+        throw err;
+      });
+    return pagefindPromise;
+  };
+
+  const dialog = document.querySelector<HTMLDialogElement>('[data-search-dialog]');
+  const trigger = document.querySelector<HTMLButtonElement>('[data-search-open]');
+  const input = document.querySelector<HTMLInputElement>('[data-search-input]');
+  const results = document.querySelector<HTMLUListElement>('[data-search-results]');
+
+  if (dialog && trigger && input && results) {
+    trigger.addEventListener('click', async () => {
+      try {
+        await loadPagefind();
+      } catch {
+        trigger.disabled = true;
+        return;
+      }
+      dialog.showModal();
+      input.focus();
+    });
+
+    // 点 backdrop 关闭 —— <dialog> 原生不做这件事，click 事件的 target
+    // 在点到 backdrop 时就是 dialog 本身（不是里面的表单元素）。
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+
+    let query = '';
+    input.addEventListener('input', async () => {
+      query = input.value.trim();
+      if (!query) {
+        results.innerHTML = '';
+        return;
+      }
+
+      const pagefind = await loadPagefind();
+      const search = await pagefind.debouncedSearch(query);
+      if (search === null) return; // 防抖跳过了这一次，更晚的输入会触发下一次
+      if (query !== input.value.trim()) return; // 结果落地前用户又改了输入
+
+      if (search.results.length === 0) {
+        const emptyLabel = document.documentElement.lang.startsWith('zh')
+          ? '没有找到结果。'
+          : 'No results.';
+        results.innerHTML = `<li class="search-empty">${emptyLabel}</li>`;
+        return;
+      }
+
+      const items = await Promise.all(
+        search.results.slice(0, 10).map(async (r) => {
+          const data = await r.data();
+          return `<li><a href="${data.url}"><span class="result-title">${data.meta.title}</span><p class="result-excerpt">${data.excerpt}</p></a></li>`;
+        }),
+      );
+      results.innerHTML = items.join('');
+    });
+  }
+</script>

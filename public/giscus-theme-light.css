@@ -1,0 +1,133 @@
+/*!
+ * Giscus 自定义主题 · Kami 浅色
+ * 变量名来自官方模板：https://github.com/giscus/giscus/blob/main/styles/themes/custom_example.css
+ * 值对齐 src/styles/tokens.css 的浅色 Kami token（手抄一份而非引用 ——
+ * 这个文件被 giscus 的 iframe 独立加载，跟站内构建流程不共享 CSS 变量）。
+ */
+
+main {
+  /* ── 语法高亮（评论区贴代码时用），映射逻辑与 src/styles/tokens.css
+     的 --astro-code-token-* 一致，保持视觉统一。 ─────────────── */
+  --color-prettylights-syntax-comment: #6b6a64; /* stone */
+  --color-prettylights-syntax-constant: #8b4513; /* warm-brown */
+  --color-prettylights-syntax-entity: #3d3d3a; /* dark-warm */
+  --color-prettylights-syntax-storage-modifier-import: #141413;
+  --color-prettylights-syntax-entity-tag: #1b365d; /* brand */
+  --color-prettylights-syntax-keyword: #1b365d; /* brand */
+  --color-prettylights-syntax-string: #8b4513; /* warm-brown */
+  --color-prettylights-syntax-variable: #504e49; /* olive */
+  --color-prettylights-syntax-brackethighlighter-unmatched: #8b4513;
+  --color-prettylights-syntax-invalid-illegal-text: #141413;
+  --color-prettylights-syntax-invalid-illegal-bg: #f0e0d8;
+  --color-prettylights-syntax-carriage-return-text: #141413;
+  --color-prettylights-syntax-carriage-return-bg: #f0e0d8;
+  --color-prettylights-syntax-string-regexp: #8b4513;
+  --color-prettylights-syntax-markup-list: #504e49;
+  --color-prettylights-syntax-markup-heading: #1b365d;
+  --color-prettylights-syntax-markup-italic: #141413;
+  --color-prettylights-syntax-markup-bold: #141413;
+  --color-prettylights-syntax-markup-deleted-text: #141413;
+  --color-prettylights-syntax-markup-deleted-bg: #f0e0d8;
+  --color-prettylights-syntax-markup-inserted-text: #141413;
+  --color-prettylights-syntax-markup-inserted-bg: #eef2f7;
+  --color-prettylights-syntax-markup-changed-text: #141413;
+  --color-prettylights-syntax-markup-changed-bg: #f0e0d8;
+  --color-prettylights-syntax-markup-ignored-text: #6b6a64;
+  --color-prettylights-syntax-markup-ignored-bg: #e4ecf5;
+  --color-prettylights-syntax-meta-diff-range: #1b365d;
+  --color-prettylights-syntax-brackethighlighter-angle: #6b6a64;
+  --color-prettylights-syntax-sublimelinter-gutter-mark: #6b6a64;
+  --color-prettylights-syntax-constant-other-reference-link: #1b365d;
+
+  /* ── 按钮 ───────────────────────────────────────── */
+  --color-btn-text: #141413;
+  --color-btn-bg: #faf9f5;
+  --color-btn-border: #e8e6dc;
+  --color-btn-shadow: 0 0 transparent;
+  --color-btn-inset-shadow: 0 0 transparent;
+  --color-btn-hover-bg: #e8e6dc;
+  --color-btn-hover-border: #1b365d;
+  --color-btn-active-bg: #e4ecf5;
+  --color-btn-active-border: #1b365d;
+  --color-btn-selected-bg: #eef2f7;
+  --color-btn-primary-text: #faf9f5;
+  --color-btn-primary-bg: #1b365d;
+  --color-btn-primary-border: #1b365d;
+  --color-btn-primary-shadow: 0 0 transparent;
+  --color-btn-primary-inset-shadow: 0 0 transparent;
+  --color-btn-primary-hover-bg: #142a49;
+  --color-btn-primary-hover-border: #142a49;
+  --color-btn-primary-selected-bg: #1b365d;
+  --color-btn-primary-selected-shadow: 0 0 transparent;
+  --color-btn-primary-disabled-text: #e8e6dc;
+  --color-btn-primary-disabled-bg: #9fb0c4;
+  --color-btn-primary-disabled-border: #9fb0c4;
+
+  --color-action-list-item-default-hover-bg: #e8e6dc;
+  --color-segmented-control-bg: #e8e6dc;
+  --color-segmented-control-button-bg: #faf9f5;
+  --color-segmented-control-button-selected-border: #1b365d;
+
+  /* ── 表面与文字（对齐 tokens.css 浅色） ─────────────── */
+  --color-fg-default: #141413; /* text-1 */
+  --color-fg-muted: #504e49; /* text-3 */
+  --color-fg-subtle: #6b6a64; /* text-4 */
+  --color-canvas-default: #f5f4ed; /* parchment */
+  --color-canvas-overlay: #faf9f5; /* ivory */
+  --color-canvas-inset: #faf9f5;
+  --color-canvas-subtle: #e8e6dc; /* warm-sand */
+  --color-border-default: #e8e6dc; /* border */
+  --color-border-muted: #e5e3d8; /* border-soft */
+  --color-neutral-muted: rgb(107 106 100 / 20%); /* stone，半透明 */
+
+  /* ── 强调色：唯一色相油墨蓝（铁律 2） ─────────────────── */
+  --color-accent-fg: #1b365d;
+  --color-accent-emphasis: #1b365d;
+  --color-accent-muted: rgb(27 54 93 / 30%);
+  --color-accent-subtle: #eef2f7; /* brand-tint */
+
+  /* 以下三个是 giscus 的功能性状态色（已解决/提醒/危险操作），
+     不在 Kami「唯一强调色」的约束范围内 —— 这是第三方组件内部的
+     语义状态，不是本站编辑内容的排版语言，保留克制的语义色而非
+     强行套用 brand，避免"已解决"和"删除"看起来长一个样。 */
+  --color-success-fg: #3b6d11;
+  --color-attention-fg: #8b4513;
+  --color-attention-muted: rgb(139 69 19 / 25%);
+  --color-attention-subtle: rgb(139 69 19 / 10%);
+  --color-danger-fg: #a32d2d;
+  --color-danger-muted: rgb(163 45 45 / 25%);
+  --color-danger-subtle: rgb(163 45 45 / 10%);
+
+  --color-primer-shadow-inset: 0 0 transparent;
+  --color-scale-gray-7: #e8e6dc;
+  --color-scale-blue-8: #eef2f7;
+
+  --color-social-reaction-bg-hover: var(--color-scale-gray-7);
+  --color-social-reaction-bg-reacted-hover: var(--color-scale-blue-8);
+}
+
+/* 评论框在上、时间线在下 —— 跟站内先看讨论、再决定要不要写的阅读顺序一致。 */
+.gsc-timeline {
+  flex-direction: column-reverse;
+}
+
+.gsc-header {
+  padding-bottom: 1rem;
+}
+
+.gsc-comments > .gsc-header {
+  order: 1;
+}
+
+.gsc-comments > .gsc-comment-box {
+  order: 2;
+  margin-bottom: 1rem;
+}
+
+.gsc-comments > .gsc-timeline {
+  order: 3;
+}
+
+.gsc-homepage-bg {
+  background-color: #f5f4ed;
+}

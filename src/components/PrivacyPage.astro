@@ -1,0 +1,40 @@
+---
+import { getEntry, render } from 'astro:content';
+
+import type { Locale } from '../consts';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+import '../styles/prose.css';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+const page = await getEntry('pages', `${locale}/privacy`);
+if (!page) {
+  throw new Error(`缺少 src/content/pages/${locale}/privacy.md。`);
+}
+
+const { Content } = await render(page);
+---
+
+<BaseLayout {locale} path="privacy" title={page.data.title} description={page.data.description}>
+  <article>
+    <h1>{page.data.title}</h1>
+    <div class="prose">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  h1 {
+    font-size: var(--size-h1);
+    line-height: var(--lh-display);
+    border-left: 3px solid var(--brand);
+    padding-left: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+  }
+</style>

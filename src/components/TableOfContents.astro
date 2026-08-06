@@ -1,0 +1,165 @@
+---
+import type { MarkdownHeading } from 'astro';
+
+import type { Locale } from '../consts';
+import { t } from '../lib/ui';
+
+interface Props {
+  locale: Locale;
+  headings: MarkdownHeading[];
+}
+
+const { locale, headings } = Astro.props;
+
+// h1 是文章标题本身，不进目录；h4 及以下对个人博客的文章长度来说太碎，
+// 目录里放了反而增加扫视成本。
+//
+// `footnote-label` 要单独排除：GFM 脚注渲染器会自动插入一个
+// `<h2 id="footnote-label" class="sr-only">Footnotes</h2>` 给屏幕阅读器
+// 定位脚注区，但它在正文里被 sr-only 裁剪成 1px、脱离正常布局 ——
+// 目录链接过去会落在一个视觉位置不确定的点，而不是脚注列表的可见起始处。
+const items = headings.filter(
+  (h) => (h.depth === 2 || h.depth === 3) && h.slug !== 'footnote-label',
+);
+---
+
+{
+  items.length > 0 && (
+    <>
+      {/* ≥1280px：左栏常驻，随内容位置高亮当前小节。 */}
+      <nav class="toc toc-desktop" aria-label={t(locale, 'tocLabel')} data-toc>
+        <p class="label">{t(locale, 'tocLabel')}</p>
+        <ol>
+          {items.map((h) => (
+            <li data-depth={h.depth}>
+              <a href={`#${h.slug}`} data-toc-link={h.slug}>
+                {h.text}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+
+      {/* <1280px：折叠块，插在正文顶部，默认收起。与桌面版共享同一份链接，
+          纯 CSS 媒体查询二选一显示，不用 JS 判断视口切换 DOM。 */}
+      <details class="toc toc-mobile">
+        <summary>{t(locale, 'tocLabel')}</summary>
+        <ol>
+          {items.map((h) => (
+            <li data-depth={h.depth}>
+              <a href={`#${h.slug}`}>{h.text}</a>
+            </li>
+          ))}
+        </ol>
+      </details>
+    </>
+  )
+}
+
+<style>
+  .toc {
+    font-size: var(--size-caption);
+  }
+
+  .toc ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .toc a {
+    color: var(--text-3);
+    text-decoration: none;
+    line-height: var(--lh-dense);
+    transition: color var(--dur) var(--ease);
+  }
+
+  .toc a:hover {
+    color: var(--brand);
+  }
+
+  /* 当前位置高亮，由 IntersectionObserver 切换（渐进增强，无 JS 时仍是普通链接）。 */
+  .toc a[data-active='true'] {
+    color: var(--brand);
+    font-weight: 500;
+  }
+
+  .toc li[data-depth='3'] {
+    padding-left: var(--space-md);
+  }
+
+  .toc-desktop {
+    display: none;
+  }
+
+  .toc-desktop .label {
+    font-size: var(--size-label);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+    color: var(--text-4);
+    margin-bottom: var(--space-md);
+  }
+
+  @media (min-width: 1280px) {
+    .toc-desktop {
+      display: block;
+      position: sticky;
+      /* 留出与正文顶部对齐的空间；没有吸顶导航，故不需要额外偏移。 */
+      top: var(--space-xl);
+    }
+
+    .toc-mobile {
+      display: none;
+    }
+  }
+
+  .toc-mobile {
+    margin-bottom: var(--space-2xl);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-md) var(--space-lg);
+  }
+
+  .toc-mobile summary {
+    cursor: pointer;
+    font-size: var(--size-small);
+    color: var(--text-2);
+  }
+
+  .toc-mobile ol {
+    margin-top: var(--space-md);
+  }
+</style>
+
+<script>
+  // 滚动时高亮当前小节。找不到 nav[data-toc] 时（无标题的文章）静默跳过。
+  const nav = document.querySelector('[data-toc]');
+  if (nav) {
+    const links = new Map(
+      [...nav.querySelectorAll('a[data-toc-link]')].map((a) => [
+        a.getAttribute('data-toc-link'),
+        a,
+      ]),
+    );
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const link = links.get(entry.target.id);
+          if (link) link.dataset.active = String(entry.isIntersecting);
+        }
+      },
+      // 只取视口上方 40% 那条线附近的标题为"当前" —— 大致对应阅读位置，
+      // 而不是标题一进入视口底部就立刻切换。
+      { rootMargin: '-10% 0px -70% 0px' },
+    );
+
+    for (const slug of links.keys()) {
+      const heading = document.getElementById(slug);
+      if (heading) observer.observe(heading);
+    }
+  }
+</script>

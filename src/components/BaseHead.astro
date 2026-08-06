@@ -18,9 +18,11 @@ interface Props {
   alternates: Locale[];
   /** 显式传入以覆盖默认约定；不传则用 ogImagePath(locale, path) 的自动生成图。 */
   ogImage?: string;
+  /** 中间态/工具页（如订阅确认跳转页）不是内容，不该被收录。默认 false。 */
+  noindex?: boolean;
 }
 
-const { locale, path, title, description, alternates, ogImage } = Astro.props;
+const { locale, path, title, description, alternates, ogImage, noindex = false } = Astro.props;
 
 const canonical = getAbsoluteLocaleUrl(locale, path);
 const site = SITE[locale];
@@ -39,6 +41,7 @@ const ogImageUrl = new URL(ogImage ?? ogImagePath(locale, path), Astro.site);
 <title>{fullTitle}</title>
 <meta name="description" content={description} />
 <link rel="canonical" href={canonical} />
+{noindex && <meta name="robots" content="noindex, nofollow" />}
 
 {/* hreflang：只输出实际存在的语言版本。PRD §6。 */}
 {

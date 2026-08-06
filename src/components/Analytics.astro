@@ -1,0 +1,21 @@
+---
+import { CF_ANALYTICS_TOKEN } from '../consts';
+
+// 不给这个脚本加 SRI —— 和 public/admin/index.html 里锁版本+加 SRI 的
+// 决定不是同一个场景。beacon.min.js 是 Cloudflare 自己持续维护的探针
+// 服务端点，不是发布版本化的开源库，没有版本号可锁。加了 SRI 之后
+// Cloudflare 任何一次脚本更新都会让浏览器因为哈希不匹配拒绝执行，
+// 分析悄无声息地失效且没有任何报错可查。这个 URL 本身就是 Cloudflare
+// 官方文档给出的标准嵌入代码，信任边界在于"信任 Cloudflare 这家云服务商"，
+// 而不是"信任某次第三方 npm 发布"。
+---
+
+{
+  CF_ANALYTICS_TOKEN && (
+    <script
+      defer
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon={JSON.stringify({ token: CF_ANALYTICS_TOKEN })}
+    />
+  )
+}

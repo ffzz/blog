@@ -82,6 +82,50 @@ export const AUTHOR: Author = {
 };
 
 // ─────────────────────────────────────────────────────────────
+// 第三方服务凭据
+//
+// 空字符串 = 未配置，对应组件会静默跳过注入（不产生指向不存在
+// 端点的失败请求）。这些都需要真实域名 / 真实 GitHub 仓库之后
+// 才能生成，跟"站点身份"那类内容性 TODO 不是一回事。
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Cloudflare Web Analytics 的站点 token。PRD §8.5：免费、无 cookie、
+ * 不需要 GDPR 横幅。
+ * 获取方式：Cloudflare Dashboard → Analytics & Logs → Web Analytics →
+ * 添加站点（需要域名已经在用 Cloudflare，见 §10 的域名开放项）→
+ * 复制那段 beacon script 里 data-cf-beacon 的 token 值。
+ */
+export const CF_ANALYTICS_TOKEN = '';
+
+/**
+ * Giscus 评论所需的 GitHub Discussions 绑定信息。PRD §8.2。
+ * 获取方式：仓库 Settings 打开 Discussions → 用 https://giscus.app
+ * 官方配置向导选目标仓库和分类 → 向导会生成这四个值。
+ */
+export interface GiscusConfig {
+  repo: `${string}/${string}`;
+  repoId: string;
+  category: string;
+  categoryId: string;
+}
+
+export const GISCUS: GiscusConfig | null = null;
+
+/**
+ * 邮件订阅（Footer 里的 <Subscribe> 表单）总开关。PRD §8.4。
+ *
+ * 跟上面两个不同：Resend 的凭据是 Worker 端密钥（`wrangler secret put`），
+ * 不是能放进这份客户端可见配置的公开 token，所以没法用"空值 = 未配置"
+ * 的方式自动判断。这里显式留一个开关，人工确认 wrangler.jsonc 的
+ * KV namespace、RESEND_FROM_EMAIL、RESEND_SEGMENT_ID 和两个 Worker
+ * 密钥都填好了之后再翻成 true —— 翻早了的后果是表单能提交，但
+ * Worker 调 Resend 必定失败，读者看到的是一个"看起来能用、实际会出错"
+ * 的表单，比干脆不显示更糟。
+ */
+export const EMAIL_SUBSCRIBE_ENABLED = false;
+
+// ─────────────────────────────────────────────────────────────
 // 以下为实现约束，PRD 已定，无需改动
 // ─────────────────────────────────────────────────────────────
 

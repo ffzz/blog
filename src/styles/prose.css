@@ -134,6 +134,24 @@
   font-size: inherit;
 }
 
+/* ── Mermaid（构建期渲染为 SVG，见 lib/mermaid-rehype.ts） ───
+   卡片处理和代码块同一套语言：填充色浮起 + 单边竖线，不画闭合边框。 */
+.prose figure.mermaid {
+  background: var(--mermaid-surface);
+  border-left: 2px solid var(--mermaid-accent);
+  border-radius: 0;
+  padding: var(--space-lg);
+  margin: 0;
+  overflow-x: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.prose figure.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
 /* ── 表格 ──────────────────────────────────────────── */
 
 .prose table {
@@ -182,9 +200,13 @@
   margin-block: var(--space-2xl);
 }
 
-/* ── 脚注（GFM）。边注版式在 P2 接入。 ─────────────────── */
+/* ── 脚注（GFM）。
+   不用 `.prose .footnotes` 限定祖先 —— Sidenotes.astro 在 ≥1280px 时会把
+   这个 section 从 .prose 内部搬到独立的 <aside> 里（PRD §8.1 的边注），
+   加上祖先限定符移出去就选不中了。`.footnotes` 这个类名足够特定，
+   不需要祖先限定也不会误伤。 ─────────────────────────────── */
 
-.prose .footnotes {
+.footnotes {
   margin-top: var(--space-2xl);
   padding-top: var(--space-lg);
   border-top: 1px solid var(--border);
@@ -192,7 +214,7 @@
   color: var(--text-3);
 }
 
-.prose .footnotes h2 {
+.footnotes h2 {
   font-size: var(--size-caption);
   letter-spacing: var(--ls-label);
   color: var(--text-4);

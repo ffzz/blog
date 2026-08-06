@@ -3,6 +3,7 @@ import { SITE, type Locale } from '../consts';
 import { localeUrl } from '../lib/i18n';
 import { t } from '../lib/ui';
 import LangSwitch from './LangSwitch.astro';
+import SearchDialog from './SearchDialog.astro';
 import ThemeToggle from './ThemeToggle.astro';
 
 interface Props {
@@ -20,6 +21,7 @@ const { locale, path, alternates } = Astro.props;
   <div class="right">
     <a class="nav-link" href={localeUrl(locale, 'archive')}>{t(locale, 'navArchive')}</a>
     <a class="nav-link" href={localeUrl(locale, 'about')}>{t(locale, 'navAbout')}</a>
+    <SearchDialog {locale} />
     <LangSwitch {locale} {path} {alternates} />
     <ThemeToggle {locale} />
   </div>

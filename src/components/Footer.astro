@@ -1,6 +1,8 @@
 ---
-import { AUTHOR, type Locale } from '../consts';
+import { AUTHOR, EMAIL_SUBSCRIBE_ENABLED, type Locale } from '../consts';
 import { localeUrl } from '../lib/i18n';
+import { t } from '../lib/ui';
+import Subscribe from './Subscribe.astro';
 
 interface Props {
   locale: Locale;
@@ -12,24 +14,37 @@ const rss = locale === 'zh' ? '/zh/rss.xml' : '/rss.xml';
 ---
 
 <footer class="footer">
-  <span>© {year} {AUTHOR.name}</span>
-  <span class="links">
-    <a href={rss}>RSS</a>
-    <a href={localeUrl(locale, 'about')}>About</a>
-  </span>
+  {EMAIL_SUBSCRIBE_ENABLED && <Subscribe {locale} />}
+
+  <div class="bottom">
+    <span>© {year} {AUTHOR.name}</span>
+    <span class="links">
+      <a href={rss}>RSS</a>
+      <a href={localeUrl(locale, 'about')}>{t(locale, 'navAbout')}</a>
+      <a href={localeUrl(locale, 'privacy')}>{t(locale, 'privacyLabel')}</a>
+    </span>
+  </div>
 </footer>
 
 <style>
   .footer {
-    display: flex;
-    justify-content: space-between;
-    gap: var(--space-lg);
-    flex-wrap: wrap;
     margin-top: var(--space-3xl);
     padding-block: var(--space-xl);
     border-top: 1px solid var(--border);
     font-size: var(--size-caption);
     color: var(--text-4);
+  }
+
+  .footer :global(.subscribe) {
+    max-width: 26rem;
+    margin-bottom: var(--space-xl);
+  }
+
+  .bottom {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-lg);
+    flex-wrap: wrap;
   }
 
   .links {

@@ -1,0 +1,95 @@
+---
+import type { Locale } from '../consts';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { localeUrl } from '../lib/i18n';
+import { t } from '../lib/ui';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+/**
+ * astro build 预渲染这个页面 —— Worker 302 跳转带的 `?status=` 只在
+ * 浏览器真实请求时才存在，Astro.url 在构建期读不到它。所以这里的
+ * server-render 只给一个安全的默认文案（当作没 JS 时的兜底），
+ * 真正的状态判断放进下面的 <script>，用 location.search 在客户端读。
+ */
+const title = t(locale, 'confirmInvalidTitle');
+const body = t(locale, 'confirmInvalidBody');
+---
+
+<BaseLayout {locale} path="subscribe/confirm" {title} description={body} noindex>
+  <div class="confirm" data-confirm-root>
+    <h1 data-confirm-title>{title}</h1>
+    <p data-confirm-body>{body}</p>
+    <a href={localeUrl(locale)}>{t(locale, 'backHome')}</a>
+  </div>
+</BaseLayout>
+
+<script>
+  const STRINGS = {
+    en: {
+      ok: { title: "You're subscribed", body: 'New posts will land in your inbox. You can unsubscribe from any email.' },
+      expired: {
+        title: 'That link expired',
+        body: 'Confirmation links are valid for 24 hours. Subscribe again to get a fresh one.',
+      },
+      invalid: {
+        title: 'That link is not valid',
+        body: 'This confirmation link is malformed or already used up. Subscribe again if you still want in.',
+      },
+      failed: {
+        title: 'Something went wrong',
+        body: "We couldn't finish setting up your subscription. Try again shortly.",
+      },
+    },
+    zh: {
+      ok: { title: '订阅成功', body: '以后新文章会发到你的邮箱。任意一封邮件底部都能退订。' },
+      expired: { title: '链接已过期', body: '确认链接 24 小时内有效，重新订阅一次即可拿到新链接。' },
+      invalid: { title: '链接无效', body: '这个确认链接格式不对，或者已经用过了。如果还想订阅，请重新提交一次。' },
+      failed: { title: '出了点问题', body: '订阅没能处理完成，请稍后再试一次。' },
+    },
+  } as const;
+
+  type Status = keyof (typeof STRINGS)['en'];
+
+  const root = document.querySelector<HTMLElement>('[data-confirm-root]');
+  const titleEl = document.querySelector<HTMLElement>('[data-confirm-title]');
+  const bodyEl = document.querySelector<HTMLElement>('[data-confirm-body]');
+  if (root && titleEl && bodyEl) {
+    const locale = document.documentElement.lang.startsWith('zh') ? 'zh' : 'en';
+    const raw = new URLSearchParams(location.search).get('status');
+    const status: Status = raw !== null && raw in STRINGS[locale] ? (raw as Status) : 'invalid';
+
+    const copy = STRINGS[locale][status];
+    root.dataset.status = status;
+    titleEl.textContent = copy.title;
+    bodyEl.textContent = copy.body;
+    document.title = document.title.replace(/^[^·]+/, `${copy.title} `);
+  }
+</script>
+
+<style>
+  .confirm {
+    padding-block: var(--space-2xl);
+  }
+
+  h1 {
+    font-size: var(--size-h2);
+    border-left: 3px solid var(--brand);
+    padding-left: var(--space-lg);
+  }
+
+  p {
+    margin-top: var(--space-lg);
+    color: var(--text-3);
+  }
+
+  a {
+    display: inline-block;
+    margin-top: var(--space-xl);
+    font-size: var(--size-small);
+  }
+</style>

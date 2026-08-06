@@ -1,0 +1,45 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "blog",
+  // TODO(上线前)：改成当前日期附近的真实日期，之后不要再改 ——
+  // 这个值锁定 Workers 运行时的兼容性行为，改动会影响已上线的行为。
+  "compatibility_date": "2026-08-05",
+
+  // 单一 Workers 项目：静态站点（astro build 产物）+ 邮件订阅的动态路由
+  // 共用一次部署。不是两个独立的 Cloudflare 项目 —— 这样不需要额外的
+  // 跨域配置，/api/subscribe 和 /subscribe/confirm 与站点同源。
+  "main": "./worker/index.ts",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // 只有 /api/* 会先经过 Worker 脚本；其余请求（含 /subscribe/confirm/
+    // 这个纯静态展示页）直接命中静态文件，不产生 Worker 调用开销 ——
+    // P0-P3 已验证过的整站静态性能不受影响。邮件确认链接指向
+    // /api/confirm（动态逻辑），处理完后 302 到 /subscribe/confirm/
+    // （静态页面，按 query string 里的 status 展示不同文案），
+    // 两个路径故意不同名，避免 Worker 路由和静态页面产生歧义。
+    "run_worker_first": ["/api/*"],
+  },
+
+  // 限流计数与 token 一次性消费记录。PRD §8.4 要求 token 一次性使用，
+  // 这个需求本身就要求某种持久化状态 —— KV 是 Workers 原生的键值存储，
+  // 不是传统意义上的"数据库"，不违背最初"无需数据库"的框架设计。
+  // id 需要用 `wrangler kv namespace create SUBSCRIBE_KV` 生成，
+  // 下面这个是占位符，上线前必须替换。
+  "kv_namespaces": [
+    {
+      "binding": "SUBSCRIBE_KV",
+      "id": "TODO_RUN_WRANGLER_KV_NAMESPACE_CREATE",
+    },
+  ],
+
+  // 非敏感配置，明文即可。敏感值（RESEND_API_KEY、TOKEN_SIGNING_SECRET）
+  // 用 `wrangler secret put` 单独设置，不进这个文件、不进 git。
+  "vars": {
+    // TODO(上线前)：Resend 里已验证域名下的发信地址，如 "Blog <hello@example.com>"。
+    "RESEND_FROM_EMAIL": "TODO <TODO@TODO>",
+    // TODO(上线前)：Resend Segment ID（Resend 已把 Audiences 改名为 Segments，
+    // 在 Resend Dashboard 创建一个 Segment 后拿到）。
+    "RESEND_SEGMENT_ID": "TODO",
+  },
+}
