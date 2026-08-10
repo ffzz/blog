@@ -1,16 +1,13 @@
 ---
 title: About
-description: 'TODO: one line about who you are — this becomes the meta description for /about.'
+description: Ben is a programmer based in Canberra, Australia, currently building products with AI.
 ---
 
-<!--
-  TODO: 这一页是你的内容，不是模板。
+I'm Ben. I live in Canberra, Australia, and work as a programmer. I like technology, and right
+now I'm mostly building products with AI.
 
-  它对 Google 识别你这个「实体」很重要（E-E-A-T 的基础），
-  所以写具体的东西：你做什么、为什么写这个博客、读者能从这里得到什么。
-  三五段就够，不需要长篇。
+This blog is where I write about what I'm working on — technical notes, some culture, some life,
+and whatever hobbies I happen to be into at the moment.
 
-  P1 会从这一页提取 JSON-LD 的 Person 实体。
--->
-
-TODO: write this.
+Thanks for stopping by. If you'd like to follow along, the [RSS feed](/rss.xml) is the easiest
+way for now.

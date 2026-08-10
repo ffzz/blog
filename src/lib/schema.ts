@@ -68,8 +68,8 @@ export function personPage(locale: Locale) {
     '@context': 'https://schema.org',
     '@type': 'Person',
     name: AUTHOR.name,
-    email: `mailto:${AUTHOR.email}`,
     url: absoluteUrl(locale, 'about'),
+    ...(AUTHOR.email ? { email: `mailto:${AUTHOR.email}` } : {}),
     ...(AUTHOR.sameAs.length > 0 ? { sameAs: AUTHOR.sameAs } : {}),
   };
 }

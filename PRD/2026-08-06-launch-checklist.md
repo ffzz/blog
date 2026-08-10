@@ -2,6 +2,12 @@
 
 > 配套文档：[PRD](2026-08-04-blog-kami-prd.md)（§10 开放项、§11 已知限制、§12 验收标准、§16–21 各阶段实施记录是本清单的依据）。
 > 本文档只记录**从当前状态到能上线**还差什么，不重复 PRD 里已经写清楚的设计决策。
+>
+> **2026-08-09 更新：站点已上线（`https://ben-chen.com`）。** 首次部署选择的是纯静态架构——
+> Worker（邮件订阅相关的 KV/Resend）没有一起部署，`wrangler.jsonc` 目前只有 `assets` 字段。
+> 下面 A/B1 已完成的项目标了 ✅；C/D2 里跟 Worker 相关的部分要等真正决定开邮件订阅时才需要做，
+> 目前不是"待办"而是"暂缓"。日常发布流程见新增的
+> [publishing-guide.md](2026-08-09-publishing-guide.md)。
 
 ## 图例
 
@@ -18,9 +24,9 @@
 
 | # | 任务 | 优先级 | 说明 |
 | --- | --- | --- | --- |
-| A1 | 填 `src/consts.ts` 的站点身份 | 🔴 | `SITE.en/zh`（name/tagline/intro）、`AUTHOR`（name/email/sameAs）。这是全站 SEO 门面和 JSON-LD `Person` 实体的内容，PRD §10 已经列出三个需要你权衡的取舍（品牌型 vs 关键词型站名、tagline 直译 vs 本地化、sameAs 的隐私代价），我写不出来 |
-| A2 | 写 `/about` 正文（en + zh） | 🔴 | 当前是 `TODO: write this.` 占位符。这页承载 `Person` JSON-LD，对 Google 识别你是谁很重要，三五段真实内容就够 |
-| A3 | 删除或替换示例文章 `hello-kami` | 🔴 | `src/content/posts/{en,zh}/hello-kami.md` 正文第一行写着"删除它一旦有了真正的第一篇文章"。上线前至少要有 1 篇真实内容，否则整站首页是空的或只有一篇自我指涉的示例文 |
+| A1 | 填 `src/consts.ts` 的站点身份 | ✅ | 已填：站名 "Ben's Blog" / "Ben 的博客"，作者 Ben，邮箱 hello@ben-chen.com |
+| A2 | 写 `/about` 正文（en + zh） | ✅ | 已写真实内容 |
+| A3 | 删除或替换示例文章 `hello-kami` | 🟡 | **仍是占位文章**——首次上线选择保留它代替空首页，不是遗漏。写了真文章之后记得删，见 publishing-guide.md §1 |
 | A4 | （可选）决定初始标签体系 | 🟢 | 不强制，写文章时顺手定即可；只需记得 PRD §5.3 的规范（全小写连字符，技术/随笔标签不混用） |
 
 ---
@@ -29,7 +35,7 @@
 
 | # | 任务 | 优先级 | 说明 |
 | --- | --- | --- | --- |
-| B1 | 定域名并接入 Cloudflare | 🔴 | PRD §10：**上线后不可更改**（会丢权重），必须先定。Cloudflare Registrar 购买或把现有域名的 DNS 转到 Cloudflare 均可 |
+| B1 | 定域名并接入 Cloudflare | ✅ | `ben-chen.com`，DNS 已在 Cloudflare，Custom Domain 已绑定到 Workers 项目 `personal-blog` |
 | B2 | 创建 GitHub 仓库并推送代码 | 🔴 | 当前只有本地一个初始 commit，没有 remote。Sveltia CMS（后台）、Giscus（评论，如果启用）、以及"push 即部署"的 CI 方式都需要一个真实远程仓库 |
 | B3 | 决定是否上线即启用评论（Giscus） | 🟡 | 需要仓库开 Discussions + 走 giscus.app 向导拿四个绑定值填 `consts.ts` 的 `GISCUS`。新博客零评论区反而显冷清（PRD §8.2 已记录这个权衡）——可以选择先不开，攒几篇文章、有读者后再开 |
 | B4 | 决定是否上线即启用访问统计 | 🟢 | 需要域名先接入 Cloudflare（B1 完成后才能做），Dashboard 里加站点拿 beacon token 填 `CF_ANALYTICS_TOKEN`。不开不影响任何其他功能 |
@@ -65,10 +71,10 @@
 
 | # | 任务 | 优先级 | 依赖 |
 | --- | --- | --- | --- |
-| E1 | `src/site-origin.mjs` 里的 `SITE_ORIGIN` 换成真实域名 | 🔴 | 依赖 B1 定好域名 |
-| E2 | 首次部署：`wrangler deploy` | 🔴 | 依赖 C1（KV 已建）、C3（密钥已设，如果订阅功能一起上线的话）；否则会部署成功但订阅功能报错 |
-| E3 | 绑定自定义域名到 Workers 项目 | 🔴 | Cloudflare Dashboard → Workers 项目 → Custom Domains，依赖 B1 |
-| E4 | （可选）配置"push 即部署"的 CI | 🟢 | Cloudflare Dashboard → Workers → Connect to Git，依赖 B2 仓库已推送。不配也可以每次手动 `wrangler deploy` |
+| E1 | `src/site-origin.mjs` 里的 `SITE_ORIGIN` 换成真实域名 | ✅ | `https://ben-chen.com` |
+| E2 | 首次部署：`wrangler deploy` | ✅ | 实际走的是纯静态路径，跳过了 C1/C3——`wrangler.jsonc` 精简为只有 `assets`，没有 Worker。以后要开邮件订阅时再把 `main`/`kv_namespaces`/`vars`/`run_worker_first` 加回来 |
+| E3 | 绑定自定义域名到 Workers 项目 | ✅ | 用 Cloudflare API（`PUT /accounts/:id/workers/domains`）直接绑的，没走 Dashboard 点击——domain 的 zone 已经在同一个 Cloudflare 账号下，API token 权限够用，比图形界面更快 |
+| E4 | （可选）配置"push 即部署"的 CI | 🟢 | 依赖 B2（还没建 GitHub 仓库）。现在发布是本地 `npm run deploy`，见 publishing-guide.md |
 
 ---
 

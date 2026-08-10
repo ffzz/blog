@@ -12,7 +12,9 @@
     "astro": "astro",
     "fonts": "node scripts/heading-font.mjs",
     "fonts:check": "node scripts/heading-font.mjs --check",
-    "og:fonts": "node scripts/og-fonts.mjs"
+    "og:fonts": "node scripts/og-fonts.mjs",
+    "whoami": "node --env-file=.env.local ./node_modules/wrangler/bin/wrangler.js whoami",
+    "deploy": "node --env-file=.env.local ./node_modules/wrangler/bin/wrangler.js deploy"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.2",
