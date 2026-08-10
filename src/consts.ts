@@ -56,7 +56,7 @@ export interface SiteIdentity {
 export const SITE: Record<Locale, SiteIdentity> = {
   en: {
     name: "Ben's Blog",
-    tagline: 'A programmer in Canberra building with AI — writing about tech, culture, and life.',
+    tagline: 'A programmer & lifelong learner  — writing about tech, culture, and life.',
     intro:
       "I'm Ben — I live in Canberra, Australia, and spend my days building products with AI. " +
       'This is where I write about what I’m working on, plus culture, life, and whatever ' +
@@ -64,7 +64,7 @@ export const SITE: Record<Locale, SiteIdentity> = {
   },
   zh: {
     name: 'Ben 的博客',
-    tagline: '一名住在堪培拉的程序员，用 AI 做产品，记录技术、文化与生活。',
+    tagline: '程序员与终身学习者，用 AI 做产品，记录技术、文化与生活。',
     intro:
       '我是 Ben，住在澳洲堪培拉，喜欢技术，目前主要在用 AI 建一些产品。这个博客记录我的技术、' +
       '文化和生活，还有一些平时的嗜好。谢谢你对这个博客感兴趣。',
