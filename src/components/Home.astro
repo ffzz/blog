@@ -22,7 +22,6 @@ const schema = website(locale);
   path=""
   title={site.name}
   description={site.tagline}
-  width="wide"
 >
   <JsonLd data={schema} />
   {/* 首页 h1 承载站点核心定位 —— 这是全站权重最高的一个标题。 */}
@@ -39,13 +38,18 @@ const schema = website(locale);
 
 <style>
   .intro {
-    max-width: var(--measure);
     margin-bottom: var(--space-3xl);
   }
 
+  /*
+   * 这个 h1 语义上仍是全站权重最高的标题（承载站点定位、进 JSON-LD），
+   * 但视觉上只比正文大一档 —— 它是一句自我介绍，不是需要占满首屏的巨幅
+   * 标语。层级靠颜色拉开：h1 用 --text-1，下面那段 intro 用 --text-3。
+   * 字号小了之后 --lh-display(1.1) 就太挤了，换成 --lh-heading。
+   */
   .intro h1 {
-    font-size: var(--size-h1);
-    line-height: var(--lh-display);
+    font-size: var(--size-lead);
+    line-height: var(--lh-heading);
   }
 
   .intro p {

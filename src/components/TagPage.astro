@@ -20,7 +20,6 @@ const { locale, tag, label, entries } = Astro.props;
   path={`tags/${tag}`}
   title={label}
   description={`${t(locale, 'tagPageDescription')} ${label}`}
-  width="wide"
 >
   <p class="eyebrow">{t(locale, 'tagged')}</p>
   <h1>{label}</h1>

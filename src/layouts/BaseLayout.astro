@@ -17,11 +17,12 @@ interface Props {
   /** 该页面实际存在的语言版本。固定页面传全集，文章页传 getAvailableLocales() 的结果。 */
   alternates?: Locale[];
   /**
-   * 正文宽度。reading 是默认单栏；wide 用于列表页；article 专给文章页 ——
-   * ≥1280px 时 main 展开成 TOC / 正文 / 边注三栏网格，窄屏退化为单栏。
-   * Header / Footer 始终保持阅读宽度，不随 main 变宽，见下方 .bar。
+   * 版面变体。全站共用同一个版心 --measure，这个 prop 只决定要不要展开
+   * 侧栏：reading 是默认单栏；article 专给文章页 —— ≥1280px 时 main 展开成
+   * TOC / 正文 / 边注三栏网格，窄屏退化为单栏。
+   * 两种情况下 Header / Footer 都跟正文列对齐，见下方 .bar。
    */
-  width?: 'reading' | 'wide' | 'article';
+  width?: 'reading' | 'article';
   ogImage?: string;
   /** 中间态/工具页不该被收录，见 BaseHead。默认 false。 */
   noindex?: boolean;
@@ -47,7 +48,7 @@ const {
   <body>
     <a class="skip-link" href="#main">{t(locale, 'skipToContent')}</a>
 
-    <div class="shell">
+    <div class="shell" data-width={width}>
       <div class="bar">
         <Header {locale} {path} {alternates} />
       </div>
@@ -68,7 +69,8 @@ const {
         flex-direction: column;
       }
 
-      /* Header / Footer 的阅读宽度，与 main 的宽度变体无关。 */
+      /* Header / Footer 的阅读宽度。列表页/普通页与 main 同宽；
+         文章页三栏布局下改为跟正文列对齐，见下方媒体查询。 */
       .bar {
         width: 100%;
         max-width: var(--measure);
@@ -84,20 +86,36 @@ const {
         padding-inline: var(--space-lg);
       }
 
-      main[data-width='wide'] {
-        max-width: var(--measure-wide);
-      }
-
       /* 文章页三栏：TOC / 正文 / 边注，居中作为一个整体，
-         而不是拉满整个视口 —— 侧栏是给内容用的余量，不是新的版心。 */
+         而不是拉满整个视口 —— 侧栏是给内容用的余量，不是新的版心。
+
+         Header / Footer 套同一套网格、内容落在中列，这样它们跟正文
+         左边缘严格对齐。两侧栏并不等宽（TOC 220 / 边注 280），正文列
+         因此比视口中心左移 (280−220)/2 = 30px；.bar 若仍按视口居中，
+         宽屏下就会跟正文差这 30px，肉眼可见。
+
+         这个差值不是常数，所以不能写死一个偏移量：视口刚过 1280px 时
+         网格没有富余、中列被压缩到填满容器，两者反而是齐的，要到
+         ~1330px 以上中列吃满 --measure、出现居中留白，才拉开到 30px。
+         让 .bar 走同一套轨道计算，才能在整个区间都对齐。 */
       @media (min-width: 1280px) {
-        main[data-width='article'] {
+        main[data-width='article'],
+        .shell[data-width='article'] > .bar {
           max-width: none;
           display: grid;
           grid-template-columns: minmax(0, 220px) minmax(0, var(--measure)) minmax(0, 280px);
           justify-content: center;
-          align-items: start;
           gap: var(--space-xl);
+        }
+
+        main[data-width='article'] {
+          align-items: start;
+        }
+
+        /* Header / Footer 是子组件，它们的根元素带的是各自的 scope id，
+           拿不到本组件的，所以这里必须 :global 才选得中。 */
+        .shell[data-width='article'] > .bar > :global(*) {
+          grid-column: 2;
         }
       }
     </style>
