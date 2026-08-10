@@ -8,8 +8,12 @@
 
 backend:
   name: github
-  # TODO(上线前)：换成真实仓库 owner/name。
-  repo: TODO/TODO
+  repo: ffzz/blog
+  # 在后台点 Publish 会直接 commit 到这个分支，没有中间的草稿分支或 PR——
+  # Sveltia 的 editorial workflow（publish_mode: editorial_workflow）官方
+  # 尚未实现，文档标注要等 1.0 才有。而 .github/workflows/deploy.yml 监听的
+  # 正是 push 到 main，所以后台点一次 Publish = 触发一次线上部署，中间没有
+  # 复核环节。想先存不发就把 draft 勾上（draft: true 不会出现在正式站点）。
   branch: main
 
 # 认证走 PAT（Personal Access Token），不需要额外的 OAuth 代理服务 ——

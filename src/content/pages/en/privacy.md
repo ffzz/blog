@@ -28,9 +28,12 @@ is held about you, use the contact address on the [About](/about/) page.
 
 ## Comments
 
-If this post has a comment section, it's provided by
+The comment section below each post is provided by
 [Giscus](https://giscus.app), which stores comments as GitHub Discussions on
-this site's repository. Commenting requires a GitHub account and is governed
+this site's repository, [ffzz/blog](https://github.com/ffzz/blog). **That
+repository is public**, so your comment text and GitHub username are visible
+to anyone and may be indexed by search engines. Commenting requires a GitHub
+account and is governed
 by [GitHub's privacy policy](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) —
 this site never sees your GitHub credentials.
 

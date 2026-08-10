@@ -115,7 +115,22 @@ export interface GiscusConfig {
   categoryId: string;
 }
 
-export const GISCUS: GiscusConfig | null = null;
+/**
+ * 分类选 Announcements 而不是 General：Announcements 只有仓库维护者能开新话题，
+ * giscus app 以维护者身份代建，读者只能在已有话题下回复。General 允许任何人开
+ * 新话题，等于把一个开放的发帖入口挂在博客旁边。
+ *
+ * repoId / categoryId 是 GitHub 的 GraphQL node ID，不是密钥——giscus 本来就把
+ * 它们写在客户端 script 标签上，公开可见是设计如此。取值方式：
+ *   gh api graphql -f query='{repository(owner:"ffzz",name:"blog"){id
+ *     discussionCategories(first:20){nodes{id name}}}}'
+ */
+export const GISCUS: GiscusConfig | null = {
+  repo: 'ffzz/blog',
+  repoId: 'R_kgDOTyxIPg',
+  category: 'Announcements',
+  categoryId: 'DIC_kwDOTyxIPs4DDC1E',
+};
 
 /**
  * 邮件订阅（Footer 里的 <Subscribe> 表单）总开关。PRD §8.4。

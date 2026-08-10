@@ -1,0 +1,61 @@
+# 推到 main 就构建 + 发布到 Cloudflare Workers（https://ben-chen.com）。
+# 两条发布路径共用这一个触发器：本地 push，和 Sveltia CMS 在 /admin 里
+# 直接提交（Sveltia 尚不支持 editorial workflow，只能写单一分支）。
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  # 允许在 Actions 页面手动重跑一次部署，不用为此造一个空 commit
+  workflow_dispatch:
+
+# 连续两次 push 时取消上一次跑到一半的部署，避免旧构建后完成、覆盖掉新构建
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
+permissions:
+  contents: write # 回写字体子集（见下面的 fonts 两步）需要写权限
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24 # package.json engines: >=22.12.0
+          cache: npm
+
+      - run: npm ci
+
+      # 在 CMS 里发一篇带新汉字标题的文章时，作者没有机会跑 npm run fonts，
+      # 而 npm run build 第一步就是 fonts:check —— 缺字直接失败，文章发不出去。
+      # 这一步补齐子集：它要联网拉 Google Fonts 的 text= 精确子集，而
+      # GitHub Actions 有网络（当初把子集预生成提交进仓库，是为了让
+      # Cloudflare Workers Builds 那条无网络的构建路径也能跑，不是禁止联网）。
+      - name: 重新生成中文标题字体子集
+        run: npm run fonts
+
+      # 只有真的变了才提交。用 GITHUB_TOKEN 推的 commit 不会再触发 workflow
+      # （GitHub 的递归保护），所以这里不会死循环。
+      - name: 子集有变动则回写仓库
+        run: |
+          if git diff --quiet -- public/fonts; then
+            echo "字体子集无变化，跳过"
+            exit 0
+          fi
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/fonts
+          git commit -m 'chore: 同步中文标题字体子集'
+          git push
+
+      - run: npm run build
+
+      # account_id 已内联在 wrangler.jsonc，所以只需要 apiToken 一个 secret
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy

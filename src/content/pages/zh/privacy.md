@@ -24,9 +24,11 @@ description: 订阅、评论、或者只是阅读时，这个站点会收集什�
 
 ## 评论
 
-如果某篇文章下有评论区，它由 [Giscus](https://giscus.app) 提供，评论会
-以 GitHub Discussions 的形式存在本站的代码仓库里。评论需要一个 GitHub
-账号，并受
+文章下方的评论区由 [Giscus](https://giscus.app) 提供，评论以 GitHub
+Discussions 的形式存放在本站的代码仓库
+[ffzz/blog](https://github.com/ffzz/blog) 里。**这是一个公开仓库**，所以
+你的评论内容和 GitHub 用户名任何人都能看到，也能被搜索引擎收录。评论需要
+一个 GitHub 账号，并受
 [GitHub 隐私政策](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)
 约束——本站不会看到你的 GitHub 账号密码。
 
