@@ -1,0 +1,26 @@
+# Cloudflare Workers static assets 的响应头覆盖文件。
+# 它本身不会被当作静态资源发出去，只被 Workers 解析。
+# https://developers.cloudflare.com/workers/static-assets/headers/
+#
+# ── 为什么这两个文件需要 CORS ────────────────────────────────
+# giscus 评论区是跑在 giscus.app 上的独立 iframe。它加载自定义主题时
+# 注入的标签是：
+#   <link rel="stylesheet" href="https://ben-chen.com/giscus-theme-light.css"
+#         crossorigin="anonymous" id="giscus-theme">
+# crossorigin="anonymous" 意味着这次请求走 CORS 模式。少了
+# Access-Control-Allow-Origin，浏览器会拉到文件、建出 CSSStyleSheet 对象，
+# 但**一条规则都不应用**——于是 --color-fg-default 等全部为空，giscus
+# 退回默认值，浅色模式下变成白字配米色底，几乎不可读。
+#
+# 失败得很安静：不报 404、不进 console error、link.sheet 也不是 null，
+# 只有 getComputedStyle 里的变量是空的。所以这行不是可有可无的加固，
+# 是评论区能不能看的前提。
+#
+# 只开这两个文件，不要放宽到全站：它们本来就是公开可读的静态样式表，
+# 不涉及任何凭据。
+
+/giscus-theme-light.css
+  Access-Control-Allow-Origin: *
+
+/giscus-theme-dark.css
+  Access-Control-Allow-Origin: *

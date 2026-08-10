@@ -330,6 +330,27 @@ Error: 字体子集缺少 N 个字符：...
 
 大概率是 GitHub PAT 过期了（默认 90 天）。按 6.1 的链接重新生成一个，重新粘贴。
 
+**评论区文字发白、几乎看不清**
+
+`public/_headers` 里给两个 `giscus-theme-*.css` 加的 `Access-Control-Allow-Origin: *` 被删了或失效了。
+giscus 是用 `<link ... crossorigin="anonymous">` 从它自己的 iframe 里加载这两个文件的，少了这个响应头，
+浏览器会把文件拉下来、却**一条样式规则都不应用**，于是主题变量全空、退回默认色。
+
+这个故障非常安静：不报 404、console 没有错误、`link.sheet` 也不是 null。判断方法：
+
+```bash
+curl -sI https://ben-chen.com/giscus-theme-light.css | grep -i access-control
+```
+
+没输出就是这个问题。以后新增自定义主题文件，记得在 `public/_headers` 里一并加上。
+
+**GitHub Actions 部署那步报 `Authentication error` / `code: 9109`**
+
+`Cannot use the access token from location: <IP>` 意思是这个 Cloudflare API token 设了 **IP 白名单**，
+而 GitHub Actions 的构建机 IP 是动态的（Azure 的大段地址，没法穷举）。去 Cloudflare Dashboard →
+My Profile → API Tokens，把 CI 用的那个 token 的 "Client IP Address Filtering" 清空。
+本地那份 token 想继续锁 IP 没问题——两份可以是不同的 token。
+
 **文章页看不到评论区**
 
 按可能性从高到低查三件事：① giscus GitHub App 是否还装在 `ffzz/blog` 上
