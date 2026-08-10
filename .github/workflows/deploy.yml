@@ -50,7 +50,9 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add public/fonts
           git commit -m 'chore: 同步中文标题字体子集'
-          git push
+          # 回写只是让本地仓库不落后，构建用的是工作区里已经生成好的文件。
+          # 万一撞上并发提交推不上去，不该因此中断这次部署——下次构建会再补一遍。
+          git push || echo '::warning::字体子集回写失败（可能有并发提交），不阻断部署'
 
       - run: npm run build
 
