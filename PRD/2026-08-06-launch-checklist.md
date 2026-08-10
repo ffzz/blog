@@ -8,6 +8,11 @@
 > 下面 A/B1 已完成的项目标了 ✅；C/D2 里跟 Worker 相关的部分要等真正决定开邮件订阅时才需要做，
 > 目前不是"待办"而是"暂缓"。日常发布流程见新增的
 > [publishing-guide.md](2026-08-09-publishing-guide.md)。
+>
+> **2026-08-10 更新：B2 / B3 / E4 完成。** 仓库推上 GitHub 并转为 public（Giscus 的硬性前提），
+> 随之打通评论、Sveltia CMS 后台、以及 GitHub Actions 自动部署。发布主路径从本地
+> `npm run deploy` 变为 `git push`。剩余待办只有 C 组（邮件订阅相关，仍暂缓）、F 组验收、
+> G 组 SEO 提交，以及 B4（访问统计）。
 
 ## 图例
 
@@ -36,8 +41,8 @@
 | # | 任务 | 优先级 | 说明 |
 | --- | --- | --- | --- |
 | B1 | 定域名并接入 Cloudflare | ✅ | `ben-chen.com`，DNS 已在 Cloudflare，Custom Domain 已绑定到 Workers 项目 `personal-blog` |
-| B2 | 创建 GitHub 仓库并推送代码 | 🔴 | 当前只有本地一个初始 commit，没有 remote。Sveltia CMS（后台）、Giscus（评论，如果启用）、以及"push 即部署"的 CI 方式都需要一个真实远程仓库 |
-| B3 | 决定是否上线即启用评论（Giscus） | 🟡 | 需要仓库开 Discussions + 走 giscus.app 向导拿四个绑定值填 `consts.ts` 的 `GISCUS`。新博客零评论区反而显冷清（PRD §8.2 已记录这个权衡）——可以选择先不开，攒几篇文章、有读者后再开 |
+| B2 | 创建 GitHub 仓库并推送代码 | ✅ | `https://github.com/ffzz/blog`。2026-08-10 因 Giscus 强制要求公开仓库而**转为 public**（转前逐 commit 核查过历史无密钥） |
+| B3 | 决定是否上线即启用评论（Giscus） | ✅ | 2026-08-10 开启。Discussions 已开，giscus app 已装，`consts.ts` 的 `GISCUS` 填的是 `ffzz/blog` + Announcements 分类（该分类只有维护者能开新话题，避免变成开放发帖入口） |
 | B4 | 决定是否上线即启用访问统计 | 🟢 | 需要域名先接入 Cloudflare（B1 完成后才能做），Dashboard 里加站点拿 beacon token 填 `CF_ANALYTICS_TOKEN`。不开不影响任何其他功能 |
 
 ---
@@ -74,7 +79,7 @@
 | E1 | `src/site-origin.mjs` 里的 `SITE_ORIGIN` 换成真实域名 | ✅ | `https://ben-chen.com` |
 | E2 | 首次部署：`wrangler deploy` | ✅ | 实际走的是纯静态路径，跳过了 C1/C3——`wrangler.jsonc` 精简为只有 `assets`，没有 Worker。以后要开邮件订阅时再把 `main`/`kv_namespaces`/`vars`/`run_worker_first` 加回来 |
 | E3 | 绑定自定义域名到 Workers 项目 | ✅ | 用 Cloudflare API（`PUT /accounts/:id/workers/domains`）直接绑的，没走 Dashboard 点击——domain 的 zone 已经在同一个 Cloudflare 账号下，API token 权限够用，比图形界面更快 |
-| E4 | （可选）配置"push 即部署"的 CI | 🟢 | 依赖 B2（还没建 GitHub 仓库）。现在发布是本地 `npm run deploy`，见 publishing-guide.md |
+| E4 | （可选）配置"push 即部署"的 CI | ✅ | 2026-08-10 落地 `.github/workflows/deploy.yml`：push `main` → `npm run fonts`（有变动则回写提交）→ `npm run build` → `wrangler-action` 部署。选 GitHub Actions 而非 Cloudflare 的 Connect to Git，是因为需要一个**有网络**的构建环境来重跑字体子集——CMS 在浏览器里发文时作者没机会补字，而 `fonts:check` 缺字即失败。附带收益：干净 checkout 消除了 `node_modules/.astro` 缓存导致的幽灵页面（本地部署曾把已删除的 `/zh/notes/only-chinese/` 一直发上线） |
 
 ---
 
@@ -85,7 +90,7 @@ PRD §12 的 14 项验收标准之前都用**假数据/本地环境**验证过�
 | # | 项 | 之前测过什么 | 上线前还要测什么 |
 | --- | --- | --- | --- |
 | F1 | 邮件订阅完整闭环 | Worker 逻辑用假 Resend key 跑通了校验/限流/token 语义 | 真实点一次：订阅 → 真的收到确认邮件 → 点确认 → 在 Resend 后台看到联系人 → 点退订 → 确认被移除 |
-| F2 | Sveltia CMS 真实读写 | `/admin` 能加载、SRI 校验通过 | 真实登录（GitHub PAT）→ 编辑一篇文章 → 提交 → 确认触发了部署 |
+| F2 | Sveltia CMS 真实读写 | `/admin` 能加载、SRI 校验通过；`config.yml` 的 `repo` 已填 `ffzz/blog` | 真实登录（GitHub PAT）→ 编辑一篇文章 → 提交 → 确认触发了部署。**注意 PAT 默认 90 天过期**，登录失败优先怀疑这个 |
 | F3 | JSON-LD Rich Results Test | 结构本地生成正确 | 拿真实域名的 URL 到 Google [Rich Results Test](https://search.google.com/test/rich-results) 跑一次 |
 | F4 | hreflang 检查工具 | 逻辑上验证了 alternate 只含实际存在的语言 | 用真实域名跑一次第三方 hreflang 检查工具，交叉确认 |
 | F5 | Lighthouse 全站 | 之前测过程中用的是占位内容 | 填完真实内容（consts.ts、about、首篇文章）之后**重新跑一次**，字体子集可能因为新增汉字而变大，需要确认仍在预算内 |

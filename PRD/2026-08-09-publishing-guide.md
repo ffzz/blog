@@ -1,27 +1,54 @@
-# 博客发布与修改指南 · 2026-08-09
+# 博客发布与修改指南 · 2026-08-09（2026-08-10 更新）
 
-> 站点已上线：**https://ben-chen.com**（评论、邮件订阅暂未开启，见文末）。
-> 这份文档写给日常写文章、改站点信息、重新发布用，不涉及代码架构——架构决策看
+> 站点已上线：**https://ben-chen.com**。评论已开启；邮件订阅仍未开启（见文末）。
+> 这份文档写给日常写文章、改站点信息、发布用，不涉及代码架构——架构决策看
 > [PRD](2026-08-04-blog-kami-prd.md)，上线前还差什么看
 > [launch-checklist](2026-08-06-launch-checklist.md)。
+>
+> **2026-08-10 这次更新改了什么**：仓库接上了 GitHub（`ffzz/blog`，已公开），随之打通了
+> 三件原本被"没有远程仓库"卡住的事——自动部署、浏览器后台、评论。发布方式从
+> "本地敲 `npm run deploy`"变成了"`git push` 就自动上线"，第 2、5、6、7 节是新的。
 
 ---
 
 ## 1. 现在是什么状态
 
 - 站点是**纯静态**部署在 Cloudflare Workers 上，域名 `ben-chen.com` 已经绑定好。
-- 站内评论、邮件订阅**都还没开**——代码都在，只是没接外部账号（Resend、GitHub Discussions）。
-  不影响正常写文章和发布。
-- 内容后台（Sveltia CMS，`/admin`）**还没配好**，因为它需要一个真实的 GitHub 仓库。现在唯一的
-  发布方式是本地改 Markdown 文件 + 命令行部署，见下面第 3 节。
-- `src/content/posts/{en,zh}/hello-kami.md` 是**占位文章**（标题 "Typography as Constraint" /
-  「排版即约束」），写了自己的第一篇真文章之后记得删掉它。
+- 代码仓库是 **https://github.com/ffzz/blog**，**公开仓库**。公开是 Giscus 评论的硬性前提
+  （giscus 要求仓库公开，否则读者看不到评论）。密钥都在 `.gitignore` 里，没有进过仓库。
+- **推到 `main` 就自动构建并上线**，不需要再手动跑部署命令。见第 5 节。
+- **评论已开启**（Giscus + GitHub Discussions）。见第 7 节。
+- **浏览器后台已接通**：https://ben-chen.com/admin/ 可以直接写文章、发布。见第 6 节。
+- **邮件订阅仍未开启**——代码都在，只是没接 Resend 账号。见第 11 节。
+- 占位文章 `hello-kami` 已经删掉了，现在站上是真文章
+  `security-clearance-canberra-it-jobs`（中英各一篇）。
 
 ---
 
-## 2. 写一篇新文章
+## 2. 两条发布路径
 
-### 2.1 文件放在哪
+写文章有两条路，**都通向同一个终点**：一次 `main` 分支上的 commit，触发同一个自动部署。
+
+| | 路径 A：浏览器后台 | 路径 B：本地 Markdown |
+| --- | --- | --- |
+| 在哪写 | https://ben-chen.com/admin/ | 你电脑上的编辑器 |
+| 适合 | 手机上、别人电脑上、只想改个错字 | 长文、要本地预览、要插图排版 |
+| 怎么发布 | 点 Publish | `git push` |
+| 之后 | 自动构建上线，约 2–3 分钟 | 同左 |
+| 详见 | 第 6 节 | 第 3–5 节 |
+
+**两条路不要同时用。** 后台点 Publish 是直接往 `main` 提交，你本地那份就落后了；下次本地
+`git push` 会被拒绝（non-fast-forward）。规矩很简单：**动手写之前先 `git pull`**。
+
+> 为什么后台不走"提交 PR 等审核"这条更稳妥的路？因为 Sveltia CMS 的 editorial workflow
+> （草稿分支 + PR）官方还没实现，文档写明要等 1.0 版本。现在它只能直接写单一分支。
+> 想"先存不发"，用文章里的 `draft` 开关，不要指望后台有草稿分支。
+
+---
+
+## 3. 写一篇新文章（本地）
+
+### 3.1 文件放在哪
 
 技术文章放 `src/content/posts/`，随笔放 `src/content/notes/`。每种下面再按语言分：
 
@@ -35,9 +62,10 @@ src/content/posts/zh/my-post-slug.md     # 中文版
 而不是 404。
 
 **slug（文件名）用英文小写连字符**，比如 `rag-chunking.md`——它会变成 URL 的一部分
-（`/posts/rag-chunking/`），发布后不要改文件名，改了等于换了个新地址，之前分享出去的链接全部失效。
+（`/posts/rag-chunking/`），发布后不要改文件名，改了等于换了个新地址，之前分享出去的链接全部失效，
+**而且那篇文章下面的评论也会一起失联**（评论按 URL 路径匹配，见第 7 节）。
 
-### 2.2 文件开头要写什么（frontmatter）
+### 3.2 文件开头要写什么（frontmatter）
 
 ```markdown
 ---
@@ -64,7 +92,7 @@ draft: false
 标签少于 3 篇文章时不会单独生成标签页（避免大量"薄内容"页面拖累 SEO），这是设计好的行为，
 不用管。
 
-### 2.3 正文里的 Markdown 有点特殊
+### 3.3 正文里的 Markdown 有点特殊
 
 这个博客的排版风格移植自 Kami 设计系统，`**加粗**` 和 `*斜体*` 被重新定义过：
 
@@ -76,7 +104,7 @@ draft: false
 
 ---
 
-## 3. 本地预览
+## 4. 本地预览
 
 ```bash
 cd /Volumes/U-disk/Projects/blog
@@ -90,43 +118,135 @@ npm run dev
 
 ---
 
-## 4. 发布上线
+## 5. 发布上线
 
-写完文章、改完站点信息之后，两条命令：
+### 5.1 正常发布：push 就完事
 
 ```bash
 cd /Volumes/U-disk/Projects/blog
-npm run build      # 本地构建，检查有没有错误
-npm run deploy      # 发布到 Cloudflare
-```
-
-`npm run build` 如果报错，**不要跳过直接部署**——常见原因见第 7 节。`npm run build` 通过之后
-`npm run deploy` 一般不会再出问题，几秒到几十秒就能跑完，跑完会打印类似这样的一行确认发布成功：
-
-```
-Uploaded personal-blog (...)
-Deployed personal-blog triggers (...)
-  https://personal-blog.cfangzheng.workers.dev
-```
-
-`ben-chen.com` 已经绑定到这个 Workers 项目，发布后几秒内 `https://ben-chen.com` 就是最新内容，
-不需要额外操作。
-
-### 关于 git
-
-项目目前没有连接 GitHub 远程仓库，`npm run deploy` 直接从你电脑上的文件发布，跟 git 没有关系。
-但强烈建议正常用 `git commit` 记录每次改动——这是免费的版本历史和备份，哪天改坏了可以随时退回去：
-
-```bash
+git pull                       # 先拉，CI 可能自动改过仓库，见 5.3
 git add -A
 git commit -m "发布：xxx 文章"
+git push
+```
+
+推上去之后 GitHub Actions 自动接手：装依赖 → 补字体子集 → 构建 → 发布到 Cloudflare。
+**约 2–3 分钟**，`https://ben-chen.com` 就是最新内容。
+
+看进度：
+
+```bash
+gh run watch
+```
+
+或者在浏览器里打开 https://github.com/ffzz/blog/actions。绿勾 = 上线成功，红叉 = 没上线，
+点进去看日志，对照第 10 节排查。
+
+**发布前不需要自己跑 `npm run build`**——CI 会跑，而且跑得比本地干净（见 5.4）。但如果你
+改动比较大，本地先跑一次能更早发现问题，省得等三分钟才看到红叉。
+
+### 5.2 手动兜底
+
+Actions 挂了、或者 GitHub 本身出故障时，本地这两条命令仍然能直接发布，不依赖 GitHub：
+
+```bash
+npm run build
+npm run deploy
+```
+
+这是**兜底**，不是日常路径。用它的时候注意 5.4 说的那个坑。
+
+### 5.3 CI 会自动往你的仓库提交东西
+
+站点的中文标题用的是一份**精确子集化**的字体——只打包文章标题里真正出现过的那些汉字，
+所以字体文件才只有 30 多 KB。代价是：写了带新汉字的标题，就得重新生成这份子集。
+
+在后台（路径 A）写文章时你没机会跑这个命令，所以 **CI 会替你跑，并把更新后的字体文件
+自动提交回 `main`**，提交者显示为 `github-actions[bot]`，信息是 `chore: 同步中文标题字体子集`。
+
+对你的唯一影响：**本地开始写之前先 `git pull`**，否则会撞上 non-fast-forward 被拒绝推送。
+
+> 顺带一提，这个机制不是假想需求。接 CI 的当天就发现 `main` 的最新 commit 已经构建不过了——
+> 之前把站点简介改成"程序员与**终身学习**者"，引入了「终身学习」四个新汉字，但没重新生成子集。
+
+### 5.4 为什么 CI 部署比本地 `npm run deploy` 更可靠
+
+Astro 把文章索引缓存在 `node_modules/.astro/data-store.json` 里，而**删掉一篇文章的源文件
+并不会清掉这个缓存里的条目**。结果是本地构建会把已经删掉的文章重新生成出来，`npm run deploy`
+再原样发上线。
+
+这不是理论问题：接 CI 之前，`https://ben-chen.com/zh/notes/only-chinese/` 一直是能打开的，
+还进了 sitemap——那是一篇早就删掉的测试随笔。
+
+CI 每次都是**干净的 checkout + 全新 `npm ci`**，压根不存在这个缓存，所以幽灵文章无处藏身。
+如果你非要用本地兜底部署，删过文章的话先清一次缓存：
+
+```bash
+rm -rf node_modules/.astro dist && npm run build && npm run deploy
 ```
 
 ---
 
-## 5. 改站点基本信息
+## 6. 在浏览器后台写（Sveltia CMS）
 
-### 5.1 站名、简介、作者信息
+打开 **https://ben-chen.com/admin/**。
+
+### 6.1 登录
+
+点 **"Sign In with Token"**，粘贴一个 GitHub Personal Access Token。生成方式：
+
+https://github.com/settings/tokens/new?scopes=repo —— 勾选 `repo` 权限即可，别的都不用勾。
+
+Token 只存在你这台设备的浏览器 localStorage 里，不会进仓库，也不会发给任何第三方。
+
+> **⚠️ PAT 默认 90 天过期。** 到期后后台会登录失败，重新按上面的链接生成一个新的、再粘一次即可。
+> 这不是故障。想彻底免掉这件事，得另外部署一个 OAuth 服务（当初权衡后选了"少维护一个服务"）。
+
+### 6.2 六个栏目分别对应什么
+
+| 后台栏目 | 对应目录 |
+| --- | --- |
+| Posts (EN) | `src/content/posts/en/` |
+| Posts (中文) | `src/content/posts/zh/` |
+| Notes (EN) | `src/content/notes/en/` |
+| Notes (中文) | `src/content/notes/zh/` |
+| Pages (EN) | `/about`、`/privacy` 英文版 |
+| Pages (中文) | `/about`、`/privacy` 中文版 |
+
+中英是**分开的两个栏目**，不是同一篇文章切 tab。这是刻意的：编辑英文文章时不会被要求同时填中文版，
+只写一种语言完全正常。
+
+### 6.3 注意事项
+
+- **Slug 字段决定文件名和 URL**，规则跟第 3.1 节完全一样，发布后不要改。
+- 点 **Publish** = 直接提交到 `main` = 立刻触发上线，中间没有复核环节。想先存不发就把
+  **Draft** 打开（`draft: true` 的文章不会出现在正式站点上）。
+- 插图会传到 `public/images/`，正文里引用路径是 `/images/xxx.png`。
+
+---
+
+## 7. 评论
+
+评论用的是 **Giscus**：读者的评论以 **GitHub Discussions** 的形式存在 `ffzz/blog` 仓库里，
+分类是 **Announcements**。零后端、零数据库、不花钱。
+
+几件值得知道的事：
+
+- **读者需要 GitHub 账号才能评论。** 这对中文非技术读者是硬门槛，是当初就明知并接受的取舍。
+- **评论按 URL 路径匹配文章**（`data-mapping: pathname`）。所以**改了文章 slug，老评论就找不回来了**
+  ——这是第 3.1 节强调"发布后不要改文件名"的第二个理由。
+- **中英文版本各自独立**：`/posts/foo/` 和 `/zh/posts/foo/` 是两个路径，评论区也是两个，互不相通。
+- **删评论去 GitHub**：https://github.com/ffzz/blog/discussions，在那边删掉，站上就没了。
+  垃圾评论也是这么处理。
+- 评论区会跟着站点的明暗模式自动切换配色，不用管。
+- 分类选 Announcements 是有意的——这个分类只有仓库维护者能开新话题，读者只能在已有话题下回复，
+  不会变成一个开放的发帖入口。
+
+---
+
+## 8. 改站点基本信息
+
+### 8.1 站名、简介、作者信息
 
 `src/consts.ts` 里的 `SITE` 和 `AUTHOR`：
 
@@ -146,87 +266,133 @@ export const AUTHOR: Author = {
 `tagline` 会同时出现在首页大标题、搜索结果摘要、RSS 描述里，改的时候留意别写太长。`sameAs`
 留空数组时 about 页不会显示"其他链接"那一行，加了链接才会自动出现，不用改模板。
 
-### 5.2 About 页正文
+### 8.2 About 页正文
 
 `src/content/pages/en/about.md` 和 `src/content/pages/zh/about.md`，跟写文章一样是 Markdown
-文件，直接改正文即可，两个语言各自独立，不用互译。
+文件，直接改正文即可，两个语言各自独立，不用互译。也可以在后台的 Pages 栏目里改。
 
-### 5.3 隐私政策页
+### 8.3 隐私政策页
 
-`src/content/pages/{en,zh}/privacy.md`——这页描述的是站点实际的数据处理行为（订阅表单收集什么、
-第三方服务有哪些）。**只有引入新的数据收集行为时才需要改这页**（比如以后真的开了邮件订阅或评论），
-平时不用管。
+`src/content/pages/{en,zh}/privacy.md`——这页描述的是站点实际的数据处理行为。**只有引入新的
+数据收集行为时才需要改这页**（比如以后真的开了邮件订阅），平时不用管。评论那段在开评论时
+已经同步过了。
 
-改完任何一处，都是走第 4 节的两条命令重新发布。
+改完任何一处，都是走第 5 节 `git push` 重新发布。
 
 ---
 
-## 6. 密钥和环境变量放在哪
+## 9. 密钥和环境变量放在哪
 
-项目里有两个不进 git 的文件，作用不一样，别搞混：
-
-| 文件 | 谁用 | 放什么 |
+| 位置 | 谁用 | 放什么 |
 | --- | --- | --- |
-| `.env.local` | 你电脑上跑 `npm run deploy` / `npm run whoami` 时，`wrangler` 命令行工具自己要用 | `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`——发布权限本身 |
-| `.dev.vars` | 以后真的启用邮件订阅功能时，本地测试 Worker 用 | `RESEND_API_KEY`、`TOKEN_SIGNING_SECRET`——现在这两个是假值，因为功能还没开 |
+| `.env.local`（本地，不进 git） | 你电脑上跑 `npm run deploy` / `npm run whoami` 时，`wrangler` 命令行工具自己要用 | `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID` |
+| **GitHub repo secret**（仓库设置里） | **GitHub Actions 自动部署时用** | `CLOUDFLARE_API_TOKEN`，跟 `.env.local` 里那个是**同一个值**，两处都要有 |
+| `.dev.vars`（本地，不进 git） | 以后真的启用邮件订阅功能时，本地测试 Worker 用 | `RESEND_API_KEY`、`TOKEN_SIGNING_SECRET`——现在是假值，因为功能还没开 |
 
-这两个文件都已经在 `.gitignore` 里，不会被提交、不会出现在 GitHub 上（即使以后接了 GitHub 仓库
-也一样）。**不要把里面的内容贴到聊天记录、文档、或任何会被分享出去的地方。**
+GitHub secret 在 https://github.com/ffzz/blog/settings/secrets/actions 管理。填进去之后
+GitHub 就再也不会显示它的值，只能覆盖，不能查看——这是设计如此。
+
+**Cloudflare 的 token 有有效期，过期后要在两个地方都换掉**，只换一个会出现"本地能发、CI 挂了"
+或者反过来的怪现象。
+
+`.env.local` 和 `.dev.vars` 都在 `.gitignore` 里，不会被提交。**仓库现在是公开的，更加不要把
+里面的内容贴到聊天记录、issue、文档、或任何会被分享出去的地方。**
 
 ---
 
-## 7. 常见问题排查
+## 10. 常见问题排查
 
-**`npm run build` 报字体缺字**
+**push 之后网站没变 / GitHub Actions 是红叉**
+
+去 https://github.com/ffzz/blog/actions 点开最新那次，看哪一步是红的。或者：
+
+```bash
+gh run view --log-failed
+```
+
+红叉意味着**没有上线**，线上还是上一个版本——不会发布半成品，这是设计好的。
+
+**Actions 报字体缺字**
+
+正常情况下不该出现，CI 那一步会自动补。如果真报了，多半是拉 Google Fonts 时网络抖动，
+点 Actions 页面的 **Re-run jobs** 重跑一次就行。
+
+**本地 `npm run build` 报字体缺字**
 
 ```
 Error: 字体子集缺少 N 个字符：...
 ```
 
-新写的标题（文章标题、站名等）用了还没打进字体子集的汉字。运行一次 `npm run fonts` 重新生成，
-再 `npm run build`。这是设计好的守卫，不是 bug——目的是保证每次发布字体文件都尽量小。
+你在本地写了带新汉字的标题。跑一次 `npm run fonts` 重新生成，再构建。或者干脆直接 `git push`
+让 CI 去补——本地这一步只是让你早点看到结果，不是必须的。
 
-**`npm run build` 报"空壳文章"或渲染失败**
+**后台 `/admin` 登录失败**
 
-Markdown 里可能有语法错误（比如没闭合的代码块）。看报错信息里具体是哪个文件，本地 `npm run dev`
-打开那篇文章看渲染是否正常。
+大概率是 GitHub PAT 过期了（默认 90 天）。按 6.1 的链接重新生成一个，重新粘贴。
+
+**文章页看不到评论区**
+
+按可能性从高到低查三件事：① giscus GitHub App 是否还装在 `ffzz/blog` 上
+（https://github.com/settings/installations）；② 仓库是不是被改回私有了（giscus 强制要求公开）；
+③ 仓库的 Discussions 是不是被关了。三者缺一评论区就不出现。
+
+**`git push` 被拒绝，提示 non-fast-forward**
+
+CI 自动提交过字体子集，或者你在后台发过文章，远端比你本地新。`git pull` 再推。
+
+**删掉的文章还在线上**
+
+见 5.4。`git push` 走 CI 会自动解决；如果是本地兜底部署造成的，
+`rm -rf node_modules/.astro dist` 之后重新构建部署。
 
 **`npm run deploy` 报鉴权失败**
 
-`.env.local` 里的 `CLOUDFLARE_API_TOKEN` 可能过期了（Cloudflare 的 token 可以设置有效期）。跑
-`npm run whoami` 确认，如果报错就去 Cloudflare Dashboard → My Profile → API Tokens 重新生成一个，
-换掉 `.env.local` 里的值。
+`.env.local` 里的 `CLOUDFLARE_API_TOKEN` 过期了。跑 `npm run whoami` 确认，去
+Cloudflare Dashboard → My Profile → API Tokens 重新生成，**记得 GitHub secret 那份也要换**（第 9 节）。
 
-**改完内容，网站上没变化**
+**改完内容，浏览器上没变化**
 
-先确认真的跑过 `npm run build && npm run deploy` 且没有报错——只改文件不重新部署，线上内容不会
-自动更新。其次浏览器可能缓存了旧页面，强制刷新（Cmd+Shift+R）试试。
+先确认 Actions 是绿的。绿的话是浏览器缓存，强制刷新（Cmd+Shift+R）。
 
 **域名打不开**
 
-正常情况下发布后几秒内 `https://ben-chen.com` 就能访问。如果打不开，去 Cloudflare Dashboard →
-你的账号 → Workers & Pages → `personal-blog` → Settings → Domains & Routes，确认 `ben-chen.com`
-状态是 Active。
+去 Cloudflare Dashboard → Workers & Pages → `personal-blog` → Settings → Domains & Routes，
+确认 `ben-chen.com` 状态是 Active。
 
 ---
 
-## 8. 以后想开评论或邮件订阅
+## 11. 以后想开邮件订阅
 
-这两个功能的代码已经写好了，只是没接外部账号，不是要重新开发。具体步骤（需要注册 Resend 账号、
-开 GitHub Discussions 等）按 [launch-checklist.md](2026-08-06-launch-checklist.md) 的 B3/C1–C4
-一步步做，做完把 `src/consts.ts` 里的 `EMAIL_SUBSCRIBE_ENABLED` 改成 `true`、`GISCUS` 填上真实
-配置，重新发布即可生效。
+代码已经写好了，只是没接 Resend 账号，不是要重新开发。步骤按
+[launch-checklist.md](2026-08-06-launch-checklist.md) 的 C1–C4 做（注册 Resend、验证发信域名、
+建 KV namespace、设 Worker 密钥），做完把 `src/consts.ts` 里的 `EMAIL_SUBSCRIBE_ENABLED`
+改成 `true`，push 即可生效。
+
+注意这一项会让站点从"纯静态"变成"静态 + 一个 Worker"，`wrangler.jsonc` 要把 `main` /
+`kv_namespaces` / `vars` / `run_worker_first` 几块加回来，届时也要更新隐私政策页。
 
 ---
 
-## 9. 命令速查
+## 12. 命令速查
 
 ```bash
 cd /Volumes/U-disk/Projects/blog
 
-npm run dev          # 本地预览，改文件自动刷新
-npm run build         # 本地构建校验（发布前必过）
-npm run deploy         # 发布到 https://ben-chen.com
+git pull               # 写之前先拉（CI 可能自动改过仓库）
+npm run dev            # 本地预览，改文件自动刷新
+git push               # ★ 发布：推上去自动构建上线
+gh run watch           # 看部署进度
+gh run view --log-failed   # 部署失败时看是哪一步炸了
+
+npm run build          # 本地构建校验（可选，CI 会跑）
+npm run fonts          # 本地标题用了新汉字时重新生成字体子集
+npm run deploy         # 手动兜底部署，绕过 GitHub
 npm run whoami         # 确认 Cloudflare 登录状态
-npm run fonts          # 标题用了新汉字时重新生成字体子集
 ```
+
+常用链接：
+
+- 站点 https://ben-chen.com
+- 后台 https://ben-chen.com/admin/
+- 部署记录 https://github.com/ffzz/blog/actions
+- 评论管理 https://github.com/ffzz/blog/discussions
