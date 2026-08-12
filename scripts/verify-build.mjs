@@ -61,3 +61,47 @@ if (problems.length > 0) {
 }
 
 console.log(`✓ 构建产物校验通过，没有空壳文章。`);
+
+/*
+ * security.txt 的有效期守卫。
+ *
+ * RFC 9116 要求 Expires 必填且不超过一年。过期后这个文件在规范意义上
+ * 就失效了，但没有任何东西会报错 —— 跟上面那个"幽灵文章"是同一类静默
+ * 失败，所以用同一个办法处理：让它在构建期显式炸掉。
+ *
+ * 顺带确认文件真的进了产物：它在 public/.well-known/ 这个点开头的目录里，
+ * 万一哪天构建工具的复制行为变了（点目录被跳过是很常见的默认行为），
+ * 线上就是个 404，而没人会注意到。
+ */
+const SECURITY_TXT = join(DIST, '.well-known', 'security.txt');
+const RENEW_WINDOW_DAYS = 30;
+
+if (!existsSync(SECURITY_TXT)) {
+  console.error(
+    '\n✗ dist/.well-known/security.txt 不存在。\n' +
+      '源文件在 public/.well-known/security.txt —— 如果它还在，' +
+      '说明构建时没有把点开头的目录复制进产物。\n',
+  );
+  process.exit(1);
+}
+
+const expiresLine = (await readFile(SECURITY_TXT, 'utf8'))
+  .split('\n')
+  .find((l) => l.toLowerCase().startsWith('expires:'));
+const expiresAt = expiresLine && new Date(expiresLine.slice('expires:'.length).trim());
+
+if (!expiresAt || Number.isNaN(expiresAt.valueOf())) {
+  console.error('\n✗ security.txt 里缺少可解析的 Expires 字段（RFC 9116 要求必填）。\n');
+  process.exit(1);
+}
+
+const daysLeft = Math.floor((expiresAt - Date.now()) / 86_400_000);
+if (daysLeft < RENEW_WINDOW_DAYS) {
+  console.error(
+    `\n✗ security.txt ${daysLeft < 0 ? `已过期 ${-daysLeft} 天` : `还有 ${daysLeft} 天过期`}。\n` +
+      '去 public/.well-known/security.txt 把 Expires 往后推一年即可，没有别的步骤。\n',
+  );
+  process.exit(1);
+}
+
+console.log(`✓ security.txt 有效，${daysLeft} 天后过期。`);

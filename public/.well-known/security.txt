@@ -1,0 +1,12 @@
+# RFC 9116 漏洞披露联系方式。
+# 有人在本站发现安全问题时，按什么地址、用什么语言联系我。
+#
+# Expires 是 RFC 要求的必填字段，且必须在一年以内。过期之后这个文件
+# 就是无效的，但**不会有任何报错** —— 所以 scripts/verify-build.mjs 里
+# 加了一道守卫：距过期不足 30 天就让构建失败，逼着改日期。
+# 续期就是把下面的 Expires 往后推一年，没有别的步骤。
+
+Contact: mailto:hello@ben-chen.com
+Expires: 2027-08-01T00:00:00Z
+Preferred-Languages: en, zh
+Canonical: https://ben-chen.com/.well-known/security.txt

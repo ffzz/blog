@@ -2,6 +2,37 @@
 # 它本身不会被当作静态资源发出去，只被 Workers 解析。
 # https://developers.cloudflare.com/workers/static-assets/headers/
 #
+# 匹配是**累加**的：下面的 /* 和后面两条具体路径规则会同时生效，
+# 具体规则不会覆盖掉全局规则。所以 giscus 那两个 CSS 既拿到全局
+# 安全头，也拿到自己的 CORS 头。改动这个文件后务必实测确认这一点
+# （curl -I 那两个 CSS，两类头必须同时出现）。
+#
+# ── 全局安全响应头 ───────────────────────────────────────────
+# 2026-08-12 Cloudflare Security Insights 扫描报了"无 HSTS"，实测发现
+# 这个站点当时**一个安全响应头都没有**，顺手一次补齐。
+#
+# 选择 _headers 而不是 Dashboard 的 SSL/TLS → HSTS 开关：两者效果等价，
+# 但写在这里能进版本控制、跟代码一起 review 和回滚，配置不散落在两处。
+#
+# HSTS 刻意**不加 preload**：preload 要提交到浏览器预加载列表，撤销得等
+# 浏览器发行周期、数月起步，且会锁死所有子域名必须 HTTPS。当前这个写法
+# 随时可以改回来（改完等老访客的缓存过期即可），preload 不行。
+#
+# X-Frame-Options 用 SAMEORIGIN 而不是 DENY：/admin 的 Sveltia CMS 有预览
+# 面板，Decap 系 CMS 的预览历来靠 iframe 实现，DENY 会把同源 iframe 一起
+# 禁掉。而挡跨站点击劫持这件事两者能力相同 —— 多出来的那点强度换的是一条
+# 只在后台才会走到、因而最可能很久以后才被发现的坏路径，不划算。
+#
+# 注意 HSTS 头救不了**第一次**明文请求，那个要靠 Cloudflare Dashboard 的
+# Always Use HTTPS（SSL/TLS → Edge Certificates）在边缘做 301。两者是互补的，
+# 不是二选一。
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()
+
 # ── 为什么这两个文件需要 CORS ────────────────────────────────
 # giscus 评论区是跑在 giscus.app 上的独立 iframe。它加载自定义主题时
 # 注入的标签是：

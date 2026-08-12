@@ -13,6 +13,10 @@
 > 随之打通评论、Sveltia CMS 后台、以及 GitHub Actions 自动部署。发布主路径从本地
 > `npm run deploy` 变为 `git push`。剩余待办只有 C 组（邮件订阅相关，仍暂缓）、F 组验收、
 > G 组 SEO 提交，以及 B4（访问统计）。
+>
+> **2026-08-12 更新：B4 完成，并处置了一次 Cloudflare 安全扫描。** 访问统计已启用（走手动 snippet
+> 嵌入，不是边缘自动注入，两条路径只能选一条，见 B4）。安全扫描的 6 条发现修 3 拒 3，
+> 全部理由与回归测试留档在新增的 I 组。
 
 ## 图例
 
@@ -43,7 +47,7 @@
 | B1 | 定域名并接入 Cloudflare | ✅ | `ben-chen.com`，DNS 已在 Cloudflare，Custom Domain 已绑定到 Workers 项目 `personal-blog` |
 | B2 | 创建 GitHub 仓库并推送代码 | ✅ | `https://github.com/ffzz/blog`。2026-08-10 因 Giscus 强制要求公开仓库而**转为 public**（转前逐 commit 核查过历史无密钥） |
 | B3 | 决定是否上线即启用评论（Giscus） | ✅ | 2026-08-10 开启。Discussions 已开，giscus app 已装，`consts.ts` 的 `GISCUS` 填的是 `ffzz/blog` + Announcements 分类（该分类只有维护者能开新话题，避免变成开放发帖入口） |
-| B4 | 决定是否上线即启用访问统计 | 🟢 | 需要域名先接入 Cloudflare（B1 完成后才能做），Dashboard 里加站点拿 beacon token 填 `CF_ANALYTICS_TOKEN`。不开不影响任何其他功能 |
+| B4 | 决定是否上线即启用访问统计 | ✅ | 2026-08-12 启用。Dashboard 选 **Enable with JS Snippet installation**（手动嵌入），token 填进 `CF_ANALYTICS_TOKEN`。**注意另外三个 Enable 选项是边缘自动注入**——Cloudflare 直接改写响应 HTML 插 beacon，那种模式下再填这个常量会变成两个 beacon 同时上报、浏览量翻倍。两条路径只能选一条，改 Dashboard 时要同步 `consts.ts` |
 
 ---
 
@@ -118,6 +122,52 @@ PRD §11 已经明确记录过，重复列在这里只是提醒"上线时不要�
 - **国内访问速度**：Cloudflare 免费层在国内不稳定，没有免费解法。策略是先上线接受现状，等 Search Console 显示国内流量确实可观（PRD §15 定的触发条件是 >20%）再考虑 ICP 备案 + 国内 CDN
 - **国内邮箱送达率**（QQ / 163）未知，上线后用 F1 的真实测试顺便看一眼，不要专门为这个再拖上线时间
 - **Sveltia CMS 仍是 beta**，单分支写入，单人博客场景影响可忽略
+
+---
+
+## I. 安全扫描处置 · 2026-08-12
+
+Cloudflare Security Insights 对 `ben-chen.com` 的扫描（2026-08-09）报了 6 条。逐条核对线上实际状态后
+**修 3 条、拒 3 条**。留档的目的很实际：下次扫描还会报同样的 3 条，不用重新判断一次，
+也避免以后有人「顺手修一下」把 AI 爬虫封了。
+
+| 条目 | 严重度 | 实测 | 处置 |
+| --- | --- | --- | --- |
+| Always Use HTTPS 未开 | Moderate | `curl -I http://ben-chen.com/` 返回 **200 而非 301** | 🟡 待你在 Dashboard → SSL/TLS → Edge Certificates 打开。仓库里修不了：`_headers` 只能设响应头不能做协议跳转，`_redirects` 按路径匹配、表达不了「若为 http 则跳 https」 |
+| 无 HSTS | Moderate | 实测当时**一个安全响应头都没有**（连 `nosniff` 都没有） | ✅ `public/_headers` 加全局块，顺手一次补齐五个头 |
+| security.txt 未配置 | Low | `/.well-known/security.txt` → 404 | ✅ 新增 `public/.well-known/security.txt`（RFC 9116），并在 `scripts/verify-build.mjs` 加过期守卫 |
+| Block AI bots 未开 | Moderate | GPTBot / ClaudeBot / OAI-SearchBot / PerplexityBot 当前全部 200 | ❌ **拒绝**，见下 |
+| AI Labyrinth 未开 | Low | 同上 | ❌ **拒绝**，见下 |
+| Bot Fight Mode 未开 | Moderate | — | ❌ **拒绝**，见下 |
+
+**为什么拒绝这三条**
+
+前两条与 §7.2 直接冲突。`src/pages/robots.txt.ts` 逐个点名允许 GPTBot / ClaudeBot / PerplexityBot /
+Google-Extended，配套 `/llms.txt`、`/llms-full.txt` 和 RSS 全文输出，PRD 写的是「2026 年 AI 引用正在
+成为主要发现渠道，这部分不是可选项」。开 Block AI bots 等于在 WAF 层把这些爬虫全部 403，
+而 **WAF 优先级高于 robots.txt** —— 是它覆盖你，不是你覆盖它。AI Labyrinth 更矛盾：它的机制是给
+AI 爬虫喂生成的垃圾页面，等于一边发邀请函一边在门口挖坑。站点的主打文章正好是《AI 搜索凭什么引用你》。
+
+Bot Fight Mode 是另一类问题：官方文档明确写了它**不支持按路径例外、不能用 WAF 规则绕过**、
+可能误伤 API 流量、且强制开启 JavaScript Detections。而纯静态站跑在 Cloudflare 免费层
+（带宽无限、静态请求免费），bot 流量本来就不产生成本 —— 它要防的风险在这个架构下不存在，
+代价却是可能挡住 RSS 阅读器、监控和搜索引擎爬虫。
+
+**回归测试**（改动 Cloudflare 安全设置后应该跑一遍，五条必须全是 200）：
+
+```bash
+for ua in GPTBot ClaudeBot OAI-SearchBot PerplexityBot Googlebot; do
+  echo "$(curl -sS -o /dev/null -w '%{http_code}' -A "$ua" https://ben-chen.com/)  <- $ua"
+done
+```
+
+**暂不做 CSP**：Pagefind 用 WASM、Giscus 注入跨域 iframe 和脚本、Sveltia CMS 从 CDN 加载并直连
+GitHub API、Astro 产出内联样式、Mermaid 是内联 SVG。严到有意义的 CSP 需要逐项放行并反复实测，
+配错了会**静默**打断站内搜索或评论区。而本站的 XSS 面基本只有「作者自己写的 Markdown」，
+依赖里也已经有 `sanitize-html`。要做就单独做一次并带完整实测，不混进安全扫描的收尾里。
+
+**HSTS 不加 preload**：撤销要等浏览器发行周期、数月起步，且锁死所有子域名必须 HTTPS。
+不值得为一次扫描报告承担这种几乎不可逆的承诺。
 
 ---
 

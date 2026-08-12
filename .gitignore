@@ -27,6 +27,12 @@ pnpm-debug.log*
 # wrangler local state (local KV/D1 simulation, logs)
 .wrangler/
 
+# 从 Cloudflare / GitHub 等后台导出的报表、临时排查资料。
+# 这些导出件的文件名里常常直接带账号邮箱（比如安全扫描 CSV），
+# 而本仓库是 public 的 —— 一次 `git add -A` 就会把它永久写进公开
+# 的 git 历史，事后删掉也还留在历史里。默认整个目录不进版本控制。
+docs/
+
 # macOS-specific files
 .DS_Store
 
