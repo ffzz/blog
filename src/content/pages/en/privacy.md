@@ -39,7 +39,7 @@ this site never sees your GitHub credentials.
 
 ## Analytics
 
-This site may use Cloudflare Web Analytics, which counts visits without
+This site uses Cloudflare Web Analytics, which counts visits without
 cookies, without fingerprinting, and without storing anything tied to you
 individually. If you'd rather opt out of even that, most browsers' "block
 third-party scripts" setting is effective, since it's loaded from a separate

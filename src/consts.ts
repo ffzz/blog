@@ -96,12 +96,17 @@ export const AUTHOR: Author = {
 
 /**
  * Cloudflare Web Analytics 的站点 token。PRD §8.5：免费、无 cookie、
- * 不需要 GDPR 横幅。
- * 获取方式：Cloudflare Dashboard → Analytics & Logs → Web Analytics →
- * 添加站点（需要域名已经在用 Cloudflare，见 §10 的域名开放项）→
- * 复制那段 beacon script 里 data-cf-beacon 的 token 值。
+ * 不需要 GDPR 横幅。token 本来就写在客户端 script 标签上，公开可见是设计如此，
+ * 不是密钥。
+ *
+ * ⚠️ 这个值只有在 Dashboard 选了 **Enable with JS Snippet installation** 时才该填。
+ * 另外三个 Enable 选项走的是边缘自动注入 —— Cloudflare 在响应经过代理时直接改写
+ * HTML 插入 beacon，那种情况下这里再填一遍，页面上就会有两个 beacon 同时上报，
+ * 浏览量凭空翻倍，而且后台看不出任何异常，只会让你对着虚高的数字做判断。
+ * 2026-08-12 启用时确认过 Dashboard 是手动 snippet 模式。
+ * 改 Dashboard 那个单选框时记得回来同步这里。
  */
-export const CF_ANALYTICS_TOKEN = '';
+export const CF_ANALYTICS_TOKEN = 'e14d088b3dbd450293977dc7f3dca9bd';
 
 /**
  * Giscus 评论所需的 GitHub Discussions 绑定信息。PRD §8.2。

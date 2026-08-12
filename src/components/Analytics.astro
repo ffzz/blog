@@ -8,12 +8,17 @@ import { CF_ANALYTICS_TOKEN } from '../consts';
 // 分析悄无声息地失效且没有任何报错可查。这个 URL 本身就是 Cloudflare
 // 官方文档给出的标准嵌入代码，信任边界在于"信任 Cloudflare 这家云服务商"，
 // 而不是"信任某次第三方 npm 发布"。
+//
+// type="module" 而不是 defer：这是 Cloudflare 官方 snippet 的写法，作用是让
+// IE 之类不认识 module 的老浏览器直接跳过这个脚本（它们本来也跑不了）。
+// Cloudflare 只在边缘自动注入那条路径上帮你加这个属性，走手动嵌入就得自己写。
+// module 脚本默认就是 deferred 的，所以 defer 是多余的，去掉。
 ---
 
 {
   CF_ANALYTICS_TOKEN && (
     <script
-      defer
+      type="module"
       src="https://static.cloudflareinsights.com/beacon.min.js"
       data-cf-beacon={JSON.stringify({ token: CF_ANALYTICS_TOKEN })}
     />

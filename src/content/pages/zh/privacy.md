@@ -34,7 +34,7 @@ Discussions 的形式存放在本站的代码仓库
 
 ## 访问统计
 
-本站可能使用 Cloudflare Web Analytics，它在不使用 cookie、不做设备指纹、
+本站使用 Cloudflare Web Analytics，它在不使用 cookie、不做设备指纹、
 不记录任何与个人挂钩的信息的前提下统计访问量。如果连这个也想避开，多数
 浏览器"屏蔽第三方脚本"的设置就能生效，因为它是从另一个域名加载的。
 
