@@ -1,6 +1,6 @@
 import type { Locale } from '../consts';
 import { getAllPostsByLocale, localeUrl, type LocalizedEntry } from './i18n';
-import { TAG_PAGE_MIN_POSTS } from '../consts';
+import { LOCALES, TAG_PAGE_MIN_POSTS } from '../consts';
 
 /**
  * 标签显示名映射表。PRD §5.3：显示名集中维护，不散落在 frontmatter ——
@@ -56,6 +56,20 @@ export async function getPageableTags(locale: Locale): Promise<TagCount[]> {
 /** 未达标签页门槛的标签也要能展示 —— 文章底部纯文本用，不链接。 */
 export async function getAllTags(locale: Locale): Promise<TagCount[]> {
   return tagIndex(locale);
+}
+
+/**
+ * 标签页门槛在每种语言下独立生效，所以同一个标签常常只在一侧成页
+ * （中文写了三篇、英文只有两篇，中文侧成页而英文侧没有）。
+ * alternates 必须按实际成页的语言给，否则 hreflang 和语言切换都会指向 404。
+ */
+export async function pageableLocalesForTag(tag: string): Promise<Locale[]> {
+  const perLocale = await Promise.all(
+    LOCALES.map(async (locale) =>
+      (await getPageableTags(locale)).some((t) => t.tag === tag) ? locale : null,
+    ),
+  );
+  return perLocale.filter((locale): locale is Locale => locale !== null);
 }
 
 export async function tagRoutes(locale: Locale) {

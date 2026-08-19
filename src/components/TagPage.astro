@@ -4,6 +4,7 @@ import type { Locale } from '../consts';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t } from '../lib/ui';
 import type { LocalizedEntry } from '../lib/i18n';
+import { pageableLocalesForTag } from '../lib/tags';
 
 interface Props {
   locale: Locale;
@@ -13,10 +14,14 @@ interface Props {
 }
 
 const { locale, tag, label, entries } = Astro.props;
+
+// 同一标签可能只在一种语言下够篇数成页，alternates 不能用默认的全集。
+const alternates = await pageableLocalesForTag(tag);
 ---
 
 <BaseLayout
   {locale}
+  {alternates}
   path={`tags/${tag}`}
   title={label}
   description={`${t(locale, 'tagPageDescription')} ${label}`}
