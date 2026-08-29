@@ -1,9 +1,9 @@
 ---
 import JsonLd from '../components/JsonLd.astro';
 import PostList from '../components/PostList.astro';
-import { SITE, type Locale } from '../consts';
+import { HOME_RECENT_POSTS, SITE, type Locale } from '../consts';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getAllPostsByLocale } from '../lib/i18n';
+import { getAllPostsByLocale, localeUrl } from '../lib/i18n';
 import { website } from '../lib/schema';
 import { t } from '../lib/ui';
 
@@ -13,8 +13,13 @@ interface Props {
 
 const { locale } = Astro.props;
 const site = SITE[locale];
-const entries = await getAllPostsByLocale(locale);
+const all = await getAllPostsByLocale(locale);
 const schema = website(locale);
+
+// 首页截断到最近 N 篇，余下的交给归档页 —— 这是让归档页有独立存在价值的
+// 前提。首页列全部时，归档页就是它的重复品，Google 有充分理由不收其中一个。
+const entries = all.slice(0, HOME_RECENT_POSTS);
+const hasMore = all.length > entries.length;
 ---
 
 <BaseLayout
@@ -33,6 +38,13 @@ const schema = website(locale);
   <section aria-labelledby="recent">
     <h2 id="recent" class="section-label">{t(locale, 'recent')}</h2>
     <PostList {locale} {entries} />
+    {
+      hasMore && (
+        <a class="view-all" href={localeUrl(locale, 'archive')}>
+          {t(locale, 'viewAll')}
+        </a>
+      )
+    }
   </section>
 </BaseLayout>
 
@@ -65,5 +77,19 @@ const schema = website(locale);
     color: var(--text-4);
     text-transform: uppercase;
     margin-bottom: var(--space-lg);
+  }
+
+  .view-all {
+    display: inline-block;
+    margin-top: var(--space-xl);
+    font-size: var(--size-caption);
+    color: var(--text-4);
+    letter-spacing: var(--ls-label);
+    text-decoration: none;
+    transition: color var(--dur) var(--ease);
+  }
+
+  .view-all:hover {
+    color: var(--brand);
   }
 </style>

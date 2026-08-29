@@ -24,13 +24,13 @@ tags: ['programming-thinking', 'design-principles', 'ai']
 | 迪米特法则 LoD | Ian Holland | 1987 | Northeastern University，Demeter 项目[3] |
 | 开闭原则 OCP | Bertrand Meyer | 1988 | 《Object-Oriented Software Construction》[4] |
 | 合成复用 CRP | GoF 四人 | 1994 | 《Design Patterns》 |
-| 依赖倒置 DIP | Robert C. Martin | 1996 | C++ Report |
-| 接口隔离 ISP | Robert C. Martin | 1996 | C++ Report |
-| 单一职责 SRP | Robert C. Martin | 1990s | C++ Report，2000 年收进《Design Principles and Design Patterns》[5] |
+| 依赖倒置 DIP | Robert C. Martin | 1996 | C++ Report（成文稿见 2000 年汇编本[7]） |
+| 接口隔离 ISP | Robert C. Martin | 1996 | C++ Report（成文稿见 2000 年汇编本[7]） |
+| 单一职责 SRP | Robert C. Martin | 1990s | C++ Report，2000 年收进《Design Principles and Design Patterns》[7] |
 
 六拨人，最早和最晚之间隔着二十二年。1974 年那三个人在讨论怎么把 Fortran 程序切成模块，1987 年 Liskov 在 OOPSLA 讲台上讨论的是类型论，1996 年 Martin 在给别人做咨询时遇到了具体的麻烦。他们不认识彼此的问题，也不是在给同一套体系添砖。
 
-SOLID 这个缩写出现得更晚。五条原则是 Martin 在 1990 年代陆续写出来的，把首字母拼成一个词是 Michael Feathers 大约 2004 年做的事，比原则本身晚了十几年。而中文教材里那张「七大原则」的并列表，比 SOLID 又多出两条——迪米特法则和合成复用从来不在 SOLID 里，它们一个来自 1987 年的东北大学，一个来自 1994 年的 GoF。
+SOLID 这个缩写出现得更晚。五条原则是 Martin 在 1990 年代陆续写出来的，把首字母拼成一个词是 Michael Feathers 大约 2004 年做的事[5]，比原则本身晚了十几年。而中文教材里那张「七大原则」的并列表，比 SOLID 又多出两条——迪米特法则和合成复用从来不在 SOLID 里，它们一个来自 1987 年的东北大学，一个来自 1994 年的 GoF。
 
 这七条被摆在一起，是后人整理的结果。
 
@@ -140,5 +140,6 @@ Agent 能把七条里的任何一条实现得比我快。它答不了的是这�
 4. [Open–closed principle — 两代表述的对照](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle)
 5. [SOLID — 缩写的来历](https://en.wikipedia.org/wiki/SOLID)
 6. [Difficulties using cohesion and coupling as quality indicators, Software Quality Journal](https://link.springer.com/article/10.1007/BF00590439)
+7. [Robert C. Martin, "Design Principles and Design Patterns", Object Mentor, 2000. SRP、DIP、ISP 三条的成文章节都收在这份汇编里；C++ Report 原刊找不到稳定的在线链接](https://www.fil.univ-lille.fr/~routier/enseignement/licence/coo/cours/Principles_and_Patterns.pdf)
 
 关于第 5 条：SOLID 这个缩写归于 Michael Feathers，目前能找到的都是二手来源互相印证，没有他本人或 Martin 的一手确认。这条按「一般认为」处理。

@@ -56,7 +56,7 @@ PR 给的是在澳大利亚长期居住和工作的权利，通常替代不了 c
 
 2026 年版 PSPF 甚至专门写明：政府机构按 merit principle 招聘时，不该只因候选人当下没有 clearance 就把人筛掉——只要对方愿意并且有能力在正式入职前通过审查，就不该在被选中之前先要求持证。这也是为什么 APS 的招聘广告经常写"must be able to obtain and maintain"而不是要求已经持有。
 
-但政府 contractor 和咨询公司的招聘现实往往更直接，广告直接写"active NV1 required"。原因通常不是法律硬性要求，而是项目已经启动，客户要人马上进 secure environment，公司没时间等几个月，也不想承担候选人审查失败、项目延期的风险。堪培拉其实并存着两个招聘市场：政府直招更倾向先按 merit 选人再发起审查，contractor 市场则更像是在买一种"可以立刻部署"的能力，active clearance 是这份能力的一部分。这也是为什么一个已经持有 NV1 的开发者在 contractor 市场往往更容易拿到面试——不是代码写得一定更好，而是能更快进客户环境。[7]
+但政府 contractor 和咨询公司的招聘现实往往更直接，广告直接写"active NV1 required"。常见的原因是项目已经启动，客户要人马上进 secure environment，公司没时间等几个月，也不想承担候选人审查失败、项目延期的风险。堪培拉其实并存着两个招聘市场：政府直招更倾向先按 merit 选人再发起审查，contractor 市场则更像是在买一种"可以立刻部署"的能力，active clearance 是这份能力的一部分。持有 active NV1 的开发者能立刻进客户环境，在 contractor 市场也因此往往更容易拿到面试。[7]
 
 ## 申请由雇主发起
 

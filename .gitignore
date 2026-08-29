@@ -38,3 +38,10 @@ docs/
 
 # jetbrains setting folder
 .idea/
+
+# AI agent 的 skill 目录。里面是指向 ~/.skills-manager/ 的软链，
+# 提交进去等于把本机绝对路径写进公开的 git 历史，而且对任何别人的
+# clone 都是一条断链。skill 的真身在 skills-manager 里单独维护。
+.claude/
+.agents/
+.workbuddy/

@@ -6,7 +6,13 @@ import Giscus from '../components/Giscus.astro';
 import JsonLd from '../components/JsonLd.astro';
 import Sidenotes from '../components/Sidenotes.astro';
 import TableOfContents from '../components/TableOfContents.astro';
-import { getAvailableLocales, postPath, type PostEntry } from '../lib/i18n';
+import {
+  getAllPostsByLocale,
+  getAvailableLocales,
+  postPath,
+  postUrl,
+  type PostEntry,
+} from '../lib/i18n';
 import { ogImagePath } from '../lib/og';
 import { blogPosting, breadcrumbList } from '../lib/schema';
 import { getPageableTags, tagLabel, tagUrl } from '../lib/tags';
@@ -34,6 +40,17 @@ const path = postPath(collection, slug);
 // 只在这里作纯文本展示。
 // 变量名不用 t —— 会遮蔽上面从 lib/ui 导入的翻译函数 t()。
 const pageableTags = new Set((await getPageableTags(locale)).map((tc) => tc.tag));
+
+// 相邻文章。只在同语言内取 —— 跨语言链接会和 hreflang 表达的
+// "这两个 URL 是同一篇文章的不同语言"冲突。
+//
+// 这不只是导航便利：文章之间原本零互链，全站唯一入口是首页，
+// Googlebot 没有第二条路径可走。对一个外链约等于零的新站，
+// 内链是少数几个能自己控制的抓取信号之一。
+const siblings = await getAllPostsByLocale(locale);
+const here = siblings.findIndex((it) => it.collection === collection && it.slug === slug);
+const newer = here > 0 ? siblings[here - 1] : undefined; // 列表按 pubDate 倒序
+const older = here >= 0 ? siblings[here + 1] : undefined;
 
 const sectionLabel = t(locale, collection === 'posts' ? 'kindPost' : 'kindNote');
 const postingSchema = blogPosting({
@@ -94,6 +111,31 @@ const breadcrumbSchema = breadcrumbList(locale, sectionLabel, title, path);
       )
     }
 
+    {
+      (newer || older) && (
+        <nav class="siblings" aria-label={t(locale, 'siblingNav')}>
+          {/* 更旧的一篇放左、更新的一篇放右，和阅读时间轴方向一致。
+              只有一侧存在时不补占位 div —— 靠 .newer 的 text-align 贴右。 */}
+          {older && (
+            <a class="sibling" href={postUrl(locale, older.collection, older.slug)} rel="prev">
+              <span class="dir">← {t(locale, 'olderPost')}</span>
+              <span class="title">{older.entry.data.title}</span>
+            </a>
+          )}
+          {newer && (
+            <a
+              class="sibling newer"
+              href={postUrl(locale, newer.collection, newer.slug)}
+              rel="next"
+            >
+              <span class="dir">{t(locale, 'newerPost')} →</span>
+              <span class="title">{newer.entry.data.title}</span>
+            </a>
+          )}
+        </nav>
+      )
+    }
+
     <Giscus {locale} />
   </article>
   <Sidenotes />
@@ -150,5 +192,45 @@ const breadcrumbSchema = breadcrumbList(locale, sectionLabel, title, path);
 
   a.tag:hover {
     background: var(--warm-sand);
+  }
+
+  .siblings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xl);
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--border);
+  }
+
+  .sibling {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    flex: 1 1 14rem;
+    text-decoration: none;
+  }
+
+  /* 靠 text-align 而不是 margin-inline-start:auto —— 上面的 flex:1 让项目
+     总是填满可用宽度，auto margin 永远解析成 0，起作用的自始至终是文字对齐。
+     只有一条时（最旧的文章没有"更早"）它照样贴右，两条时各占一半。 */
+  .newer {
+    text-align: end;
+  }
+
+  .dir {
+    font-size: var(--size-caption);
+    color: var(--text-4);
+    letter-spacing: var(--ls-label);
+  }
+
+  .sibling .title {
+    color: var(--text-2);
+    line-height: var(--lh-dense);
+    transition: color var(--dur) var(--ease);
+  }
+
+  .sibling:hover .title {
+    color: var(--brand);
   }
 </style>

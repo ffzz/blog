@@ -133,7 +133,7 @@ Cloudflare Security Insights 对 `ben-chen.com` 的扫描（2026-08-09）报了 
 
 | 条目 | 严重度 | 实测 | 处置 |
 | --- | --- | --- | --- |
-| Always Use HTTPS 未开 | Moderate | `curl -I http://ben-chen.com/` 返回 **200 而非 301** | 🟡 待你在 Dashboard → SSL/TLS → Edge Certificates 打开。仓库里修不了：`_headers` 只能设响应头不能做协议跳转，`_redirects` 按路径匹配、表达不了「若为 http 则跳 https」 |
+| Always Use HTTPS 未开 | Moderate → **实际更高** | 当时 `curl -I http://ben-chen.com/` 返回 **200 而非 301** | ✅ **2026-08-18 已开**（Dashboard → SSL/TLS → Edge Certificates）。仓库里修不了：`_headers` 只能设响应头不能做协议跳转，`_redirects` 按路径匹配、表达不了「若为 http 则跳 https」。事后看这远不止是安全问题 —— 它让全站每个页面在 Google 眼里多出一个 `http://` 副本，独占了 GSC 里 13 个未索引 URL 中的 8 个，见 §J |
 | 无 HSTS | Moderate | 实测当时**一个安全响应头都没有**（连 `nosniff` 都没有） | ✅ `public/_headers` 加全局块，顺手一次补齐五个头 |
 | security.txt 未配置 | Low | `/.well-known/security.txt` → 404 | ✅ 新增 `public/.well-known/security.txt`（RFC 9116），并在 `scripts/verify-build.mjs` 加过期守卫 |
 | Block AI bots 未开 | Moderate | GPTBot / ClaudeBot / OAI-SearchBot / PerplexityBot 当前全部 200 | ❌ **拒绝**，见下 |
@@ -168,6 +168,75 @@ GitHub API、Astro 产出内联样式、Mermaid 是内联 SVG。严到有意义�
 
 **HSTS 不加 preload**：撤销要等浏览器发行周期、数月起步，且锁死所有子域名必须 HTTPS。
 不值得为一次扫描报告承担这种几乎不可逆的承诺。
+
+---
+
+## J. GSC 索引覆盖处置 · 2026-08-18
+
+Search Console 的 Coverage 导出（`docs/SEO/ben-chen.com-Coverage-2026-08-18/`）：**28 个已知 URL，
+只有 15 个被索引**。属性类型是 **Domain property**，所以 `http://` 和 `https://` 分别计数 ——
+这是下面第一行成立的前提。
+
+**逐桶的示例 URL 后来在 GSC 界面上拉到了，下表已是实证，不是推断。**
+四个 CSV 导出只有分桶计数，害我先猜错了两条，教训见文末。
+
+| GSC 分桶 | 数量 | 实际是什么 | 处置 |
+| --- | --- | --- | --- |
+| Alternative page with proper canonical tag | 7 | **7 个全是 `http://` URL**（`http://ben-chen.com/`、`/about/`、`/privacy/`、`/zh/`、`/zh/archive/`、`/zh/privacy/`、`/zh/posts/how-ai-search-picks-sources/`），canonical 都指向 https 正版 | ✅ 已开 Always Use HTTPS，实测全部 301 |
+| Not found (404) | 2 | `/zh/notes/only-chinese/`、`/zh/posts/hello-kami/` —— commit `00fa060` 删掉的示例内容（§E4 注释里提过它们曾被误发上线） | ✅ **无需修复**，404 就是正确答案。sitemap 已不含它们，Google 会自行淘汰 |
+| Crawled – currently not indexed | 2 | `/rss.xml`、`/zh/rss.xml` | ✅ **无需修复**，RSS feed 本来就不该进网页索引，Google 抓它是为了发现内容 |
+| Discovered – currently not indexed | 2 | `/posts/how-ai-search-picks-sources/`、`/zh/posts/prompt-engineering-in-agent-era/`，两篇真文章，**Last crawled = N/A（从未被抓过）** | ✅ 文章页加「上一篇 / 下一篇」增加抓取路径；根子上靠 http 副本消失后腾出的抓取额度 |
+
+**所以 13 个未索引里只有 2 个是真问题。** 另外 11 个：8 个是 `http://` 垃圾副本（含那个 404），
+2 个是 RSS，1 个是已删内容 —— 全部是本来就该长这样，或者一个 Dashboard 开关能清掉的。
+
+**因果链有硬证据，不是推断**：Googlebot 在 8–13 Aug 之间把抓取额度花在了 7 个 `http://` 副本上
+（每个都有真实抓取时间戳），而那两篇 https 正版文章的 Last crawled 是 **N/A**。
+一个 9 天大、外链约等于零的站，抓取配额就这么点，被副本吃掉就没了。
+
+**踩过的坑**
+
+- **`/404` 返回 200**，构成软 404；canonical 还指向 `/404/`，而那个 URL 自己 307 跳回 `/404`。
+  加 `noindex` 后两个问题一并作废。（这一页当时还没被 Google 抓到，属于提前堵住。）
+- **`noindex` 必须配 `follow`，不能配 `nofollow`。** 两件事是独立的：「别收录这页」不等于
+  「别顺着这页往下爬」。`BaseHead.astro` 已从 `nofollow` 改成 `follow`。
+- **`LangSwitch` 里"目标语言不存在就渲染禁用文本"的防御是对的，是调用方没传对** ——
+  `404.astro` 吃了 `BaseLayout` 的默认 `alternates=[...LOCALES]`，链出了不存在的 `/zh/404/`。
+  Google 还没抓到它，属于提前修。`scripts/verify-build.mjs` 加了第三段检查兜住这类回归：
+  扫描构建产物里所有站内链接，指向不存在的页面就构建失败。
+
+**两条猜错的归因，和为什么会猜错**
+
+先按分桶计数推断，猜 "Crawled – not indexed" 是 `/archive/` + `/zh/archive/`（归档页正文只有
+267 字符、和首页 100% 重合，数量也正好对上 2），据此给归档页加了 noindex 并移出 sitemap。
+拉到真实 URL 后发现是两个 **RSS feed**，而归档页**一直在被正常收录** —— 那个改动等于主动
+deindex 一个健康页面，是净负面，已回滚。同理 "Not found" 猜的 `/zh/404/` 也不是真凶。
+
+教训不是"别推断"，是**推断和证据必须在文档里区分开，且拿到证据后要回头改判**。
+`HOME_RECENT_POSTS` 保留（首页截断本身是标准做法，文章多了必然要做），但不再据它决定
+归档页收不收录 —— 重复是真的，Google 并没有因此惩罚谁，为一个没被报告的问题动手是投机。
+
+**下次看报告时第一步**：GSC → 索引 → 页面 → 点开每个未索引原因 → 右侧「示例」拿 URL。
+在拿到 URL 之前不要动代码。
+
+---
+
+## K. Cloudflare Diagnostics 处置 · 2026-08-18
+
+Cloudflare 的 AI Agent Diagnostics 面板（Beta）Quick Wins 报 3/5，缺两项。
+
+| 条目 | 处置 |
+| --- | --- |
+| Content Signals | ✅ `src/pages/robots.txt.ts` 加 `Content-Signal: search=yes, ai-input=yes, ai-train=yes`，五组 user-agent 规则各一份，附三行中文注释解释三个信号。语法按 Cloudflare 官方博客核对：放在 `User-agent:` 之后、`Allow:` 之前 |
+| Markdown Negotiation | ❌ **拒绝**。它要按 `Accept: text/markdown` 做内容协商，而 `wrangler.jsonc` 是纯 assets 部署、没有 `main`，静态资源层做不了协商 —— 要为这一项引入一个 Worker，让每个请求都过一遍 JS。而它想解决的「给 AI 干净的纯文本」，站点已经用 `/llms.txt` + `/llms-full.txt` + RSS 全文覆盖了 |
+
+**为什么三项 Content Signal 全填 yes**：`Allow` 管「能不能抓」，`Content-Signal` 管「抓到之后
+能拿来干什么」，是两件事。既然 §7.2 已经逐个点名放行 GPTBot / Google-Extended，实际立场就是
+全部允许，含糊其辞没有意义。规范里省略某项明确表示「不表态」—— 对爬虫等于什么都没说。
+
+**Security Overview 面板报的三条（Bot Fight Mode / AI Labyrinth / security.txt）是 8 月 9 日的
+陈旧扫描数据**，三条在 §I 都已处置：前两条明确拒绝并留了理由，security.txt 早已上线且
+`verify-build.mjs` 有过期守卫。下次看到不要重新判断一遍。
 
 ---
 

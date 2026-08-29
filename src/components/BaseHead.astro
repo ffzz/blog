@@ -41,7 +41,13 @@ const ogImageUrl = new URL(ogImage ?? ogImagePath(locale, path), Astro.site);
 <title>{fullTitle}</title>
 <meta name="description" content={description} />
 <link rel="canonical" href={canonical} />
-{noindex && <meta name="robots" content="noindex, nofollow" />}
+{/*
+  follow 而不是 nofollow：这两件事是独立的 —— "别收录这一页"不等于
+  "别顺着这一页往下爬"。归档页正是这种情况：它自己没有独立收录价值
+  （内容全是首页的重复），但它是通往每一篇旧文章的抓取路径，nofollow
+  会把这条路径掐断，为省一点抓取预算反而把文章埋得更深。
+*/}
+{noindex && <meta name="robots" content="noindex, follow" />}
 
 {/* hreflang：只输出实际存在的语言版本。PRD §6。 */}
 {

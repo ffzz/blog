@@ -23,15 +23,20 @@ import { existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { SITE_ORIGIN } from '../src/site-origin.mjs';
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
 
+// 所有 .html 而不只是 index.html —— 404.html 直接躺在 dist 根下，
+// 只收 index.html 会把它整个漏掉，而它恰恰是最容易出死链的一页
+// （静态托管只有一份 404，它要同时服务两种语言）。
 async function* walk(dir) {
   if (!existsSync(dir)) return;
   for (const e of await readdir(dir, { withFileTypes: true })) {
     const p = join(dir, e.name);
     if (e.isDirectory()) yield* walk(p);
-    else if (e.name === 'index.html') yield p;
+    else if (e.name.endsWith('.html')) yield p;
   }
 }
 
@@ -105,3 +110,69 @@ if (daysLeft < RENEW_WINDOW_DAYS) {
 }
 
 console.log(`✓ security.txt 有效，${daysLeft} 天后过期。`);
+
+/*
+ * 站内死链守卫。
+ *
+ * 2026-08-18 GSC 报告里的 "Not found (404)" 追到源头是 /zh/404/：静态托管
+ * 只有一份 404.html，它却拿着 alternates=['en','zh'] 渲染，于是 hreflang 和
+ * 语言切换器都指向了一个根本不存在的页面。LangSwitch 里明明写了"目标语言不
+ * 存在就渲染禁用文本"的防御 —— 防御是对的，调用方没传对。这类 bug 在 review
+ * 里几乎看不见，但在构建产物上是完全静态可判定的。
+ *
+ * 不查的话，代价是等 Googlebot 抓到、再等一周报告出来才知道。所以和上面两段
+ * 一样：让它在构建期显式炸掉。
+ */
+const IGNORED_HREF = /^(#|mailto:|tel:|data:|javascript:)/;
+
+/** 一个站内路径在 dist 里可能对应的文件。命中任意一个就算存在。 */
+function candidates(pathname) {
+  const clean = pathname.replace(/^\/+/, '').replace(/\/+$/, '');
+  if (clean === '') return [join(DIST, 'index.html')];
+  // 有扩展名的按原样找（/rss.xml、/llms.txt）；没有的既可能是目录页
+  // （/about/ → about/index.html）也可能是平铺文件（/404/ → 404.html）,
+  // 因为 Cloudflare 的 auto-trailing-slash 两种都能服务。
+  if (/\.[a-z0-9]+$/i.test(clean)) return [join(DIST, clean)];
+  return [join(DIST, clean, 'index.html'), join(DIST, `${clean}.html`)];
+}
+
+const HREF = /(?:href|src)="([^"]*)"/g;
+const deadLinks = [];
+
+for await (const file of walk(DIST)) {
+  const html = await readFile(file, 'utf8');
+  const seen = new Set();
+  for (const [, raw] of html.matchAll(HREF)) {
+    // 内联脚本里的模板串（搜索结果用的 href="${t.url}"）不是真链接。
+    if (!raw || raw.includes('${') || IGNORED_HREF.test(raw)) continue;
+
+    let pathname;
+    if (raw.startsWith('/')) {
+      pathname = raw;
+    } else if (raw.startsWith(SITE_ORIGIN)) {
+      pathname = raw.slice(SITE_ORIGIN.length) || '/';
+    } else {
+      continue; // 站外链接不归这里管
+    }
+    pathname = pathname.split(/[?#]/)[0];
+    if (seen.has(pathname)) continue;
+    seen.add(pathname);
+
+    if (!candidates(pathname).some(existsSync)) {
+      deadLinks.push({ file: file.replace(`${DIST}/`, ''), href: raw });
+    }
+  }
+}
+
+if (deadLinks.length > 0) {
+  console.error(
+    `\n✗ 发现 ${deadLinks.length} 条指向不存在页面的站内链接：\n` +
+      deadLinks.map(({ file, href }) => `  - ${file} → ${href}`).join('\n') +
+      '\n\n每一条都会变成 Googlebot 抓到的一个 404，白白吃掉抓取预算。\n' +
+      '常见原因：给 BaseLayout 传了默认的 alternates（两种语言全集），' +
+      '但该页面实际只有一种语言版本 —— 显式传 alternates={[...]} 即可。\n',
+  );
+  process.exit(1);
+}
+
+console.log('✓ 站内链接全部指向存在的页面。');

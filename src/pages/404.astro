@@ -5,12 +5,24 @@ import { localeUrl } from '../lib/i18n';
 import { t } from '../lib/ui';
 
 // 静态托管只会有一个 404.html，它无从得知访客期望的语言，
-// 所以两种语言都给出 —— 而不是猜一个。
+// 所以下面正文两种语言都给出 —— 而不是猜一个。
+//
+// 但这只是**正文**双语，页面本身仍然只有 en 一个版本：/zh/404/ 不存在。
+// 所以 alternates 必须显式传 ['en']，不能吃 BaseLayout 的默认全集 ——
+// 否则 hreflang 和语言切换器会一起指向 /zh/404/ 这个死链（2026-08-18
+// GSC 报告里的 "Not found (404)" 就是这么来的）。verify-build.mjs 现在
+// 会在构建期挡住这类回归。
+//
+// noindex：Cloudflare 把这个文件当作 404 响应体，但 /404 这个路径本身
+// 是 200，构成软 404。canonical 也指向会 307 跳转的 /404/。加 noindex
+// 后两个问题一并作废，而 follow 保证访客常走的返回首页链接仍被跟随。
 ---
 
 <BaseLayout
   locale="en"
   path="404"
+  alternates={['en']}
+  noindex
   title={t('en', 'notFoundTitle')}
   description={t('en', 'notFoundBody')}
 >

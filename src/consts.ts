@@ -157,6 +157,16 @@ export const EMAIL_SUBSCRIBE_ENABLED = false;
 /** 标签下少于此数量的文章时不生成独立页面，避免 Google 判定薄内容。PRD §4.2。 */
 export const TAG_PAGE_MIN_POSTS = 3;
 
+/**
+ * 首页最多列这么多篇，余下的交给归档页。
+ *
+ * 这也是归档页开始有独立价值的那个点 —— 在此之前两个页面列的是同一批链接。
+ * 曾经据此给归档页加过 noindex，2026-08-18 的 GSC 数据推翻了那个判断：
+ * 归档页本来就在被正常收录，主动 deindex 只会白白少一个已索引页面。
+ * 重复本身是真的，但 Google 并没有因此惩罚谁，所以只保留截断，不做护栏。
+ */
+export const HOME_RECENT_POSTS = 5;
+
 /** 内容分型。技术文章承担 SEO 流量，随笔建立个人连接。PRD §4.1。 */
 export const COLLECTIONS = ['posts', 'notes'] as const;
 export type CollectionName = (typeof COLLECTIONS)[number];
