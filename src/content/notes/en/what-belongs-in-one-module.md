@@ -5,7 +5,7 @@ pubDate: 2026-08-20
 tags: ['programming-thinking', 'design-principles', 'typescript']
 ---
 
-> The second of ten notes in the Programming Thinking series. The case the series is built on is in the opening essay.
+> The second of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era).
 
 This note is about cohesion: what earns a handful of elements the right to live in the same module. Start with the kind of code nobody defends.
 
@@ -147,7 +147,7 @@ This criterion and the one used for grading land in the same place, approached f
 
 ## The scale measures reasons, not resemblance
 
-The opening essay cites a study [3] in which 163 students labelled cohesion and coupling levels for modules in the same mid-sized Fortran program and disagreed with each other at length. That is not a failure of the students. The scale describes the reason things are together, and that reason depends on which system the code lives in, who maintains it, and where it is heading next.
+The [opening essay](/notes/programming-taste-in-the-agent-era) cites a study [3] in which 163 students labelled cohesion and coupling levels for modules in the same mid-sized Fortran program and disagreed with each other at length. That is not a failure of the students. The scale describes the reason things are together, and that reason depends on which system the code lives in, who maintains it, and where it is heading next.
 
 I used to think of cohesion as a continuous quantity: higher is better, no steps in between. After reading the 1974 paper I changed that to six ordered levels, and code like `RefundHandler`, whose name similarity is about as high as it gets, lands in the lower half.
 

@@ -5,7 +5,7 @@ pubDate: 2026-08-20
 tags: ['programming-thinking', 'design-principles', 'typescript']
 ---
 
-> The third of ten notes in the Programming Thinking series. The case the series is built on is in the opening essay.
+> The third of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era).
 
 I used to keep a cheap rule in my head: the more a module imports, the more coupled it is. Swap a direct call for an event and two imports disappear, the constructor gets shorter, and the result looks a lot like decoupling.
 
@@ -126,7 +126,7 @@ Once the connections are visible, they need a direction. I keep three rules here
 
 Start with cycles. A depends on B, B depends on C, C depends on A, and the three modules now behave like one module when it comes to change: touch one and all three need verifying again. Cycles are one of the few structural problems a tool can find for you. Both `madge` and `dependency-cruiser` do it.
 
-Then direction. Dependencies should point toward the more stable side, where stable means depended on by many and depending on few, and therefore expensive to change. `Money` can be depended on by all four channels; it should not know about any specific channel. Wire it the other way and adding a channel means editing `Money`, where two of the four invariants listed in the opening essay also live.
+Then direction. Dependencies should point toward the more stable side, where stable means depended on by many and depending on few, and therefore expensive to change. `Money` can be depended on by all four channels; it should not know about any specific channel. Wire it the other way and adding a channel means editing `Money`, where two of the four invariants listed in the [opening essay](/notes/programming-taste-in-the-agent-era) also live.
 
 Last, visibility. The connections in this note can be reordered by how much a tool helps you when the convention changes:
 
