@@ -33,6 +33,7 @@
     "@types/markdown-it": "^14.1.2",
     "@types/sanitize-html": "^2.16.1",
     "pagefind": "^1.5.2",
+    "subset-font": "^2.7.0",
     "typescript": "^7.0.2",
     "wrangler": "^4.118.0"
   }

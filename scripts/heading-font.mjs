@@ -10,10 +10,15 @@
  * 后者也要收，因为 P1-5 的 OG 图渲染会把 description 画成图里的可见文字，
  * 用同一份子集，不必再为构建期渲染单独维护第二份字体资产。
  *
- * 做法：扫出这些文本里出现过的中文字符，交给 Google Fonts 的
- * `text=` 参数做服务端精确子集，把结果 woff2 落到 public/fonts/ 并提交。
- * 这样构建期不需要 fonttools、不需要 86MB 的 @fontsource 依赖、
- * 也不需要联网 —— Cloudflare Workers Builds 只跑 Node。
+ * 做法：扫出这些文本里出现过的中文字符，从 Google Fonts 取字体，再用
+ * subset-font（harfbuzz 的 WASM 版）在本地裁成精确子集，落到 public/fonts/ 并提交。
+ * 全程 Node，不需要 fonttools，也不需要 86MB 的 @fontsource 依赖。
+ *
+ * 为什么不直接用 Google Fonts 的 `text=` 参数做服务端子集：2026-08-30 实测，
+ * 那个端点已经失效。请求 50 字、150 字、523 字各三次，成功时返回的都是同一个
+ * 6,247,900 字节的完整字体，失败时是 504。也就是说它要么把整包字体给你，
+ * 要么不给 —— 靠它做子集，等于把 6 MB 推上线（PRD §7.4 的预算是 80 KB）。
+ * 现在 gstatic 的返回值只被当作源字体，裁剪一定在本地发生。
  *
  *   npm run fonts          重新生成子集（内容有新标题/描述字时手动跑）
  *   npm run fonts:check    校验已提交的子集是否覆盖当前全部用字
@@ -25,6 +30,7 @@ import { readFile, readdir, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import subsetFont from 'subset-font';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT = join(ROOT, 'src/content');
@@ -104,6 +110,57 @@ async function collectSubsetText() {
 const readManifest = async () =>
   existsSync(MANIFEST) ? JSON.parse(await readFile(MANIFEST, 'utf8')) : null;
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * 带重试的 fetch。
+ *
+ * fonts.gstatic.com 的字体端点 2026-08-30 起频繁返回 504，而重试通常就能拿到 ——
+ * 连续三次部署都是首跑 504、重跑即过。把重试收进脚本，本地和 CI 都受益。
+ * 只重试 5xx 与网络错误；4xx 是请求本身的问题，重试没有意义。
+ */
+async function fetchWithRetry(url, label, retries = 4) {
+  let lastError;
+  for (let attempt = 1; attempt <= retries; attempt += 1) {
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': UA } });
+      if (res.ok) return res;
+      lastError = new Error(`${label} 请求失败：HTTP ${res.status} ${res.statusText}`);
+      if (res.status < 500) throw lastError;
+    } catch (e) {
+      lastError = e;
+      // 4xx 已经在上一步 throw，这里再拦一次是为了不把它当成可重试的错误
+      if (/HTTP [45]\d\d/.test(e.message) && !/HTTP 5\d\d/.test(e.message)) throw e;
+    }
+    if (attempt < retries) {
+      console.warn(`  ${label} 第 ${attempt} 次失败（${lastError.message}），4 秒后重试`);
+      await sleep(4000);
+    }
+  }
+  throw lastError;
+}
+
+/**
+ * 裁剪结果的校验。
+ *
+ * 用每字字节数而不是总大小当判据：字集随文章增长，总大小本来就会涨，
+ * 而一次正常的裁剪稳定在 200 字节/字以内（523 字实测 89 KB，175 字节/字）。
+ * 整包字体是 6.2 MB、11,946 字节/字，差两个数量级，阈值取 1000 留足余量。
+ */
+function validateSubset(bytes, charCount) {
+  if (bytes.length === 0) {
+    throw new Error('裁剪结果为空，源字体可能不是有效字体。');
+  }
+  const perChar = bytes.length / charCount;
+  if (perChar > 1000) {
+    throw new Error(
+      `本地裁剪没有生效：${charCount} 字生成了 ${(bytes.length / 1024).toFixed(1)} KB` +
+        `（每字 ${Math.round(perChar)} 字节，正常应在 200 字节以内）。\n` +
+        '这通常是拿到了整包字体。不要提交，先查 subset-font 这一步。',
+    );
+  }
+}
+
 async function generate(chars) {
   if (chars.length === 0) {
     console.log('没有中文标题字符，跳过子集生成。');
@@ -114,17 +171,19 @@ async function generate(chars) {
     `https://fonts.googleapis.com/css2?family=${FAMILY}:wght@${WEIGHT}` +
     `&text=${encodeURIComponent(chars.join(''))}`;
 
-  const css = await fetch(url, { headers: { 'User-Agent': UA } });
-  if (!css.ok) throw new Error(`Google Fonts CSS 请求失败：${css.status} ${css.statusText}`);
-
+  const css = await fetchWithRetry(url, 'Google Fonts CSS');
   const cssText = await css.text();
   const fontUrl = cssText.match(/url\((https:\/\/fonts\.gstatic\.com[^)]+)\)/)?.[1];
   if (!fontUrl) throw new Error(`未能从返回的 CSS 中解析出 woff2 地址：\n${cssText.slice(0, 400)}`);
 
-  const font = await fetch(fontUrl, { headers: { 'User-Agent': UA } });
-  if (!font.ok) throw new Error(`woff2 下载失败：${font.status} ${font.statusText}`);
+  const source = await fetchWithRetry(fontUrl, '字体下载');
+  const sourceBytes = Buffer.from(await source.arrayBuffer());
 
-  const bytes = Buffer.from(await font.arrayBuffer());
+  // 源字体可能是精确子集，也可能是整包（见文件头注释）。两种情况都在本地再裁一次，
+  // 结果只取决于这里的字符表，不取决于 Google Fonts 那天返回了什么。
+  const subset = await subsetFont(sourceBytes, chars.join(''), { targetFormat: 'woff2' });
+  const bytes = Buffer.from(subset);
+  validateSubset(bytes, chars.length);
   await mkdir(OUT_DIR, { recursive: true });
   await writeFile(WOFF2, bytes);
   await writeFile(
