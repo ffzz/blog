@@ -122,8 +122,8 @@ Refunds run through four channels (back to the original card, wallet balance, ba
 ## The series
 
 - Opening · Seven Design Principles Are Not a Pyramid
-- Cohesion · [The test is "must change together", not "looks related"](/notes/what-belongs-in-one-module)
-- Coupling · [Three You Cannot See, and a Dependency That Moved House](/notes/three-invisible-couplings)
+- Cohesion · [The test is "must change together", not "looks related"](/notes/what-belongs-in-one-module/)
+- Coupling · [Three You Cannot See, and a Dependency That Moved House](/notes/three-invisible-couplings/)
 - Single responsibility · A responsibility is not a task, it is a person who will come asking
 - Open-closed · You can only be open along the axis you guessed right
 - Liskov substitution · A matching signature does not mean it can be swapped in

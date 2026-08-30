@@ -5,7 +5,7 @@ pubDate: 2026-08-20
 tags: ['programming-thinking', 'design-principles', 'typescript']
 ---
 
-> The second of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era).
+> The second of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era/).
 >
 > AI can write more of our code every month, which makes the judgement we have built up worth more, not less. This series is me taking these ageing principles back off the shelf, checking where each one came from, where it holds, and where it breaks. Reviewing the old to understand the new.
 
@@ -149,7 +149,7 @@ This criterion and the one used for grading land in the same place, approached f
 
 ## The scale measures reasons, not resemblance
 
-The [opening essay](/notes/programming-taste-in-the-agent-era) cites a study [3] in which 163 students labelled cohesion and coupling levels for modules in the same mid-sized Fortran program and disagreed with each other at length. That is not a failure of the students. The scale describes the reason things are together, and that reason depends on which system the code lives in, who maintains it, and where it is heading next.
+The [opening essay](/notes/programming-taste-in-the-agent-era/) cites a study [3] in which 163 students labelled cohesion and coupling levels for modules in the same mid-sized Fortran program and disagreed with each other at length. That is not a failure of the students. The scale describes the reason things are together, and that reason depends on which system the code lives in, who maintains it, and where it is heading next.
 
 I used to think of cohesion as a continuous quantity: higher is better, no steps in between. After reading the 1974 paper I changed that to six ordered levels, and code like `RefundHandler`, whose name similarity is about as high as it gets, lands in the lower half.
 

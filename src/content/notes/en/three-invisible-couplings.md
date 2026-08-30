@@ -5,7 +5,7 @@ pubDate: 2026-08-20
 tags: ['programming-thinking', 'design-principles', 'typescript']
 ---
 
-> The third of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era).
+> The third of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era/).
 >
 > AI can write more of our code every month, which makes the judgement we have built up worth more, not less. This series is me taking these ageing principles back off the shelf, checking where each one came from, where it holds, and where it breaks. Reviewing the old to understand the new.
 
@@ -128,7 +128,7 @@ Once the connections are visible, they need a direction. I keep three rules here
 
 Start with cycles. A depends on B, B depends on C, C depends on A, and the three modules now behave like one module when it comes to change: touch one and all three need verifying again. Cycles are one of the few structural problems a tool can find for you. Both `madge` and `dependency-cruiser` do it.
 
-Then direction. Dependencies should point toward the more stable side, where stable means depended on by many and depending on few, and therefore expensive to change. `Money` can be depended on by all four channels; it should not know about any specific channel. Wire it the other way and adding a channel means editing `Money`, where two of the four invariants listed in the [opening essay](/notes/programming-taste-in-the-agent-era) also live.
+Then direction. Dependencies should point toward the more stable side, where stable means depended on by many and depending on few, and therefore expensive to change. `Money` can be depended on by all four channels; it should not know about any specific channel. Wire it the other way and adding a channel means editing `Money`, where two of the four invariants listed in the [opening essay](/notes/programming-taste-in-the-agent-era/) also live.
 
 Last, visibility. The connections in this note can be reordered by how much a tool helps you when the convention changes:
 
