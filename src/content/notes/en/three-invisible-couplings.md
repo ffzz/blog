@@ -1,11 +1,13 @@
 ---
-title: 'Three Couplings You Cannot See, and a Dependency That Moved House'
+title: 'Coupling: Three You Cannot See, and a Dependency That Moved House'
 description: "Coupling often gets reduced to counting imports. That holds up on the textbook violations and fails on production code. Replace a direct call with an event bus and two imports disappear, but the dependency has not gone anywhere. It has moved out of the compiler's sight."
 pubDate: 2026-08-20
 tags: ['programming-thinking', 'design-principles', 'typescript']
 ---
 
 > The third of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era).
+>
+> AI can write more of our code every month, which makes the judgement we have built up worth more, not less. This series is me taking these ageing principles back off the shelf, checking where each one came from, where it holds, and where it breaks. Reviewing the old to understand the new.
 
 I used to keep a cheap rule in my head: the more a module imports, the more coupled it is. Swap a direct call for an event and two imports disappear, the constructor gets shorter, and the result looks a lot like decoupling.
 

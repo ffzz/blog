@@ -5,6 +5,8 @@ pubDate: 2026-08-19
 tags: ['programming-thinking', 'design-principles', 'ai']
 ---
 
+> AI can write more of our code every month, which makes the judgement we have built up worth more, not less. This series is me taking these ageing principles back off the shelf, checking where each one came from, where it holds, and where it breaks. Reviewing the old to understand the new.
+
 These are my notes on the seven principles of object-oriented design.
 
 They started with a question I could not answer properly. Agents write code faster than I do now, and most of the time I cannot fault what they produce, so are thirty-year-old principles still worth the hours? Yes, though not for the reason you would expect. The seven give contradictory advice about the same piece of code, and which one to follow depends on guessing which way that code will grow. That guess cannot be outsourced yet.
@@ -121,7 +123,7 @@ Refunds run through four channels (back to the original card, wallet balance, ba
 
 - Opening · Seven Design Principles Are Not a Pyramid
 - Cohesion · [The test is "must change together", not "looks related"](/notes/what-belongs-in-one-module)
-- Coupling · [Three Couplings You Cannot See, and a Dependency That Moved House](/notes/three-invisible-couplings)
+- Coupling · [Three You Cannot See, and a Dependency That Moved House](/notes/three-invisible-couplings)
 - Single responsibility · A responsibility is not a task, it is a person who will come asking
 - Open-closed · You can only be open along the axis you guessed right
 - Liskov substitution · A matching signature does not mean it can be swapped in

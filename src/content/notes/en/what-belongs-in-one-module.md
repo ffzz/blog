@@ -6,6 +6,8 @@ tags: ['programming-thinking', 'design-principles', 'typescript']
 ---
 
 > The second of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era).
+>
+> AI can write more of our code every month, which makes the judgement we have built up worth more, not less. This series is me taking these ageing principles back off the shelf, checking where each one came from, where it holds, and where it breaks. Reviewing the old to understand the new.
 
 This note is about cohesion: what earns a handful of elements the right to live in the same module. Start with the kind of code nobody defends.
 

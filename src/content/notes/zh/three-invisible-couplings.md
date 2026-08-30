@@ -6,6 +6,8 @@ tags: ['programming-thinking', 'design-principles', 'typescript']
 ---
 
 > 《编程思想》系列第 3/10 篇。这一季的立论在[序章](/zh/notes/programming-taste-in-the-agent-era)。
+>
+> AI 能替我们写的代码越来越多，程序员自己攒下的经验和底层判断因此更值钱。这个系列是我把这些上了年纪的原则重新翻出来，一条条查它们的出处、边界和失效场景的记录。温故而知新。
 
 我以前有个很省事的判断：一个模块 import 得越多，耦合就越高。直接调用改成事件之后，两个 import 消失，构造函数也短了一截，看上去很像解耦。
 

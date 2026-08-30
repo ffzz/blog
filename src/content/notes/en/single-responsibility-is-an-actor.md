@@ -6,6 +6,8 @@ tags: ['programming-thinking', 'design-principles', 'typescript']
 ---
 
 > The fourth of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era/).
+>
+> AI can write more of our code every month, which makes the judgement we have built up worth more, not less. This series is me taking these ageing principles back off the shelf, checking where each one came from, where it holds, and where it breaks. Reviewing the old to understand the new.
 
 Finance asked for a change: round refund amounts down to the cent instead of half-up. The change itself was three lines. On the day it shipped, the support console started showing two extra decimal places, and the amount format in the audit log changed with it.
 
