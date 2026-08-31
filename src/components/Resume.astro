@@ -1,0 +1,1146 @@
+---
+import type { Locale } from '../consts';
+import { CONTACT, RESUME } from '../data/resume';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { ogImagePath } from '../lib/og';
+
+/*
+ * 简历页。内容与文案全部来自 src/data/resume.ts，这里只负责画。
+ *
+ * ── 三个和站内其他页面不同的决定 ────────────────────────────────
+ *
+ * 1) 不 import prose.css。
+ *    那套样式是给 Markdown 正文的，这一页是排版过的信息密度页面，
+ *    段落、卡片、图表各有各的节奏，套上文章排版反而处处要覆盖。
+ *
+ * 2) noindex，且 og:image 复用首页那张。
+ *    简历带真名等身份信息，不进搜索引擎（robots.txt 里另外挡了训练型爬虫，
+ *    见 src/pages/robots.txt.ts 的注释）。而 BaseHead 是**无条件**输出
+ *    og:image 的，路径按 ogImagePath(locale, path) 约定 —— 这一页没进
+ *    og-pages.ts，那张图根本不会生成，不显式传就是个 404。而且
+ *    verify-build.mjs 的死链检查只扫 href/src，扫不到 meta content，
+ *    构建不会报错。所以这里显式指回首页那张已存在的图。
+ *
+ * 3) 四张图用 CSS 定位的条，不用 SVG。
+ *    条的位置是百分比，CSS 算得了；而 SVG 里的文字会跟着 viewBox 一起缩放，
+ *    375px 窄屏上年份标签会小到读不了，还选不中、搜不到。CSS 条里的字是
+ *    真文本，换行、缩放、朗读都是浏览器的默认行为，不需要 role="img"
+ *    再补一套替代文本（那反而会把可读的文本对屏幕阅读器藏起来）。
+ *    SVG 只用在 icon 上 —— 那才是 SVG 该干的事。
+ */
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const r = RESUME[locale];
+
+// ── 时间轴 ─────────────────────────────────────────────────────
+// 甘特图与技术栈条共用同一根时间轴，两张图因此可以上下对照着看。
+
+/** `YYYY-MM` → 小数年。2021-11 → 2021.833 */
+const toYear = (ym: string): number => {
+  const [y, m] = ym.split('-').map(Number);
+  return y + (m - 1) / 12;
+};
+
+// 构建时间。"至今"的条会随每次构建一起长，这是想要的行为。
+const now = new Date();
+const nowYear = now.getUTCFullYear() + now.getUTCMonth() / 12;
+
+const axisFrom = Math.floor(Math.min(...r.timeline.map((t) => toYear(t.start))));
+const axisTo = Math.ceil(nowYear);
+const span = axisTo - axisFrom;
+
+/** 一段时间在轴上的位置，返回百分比。end 为 null 表示至今。 */
+const place = (start: string, end: string | null) => {
+  const from = toYear(start);
+  const to = end ? toYear(end) : nowYear;
+  return {
+    left: (((from - axisFrom) / span) * 100).toFixed(2),
+    width: (((to - from) / span) * 100).toFixed(2),
+  };
+};
+
+// 刻度均匀分布，所以标签行用 flex + space-between 就能精确对位，
+// 不需要给每个标签算 left 百分比 —— 那样首尾两个还会各溢出半个标签宽。
+const ticks = Array.from({ length: span + 1 }, (_, i) => axisFrom + i);
+
+const fmtMonth = (ym: string) => {
+  const [y, m] = ym.split('-');
+  return `${m}/${y}`;
+};
+const fmtRange = (start: string, end: string | null) =>
+  `${fmtMonth(start)} – ${end ? fmtMonth(end) : r.ui.present}`;
+
+const gantt = r.timeline.map((t) => ({ ...t, ...place(t.start, t.end) }));
+const stacks = r.stacks.map((s) => ({
+  ...s,
+  ...place(s.from, s.to),
+  range: `${s.from.slice(0, 4)} – ${s.to ? s.to.slice(0, 4) : r.ui.present}`,
+}));
+
+/** 链接显示成主机名，比裸 URL 好读。 */
+const host = (url: string) => new URL(url).host.replace(/^www\./, '');
+
+// ── 图标 ───────────────────────────────────────────────────────
+// 手写的一小套线性图标，统一 24×24、stroke=currentColor。
+// 需要的不到十个，为此装一整个图标库不划算。
+const ICON = {
+  download: '<path d="M12 3v11m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
+  mail: '<path d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="m3.5 6.5 8.5 6 8.5-6"/>',
+  chevron: '<path d="m9 6 6 6-6 6"/>',
+  external:
+    '<path d="M14 4h6v6M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  pulse: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+  sparkle: '<path d="m12 3 2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/>',
+  briefcase:
+    '<path d="M4 8h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><path d="M9 8V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+  code: '<path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 4l-3 16"/>',
+  // 网格而不是「层叠」形：层叠形在 1em 大小下跟下面的学位帽几乎一模一样，
+  // 两个章节图标撞脸就等于没有图标。
+  grid: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>',
+  cap: '<path d="m12 4 10 5-10 5L2 9z"/><path d="M6 11v5c0 1.2 2.7 2.5 6 2.5s6-1.3 6-2.5v-5"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+} as const;
+---
+
+<BaseLayout
+  {locale}
+  path="resume"
+  title={r.title}
+  description={r.description}
+  noindex
+  ogImage={ogImagePath(locale, '')}
+>
+  <article class="resume">
+    {/* ── 页头 ─────────────────────────────────────────────── */}
+    <header class="masthead">
+      <p class="badge">
+        <span class="dot" aria-hidden="true"></span>{r.availability}
+      </p>
+      <h1>{r.name}</h1>
+      <p class="positioning">{r.positioning}</p>
+      <p class="facts">{r.location} · {r.workRights}</p>
+
+      <div class="actions">
+        <a class="btn btn-primary" href={CONTACT.resumePdf} download>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"
+            ><Fragment set:html={ICON.download} /></svg
+          >
+          {r.ui.downloadResume}
+          <span class="btn-hint">{r.ui.downloadHint}</span>
+        </a>
+        <a class="btn" href={`mailto:${CONTACT.email}`}>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"
+            ><Fragment set:html={ICON.mail} /></svg
+          >
+          {r.ui.emailMe}
+        </a>
+      </div>
+
+      <p class="elsewhere">
+        <a href={CONTACT.linkedin} rel="me">{CONTACT.linkedinLabel}</a>
+        <a href={CONTACT.github} rel="me">{CONTACT.githubLabel}</a>
+      </p>
+    </header>
+
+    {/* ── 数字概览 ─────────────────────────────────────────── */}
+    <section>
+      <h2 class="section-head">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"
+          ><Fragment set:html={ICON.chart} /></svg
+        >{r.heading.stats}
+      </h2>
+      <dl class="stats">
+        {
+          r.stats.map((s) => (
+            <div class="stat">
+              <dt>{s.label}</dt>
+              <dd>{s.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    {/* ── 目前状态 ─────────────────────────────────────────── */}
+    <section>
+      <h2 class="section-head">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"
+          ><Fragment set:html={ICON.pulse} /></svg
+        >{r.heading.status}
+      </h2>
+      <div class="lede">{r.status.map((p) => <p>{p}</p>)}</div>
+    </section>
+
+    {/* ── AI 实践：页面重心 ────────────────────────────────── */}
+    <section>
+      <h2 class="section-head">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"
+          ><Fragment set:html={ICON.sparkle} /></svg
+        >{r.heading.ai}
+      </h2>
+      <p class="kicker">{r.kicker.ai}</p>
+      <div class="lede"><p>{r.aiIntro}</p></div>
+
+      <figure class="chart">
+        <ol class="layers">
+          {
+            r.aiLayers.map((l, i) => (
+              <li style={`--depth:${i}`}>
+                <span class="layer-num" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <div>
+                  <b>{l.name}</b>
+                  <p>{l.desc}</p>
+                </div>
+              </li>
+            ))
+          }
+        </ol>
+        <figcaption>{r.ui.layersCaption}</figcaption>
+      </figure>
+
+      <div class="cards">
+        {
+          r.aiCases.map((c) => (
+            <details class="card" open={c.current}>
+              <summary>
+                <div class="card-top">
+                  <h3>{c.name}</h3>
+                  <span class="status">{c.status}</span>
+                </div>
+                <p class="card-lede">{c.summary}</p>
+                <svg class="chev icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <Fragment set:html={ICON.chevron} />
+                </svg>
+              </summary>
+              <div class="card-body">
+                <ul>
+                  {c.points.map((p) => (
+                    <li>{p}</li>
+                  ))}
+                </ul>
+                <p class="tags">
+                  <span class="tags-label">{r.ui.stackLabel}</span>
+                  {c.stack.map((s) => (
+                    <span class="tag">{s}</span>
+                  ))}
+                </p>
+                {c.href && (
+                  <a class="out" href={c.href}>
+                    {host(c.href)}
+                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <Fragment set:html={ICON.external} />
+                    </svg>
+                  </a>
+                )}
+              </div>
+            </details>
+          ))
+        }
+      </div>
+
+      <figure class="chart">
+        <ol class="pipeline">
+          {
+            r.pipeline.map((step, i) => (
+              <li>
+                {i > 0 && (
+                  <svg class="pipe-arrow icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <Fragment set:html={ICON.chevron} />
+                  </svg>
+                )}
+                <span class="pipe-node">{step}</span>
+              </li>
+            ))
+          }
+        </ol>
+        <figcaption>{r.ui.pipelineCaption}</figcaption>
+      </figure>
+    </section>
+
+    {/* ── 工作经历 ─────────────────────────────────────────── */}
+    <section>
+      <h2 class="section-head">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"
+          ><Fragment set:html={ICON.briefcase} /></svg
+        >{r.heading.timeline}
+      </h2>
+      <p class="kicker">{r.kicker.timeline}</p>
+
+      <figure class="chart" style={`--span:${span}`}>
+        <ul class="gantt">
+          {
+            gantt.map((t) => (
+              <li>
+                <div class="bar-meta">
+                  <b>{t.org}</b>
+                  <small>{fmtRange(t.start, t.end)}</small>
+                </div>
+                <div class="track">
+                  <span
+                    class:list={['bar', { current: t.current }]}
+                    style={`left:${t.left}%;width:${t.width}%`}
+                  />
+                </div>
+              </li>
+            ))
+          }
+        </ul>
+        <div class="ruler" aria-hidden="true">
+          <div />
+          <div class="ruler-ticks">
+            {ticks.map((y) => (
+              <span>{y}</span>
+            ))}
+          </div>
+        </div>
+        <figcaption>{r.ui.ganttCaption}</figcaption>
+      </figure>
+
+      <div class="cards">
+        {
+          r.timeline.map((t) => (
+            <details class="card" open={t.current}>
+              <summary>
+                <div class="card-top">
+                  <h3>{t.org}</h3>
+                  <span class="status">{fmtRange(t.start, t.end)}</span>
+                </div>
+                <p class="role">
+                  {t.role} · {t.city}
+                </p>
+                <p class="card-lede">{t.summary}</p>
+                <svg class="chev icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <Fragment set:html={ICON.chevron} />
+                </svg>
+              </summary>
+              <div class="card-body">
+                <ul>
+                  {t.points.map((p) => (
+                    <li>{p}</li>
+                  ))}
+                </ul>
+                <p class="tags">
+                  <span class="tags-label">{r.ui.stackLabel}</span>
+                  {t.stack.map((s) => (
+                    <span class="tag">{s}</span>
+                  ))}
+                </p>
+              </div>
+            </details>
+          ))
+        }
+      </div>
+    </section>
+
+    {/* ── 能力与技术栈 ─────────────────────────────────────── */}
+    <section>
+      <h2 class="section-head">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"
+          ><Fragment set:html={ICON.code} /></svg
+        >{r.heading.skills}
+      </h2>
+      <p class="kicker">{r.kicker.skills}</p>
+
+      <figure class="chart" style={`--span:${span}`}>
+        <ul class="gantt">
+          {
+            stacks.map((s) => (
+              <li>
+                <div class="bar-meta">
+                  <b>{s.label}</b>
+                  <small>{s.range}</small>
+                </div>
+                {/* 这张图的条一律用淡填充，不用甘特图那个实心的 .current：
+                    六条里有四条是「至今」，全实心整张图就糊成一片深蓝，
+                    反而看不出长短差异。是否仍在用，右边的年份区间已经写了。 */}
+                <div class="track">
+                  <span class="bar" style={`left:${s.left}%;width:${s.width}%`} />
+                </div>
+              </li>
+            ))
+          }
+        </ul>
+        <div class="ruler" aria-hidden="true">
+          <div />
+          <div class="ruler-ticks">
+            {ticks.map((y) => (
+              <span>{y}</span>
+            ))}
+          </div>
+        </div>
+        <figcaption>{r.ui.stackCaption}</figcaption>
+      </figure>
+
+      <dl class="toolbox">
+        {
+          r.toolbox.map((g) => (
+            <div>
+              <dt>{g.group}</dt>
+              <dd>
+                {g.items.map((it) => (
+                  <span class="tag">{it}</span>
+                ))}
+              </dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    {/* ── 精选项目 ─────────────────────────────────────────── */}
+    <section>
+      <h2 class="section-head">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"
+          ><Fragment set:html={ICON.grid} /></svg
+        >{r.heading.projects}
+      </h2>
+      <p class="kicker">{r.kicker.projects}</p>
+      <ul class="projects">
+        {
+          r.projects.map((p) => (
+            <li>
+              <div class="card-top">
+                <h3>{p.name}</h3>
+                <span class="status">{p.status}</span>
+              </div>
+              <p>{p.desc}</p>
+              {p.href && (
+                <a class="out" href={p.href}>
+                  {p.hrefLabel ?? host(p.href)}
+                  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <Fragment set:html={ICON.external} />
+                  </svg>
+                </a>
+              )}
+              <p class="tags">
+                {p.stack.map((s) => (
+                  <span class="tag">{s}</span>
+                ))}
+              </p>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {/* ── 教育与语言 ───────────────────────────────────────── */}
+    <section>
+      <h2 class="section-head">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"
+          ><Fragment set:html={ICON.cap} /></svg
+        >{r.heading.education}
+      </h2>
+      <ul class="education">
+        {
+          r.education.map((e) => (
+            <li>
+              <div>
+                <b>{e.degree}</b>
+                <small>{e.school}</small>
+              </div>
+              <span class="period">{e.period}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="tags">
+        {r.languages.map((l) => <span class="tag">{l}</span>)}
+      </p>
+    </section>
+
+    {/* ── 页尾 CTA ─────────────────────────────────────────── */}
+    <section class="closing">
+      <h2 class="section-head">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"
+          ><Fragment set:html={ICON.mail} /></svg
+        >{r.heading.contact}
+      </h2>
+      <div class="actions">
+        <a class="btn btn-primary" href={CONTACT.resumePdf} download>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"
+            ><Fragment set:html={ICON.download} /></svg
+          >
+          {r.ui.downloadResume}
+          <span class="btn-hint">{r.ui.downloadHint}</span>
+        </a>
+        <a class="btn" href={`mailto:${CONTACT.email}`}>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"
+            ><Fragment set:html={ICON.mail} /></svg
+          >
+          {CONTACT.email}
+        </a>
+      </div>
+      <p class="elsewhere">
+        <a href={CONTACT.linkedin} rel="me">{CONTACT.linkedinLabel}</a>
+        <a href={CONTACT.github} rel="me">{CONTACT.githubLabel}</a>
+      </p>
+    </section>
+  </article>
+</BaseLayout>
+
+<style>
+  /* ── 通用 ───────────────────────────────────────────────── */
+
+  .resume section {
+    margin-top: var(--space-3xl);
+  }
+
+  /* 页头本身已经有下内边距，再叠一个 3xl 就把首屏推空了。 */
+  .masthead + section {
+    margin-top: var(--space-2xl);
+  }
+
+  .icon {
+    width: 1em;
+    height: 1em;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* 章节标题。图标跟中文首字对齐靠 baseline 不靠 center ——
+     center 在中英混排时会让图标看起来偏高。 */
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-md);
+    font-size: var(--size-h2);
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-head .icon {
+    color: var(--brand);
+    align-self: center;
+  }
+
+  .kicker {
+    margin-top: var(--space-md);
+    font-size: var(--size-small);
+    color: var(--text-4);
+  }
+
+  .lede {
+    margin-top: var(--space-lg);
+    color: var(--text-2);
+  }
+
+  .lede p + p {
+    margin-top: var(--space-lg);
+  }
+
+  /* ── 页头 ───────────────────────────────────────────────── */
+
+  .masthead {
+    padding-block: var(--space-lg) var(--space-xl);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-md);
+    border-radius: 999px;
+    background: var(--brand-tint);
+    color: var(--brand);
+    font-size: var(--size-caption);
+    letter-spacing: var(--ls-label);
+  }
+
+  /* 呼吸灯。唯一的循环动画，reduced-motion 下由 base.css 全局压掉。 */
+  .dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: var(--brand);
+    animation: breathe 2.4s var(--ease) infinite;
+  }
+
+  @keyframes breathe {
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  .masthead h1 {
+    margin-top: var(--space-lg);
+    font-size: var(--size-h1);
+    line-height: var(--lh-display);
+  }
+
+  .positioning {
+    margin-top: var(--space-md);
+    font-size: var(--size-lead);
+    color: var(--text-2);
+    line-height: var(--lh-heading);
+  }
+
+  .facts {
+    margin-top: var(--space-md);
+    font-size: var(--size-small);
+    color: var(--text-4);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin-top: var(--space-xl);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--ivory);
+    color: var(--text-1);
+    font-size: var(--size-small);
+    text-decoration: none;
+    transition:
+      border-color var(--dur) var(--ease),
+      background var(--dur) var(--ease);
+  }
+
+  .btn:hover {
+    border-color: var(--brand);
+  }
+
+  /* 唯一一处大面积用强调色的地方。铁律 2 的 5% 预算基本都花在这里，
+     所以别的地方一律用 --brand-tint。 */
+  .btn-primary {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: var(--parchment);
+  }
+
+  .btn-primary:hover {
+    opacity: 0.88;
+  }
+
+  .btn-hint {
+    color: inherit;
+    opacity: 0.7;
+    font-size: var(--size-caption);
+  }
+
+  .elsewhere {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+    margin-top: var(--space-lg);
+    font-size: var(--size-small);
+  }
+
+  /* ── 数字卡 ─────────────────────────────────────────────── */
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-lg);
+    margin-top: var(--space-xl);
+  }
+
+  /* dt 是标签、dd 是数字，朗读顺序「交付的客户系统 —— 20+」才通顺；
+     视觉上数字要在上，所以这里翻转，而不是把 DOM 写反。 */
+  .stat {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--space-xs);
+    padding-left: var(--space-md);
+    border-left: 2px solid var(--brand-tint);
+  }
+
+  .stat dd {
+    margin: 0;
+    font-family: var(--font-serif-en);
+    font-size: var(--size-h3);
+    color: var(--brand);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--lh-heading);
+  }
+
+  .stat dt {
+    font-size: var(--size-caption);
+    color: var(--text-4);
+    line-height: var(--lh-dense);
+  }
+
+  /* ── 图表通用 ───────────────────────────────────────────── */
+
+  .chart {
+    margin: var(--space-xl) 0 0;
+  }
+
+  .chart figcaption {
+    margin-top: var(--space-lg);
+    font-size: var(--size-caption);
+    color: var(--text-4);
+    line-height: var(--lh-dense);
+  }
+
+  /* ── 条形图（甘特 + 技术栈年限，共用同一根轴） ──────────── */
+
+  .gantt {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: var(--space-md);
+  }
+
+  .gantt li,
+  .ruler {
+    display: grid;
+    grid-template-columns: 10rem minmax(0, 1fr);
+    gap: var(--space-md);
+    align-items: center;
+  }
+
+  .bar-meta {
+    display: flex;
+    flex-direction: column;
+    line-height: var(--lh-dense);
+  }
+
+  .bar-meta b {
+    font-weight: 500;
+    font-size: var(--size-small);
+  }
+
+  .bar-meta small {
+    font-size: var(--size-caption);
+    color: var(--text-4);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 年份网格线。--span 是轴上的年数，由模板算好传进来。
+     用 repeating-linear-gradient 而不是给每年画一个元素 ——
+     刻度是均匀的，一条渐变就够，DOM 里不必多出 7 个空 div。 */
+  .track {
+    position: relative;
+    height: 1.5rem;
+    border-radius: var(--radius-sm);
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--border-soft) 0 1px,
+      transparent 1px calc(100% / var(--span))
+    );
+  }
+
+  /* 填充用 --tag-bg 而不是更浅的 --brand-tint：后者(#eef2f7)贴在羊皮纸
+     (#f5f4ed)上几乎看不出边界，条的长短——这张图唯一要传达的东西——就没了。
+     --tag-bg 是本来就设计成能在羊皮纸上立住的填充色（标签用的就是它）。 */
+  .bar {
+    position: absolute;
+    inset-block: 0;
+    border-radius: var(--radius-sm);
+    background: var(--tag-bg);
+    border-left: 2px solid var(--brand);
+  }
+
+  /* 进行中的那条填实色 —— 「现在」是这张图上唯一值得用强调色的信息。 */
+  .bar.current {
+    background: var(--brand);
+    opacity: 0.85;
+  }
+
+  .ruler-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--size-label);
+    color: var(--text-4);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--ls-label);
+  }
+
+  /* ── AI 三层 ────────────────────────────────────────────── */
+
+  .layers {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: var(--space-sm);
+  }
+
+  /* 越深的层越往右缩进，读起来就是「一层压在一层上」。
+     层次靠填充色与单边竖线，不用投影（铁律 9）。 */
+  .layers li {
+    display: flex;
+    gap: var(--space-md);
+    margin-left: calc(var(--depth) * var(--space-xl));
+    padding: var(--space-md) var(--space-lg);
+    background: var(--brand-tint);
+    border-left: 2px solid var(--brand);
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+
+  .layer-num {
+    font-family: var(--font-serif-en);
+    font-size: var(--size-h3);
+    color: var(--brand);
+    line-height: 1.2;
+  }
+
+  .layers b {
+    font-weight: 500;
+    font-size: var(--size-small);
+  }
+
+  .layers p {
+    margin-top: var(--space-xs);
+    font-size: var(--size-caption);
+    color: var(--text-3);
+    line-height: var(--lh-dense);
+  }
+
+  /* ── 检索流水线 ─────────────────────────────────────────── */
+
+  .pipeline {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .pipeline li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .pipe-node {
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--ivory);
+    font-size: var(--size-caption);
+    line-height: var(--lh-dense);
+  }
+
+  .pipe-arrow {
+    color: var(--text-4);
+  }
+
+  /* ── 可展开卡片（AI 案例 + 工作经历） ──────────────────── */
+
+  .cards {
+    display: grid;
+    gap: var(--space-md);
+    margin-top: var(--space-xl);
+  }
+
+  .card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--ivory);
+  }
+
+  /* 用原生 details 而不是自己写折叠：键盘、屏幕阅读器、页内查找
+     全部是浏览器默认行为，不需要补 aria-expanded / aria-controls，
+     也不需要为此加一份运行时。 */
+  .card > summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--space-sm) var(--space-md);
+    padding: var(--space-lg);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .card > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .card > summary:hover h3 {
+    color: var(--brand);
+  }
+
+  .card-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-sm) var(--space-md);
+  }
+
+  /* 卡片标题走无衬线：这一页有十几个小标题，全用衬线会跟章节标题
+     抢层级；而且 summary 本质上是个控件，控件用无衬线更合适。 */
+  .card-top h3,
+  .projects h3 {
+    font-family: var(--font-body);
+    font-size: var(--size-body);
+    font-weight: 500;
+    transition: color var(--dur) var(--ease);
+  }
+
+  .status {
+    padding: 0 var(--space-sm);
+    border-radius: var(--radius-sm);
+    background: var(--tag-bg);
+    color: var(--brand);
+    font-size: var(--size-label);
+    letter-spacing: var(--ls-label);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .role {
+    grid-column: 1;
+    font-size: var(--size-caption);
+    color: var(--text-4);
+  }
+
+  .card-lede {
+    grid-column: 1;
+    font-size: var(--size-small);
+    color: var(--text-3);
+    line-height: var(--lh-dense);
+  }
+
+  .chev {
+    grid-row: 1;
+    grid-column: 2;
+    color: var(--text-4);
+    align-self: center;
+    transition: transform var(--dur) var(--ease);
+  }
+
+  .card[open] > summary .chev {
+    transform: rotate(90deg);
+  }
+
+  .card-body {
+    padding: 0 var(--space-lg) var(--space-lg);
+  }
+
+  .card-body ul {
+    display: grid;
+    gap: var(--space-md);
+    margin: 0;
+    padding-left: var(--space-lg);
+    font-size: var(--size-small);
+    color: var(--text-2);
+    line-height: var(--lh-dense);
+  }
+
+  .card-body li::marker {
+    color: var(--brand);
+  }
+
+  /* ── 标签 ───────────────────────────────────────────────── */
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-lg);
+  }
+
+  .tags-label {
+    font-size: var(--size-label);
+    color: var(--text-4);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+  }
+
+  /* 标签底色用实色 hex 变量，不用 rgba（铁律 8）。 */
+  .tag {
+    padding: 0 var(--space-sm);
+    border-radius: var(--radius-sm);
+    background: var(--tag-bg);
+    color: var(--text-2);
+    font-size: var(--size-caption);
+    line-height: 1.7;
+  }
+
+  .out {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-top: var(--space-lg);
+    font-size: var(--size-small);
+  }
+
+  /* ── 工具箱 ─────────────────────────────────────────────── */
+
+  .toolbox {
+    display: grid;
+    gap: var(--space-lg);
+    margin-top: var(--space-xl);
+  }
+
+  .toolbox > div {
+    display: grid;
+    grid-template-columns: 6rem minmax(0, 1fr);
+    gap: var(--space-md);
+    align-items: baseline;
+  }
+
+  .toolbox dt {
+    font-size: var(--size-label);
+    color: var(--text-4);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+  }
+
+  .toolbox dd {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin: 0;
+  }
+
+  /* ── 项目 ───────────────────────────────────────────────── */
+
+  .projects {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-md);
+    margin-top: var(--space-xl);
+  }
+
+  .projects li {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-lg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--ivory);
+  }
+
+  .projects li > p {
+    margin-top: var(--space-md);
+    font-size: var(--size-small);
+    color: var(--text-3);
+    line-height: var(--lh-dense);
+  }
+
+  /* 标签行推到卡片底部，两张卡片的标签因此横向对齐。 */
+  .projects .tags {
+    margin-top: auto;
+    padding-top: var(--space-lg);
+  }
+
+  .projects .out {
+    align-self: flex-start;
+  }
+
+  /* ── 教育 ───────────────────────────────────────────────── */
+
+  .education {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: var(--space-md);
+    margin-top: var(--space-xl);
+  }
+
+  .education li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-sm) var(--space-lg);
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .education b {
+    display: block;
+    font-weight: 500;
+    font-size: var(--size-small);
+  }
+
+  .education small {
+    font-size: var(--size-caption);
+    color: var(--text-4);
+  }
+
+  .period {
+    font-size: var(--size-caption);
+    color: var(--text-4);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── 页尾 ───────────────────────────────────────────────── */
+
+  .closing {
+    padding-bottom: var(--space-2xl);
+  }
+
+  /* ── 窄屏 ───────────────────────────────────────────────── */
+
+  @media (max-width: 34rem) {
+    .stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* 项目卡里有整段描述，两栏在窄屏下每栏只剩十来个字符，读不了。 */
+    .projects {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* 标签列塌成整行：10rem 的固定列在 375px 上只剩不到一半宽度给条，
+       条短到看不出长度差异，图就没意义了。 */
+    .gantt li,
+    .ruler,
+    .toolbox > div {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-sm);
+    }
+
+    .ruler > :first-child {
+      display: none;
+    }
+
+    .bar-meta {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: var(--space-md);
+    }
+
+    .layers li {
+      margin-left: calc(var(--depth) * var(--space-md));
+    }
+
+    .pipeline {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .pipeline li {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--space-xs);
+    }
+
+    /* 竖排时箭头也要跟着转，否则指向和阅读方向对不上。 */
+    .pipe-arrow {
+      transform: rotate(90deg);
+      align-self: center;
+    }
+  }
+
+  @media (max-width: 24rem) {
+    .stats {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

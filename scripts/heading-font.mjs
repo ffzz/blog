@@ -75,9 +75,45 @@ async function* walk(dir) {
 }
 
 /**
+ * 简历页的章节标题。
+ *
+ * 这个文件是 .ts 不是 .md，上面的 walk() 扫不到它，而 /zh/resume 的 h2
+ * 全部来自这里。漏掉的后果是中文标题掉回系统字体 —— macOS/Windows 有宋体
+ * 所以本地看不出来，Android 没有，会直接掉到无衬线，标题和正文再无区分。
+ * 而 --check 也不会报错，因为它和采集共用同一套逻辑，采不到就无从发现。
+ *
+ * 只收 `heading` 块里的值：简历页上唯一用衬线的就是 h1 与 h2，h1 是拉丁文
+ * 姓名，h2 全在这个块里。其余字段（正文、卡片标题、摘要）在页面上都是无衬线，
+ * 收进来只会白白撑大子集 —— 光 status 和 aiCases 就是上千字。
+ *
+ * 对应的纪律写在 src/data/resume.ts 的文件头：出现在标题里的中文必须写在
+ * heading 键下，不得硬编码进 .astro。
+ */
+async function collectResumeHeadings() {
+  const file = join(ROOT, 'src/data/resume.ts');
+  if (!existsSync(file)) return [];
+
+  const source = await readFile(file, 'utf8');
+  const blocks = [...source.matchAll(/^\s*heading:\s*\{([\s\S]*?)^\s*\},/gm)];
+
+  // 两种语言各一个 heading 块。数量对不上说明文件结构变了（改名、换成
+  // 嵌套更深的形状、或者新增了语言），此时静默返回空数组就是又一次
+  // 静默失败，所以直接炸。
+  if (blocks.length !== 2) {
+    throw new Error(
+      `src/data/resume.ts 里找到 ${blocks.length} 个 heading 块，期望 2 个（en + zh）。\n` +
+        '简历页的中文 h2 全部来自这些块。结构变了就要同步改这里的匹配，' +
+        '否则字体子集会漏字，而且 --check 发现不了。',
+    );
+  }
+
+  return blocks.flatMap(([, body]) => [...body.matchAll(/'([^']*)'/g)].map(([, s]) => s));
+}
+
+/**
  * 收集所有需要这个子集覆盖的文本：
  *   frontmatter 的 title/description、Markdown 的 h1–h4、
- *   以及 consts.ts 里的站名与 tagline。
+ *   consts.ts 里的站名与 tagline，以及简历页的章节标题。
  * 正文不收 —— 正文在页面上是无衬线，且体量会让子集失控。
  */
 async function collectSubsetText() {
@@ -99,6 +135,8 @@ async function collectSubsetText() {
   // 站名与 tagline 也用衬线（Header 的 brand、首页 h1、OG 图默认文案）。
   const consts = await readFile(join(ROOT, 'src/consts.ts'), 'utf8');
   for (const m of consts.matchAll(/^\s*(?:name|tagline):\s*'([^']*)'/gm)) parts.push(m[1]);
+
+  parts.push(...(await collectResumeHeadings()));
 
   const chars = new Set();
   for (const cp of [...parts.join('')]) {

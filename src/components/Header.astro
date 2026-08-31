@@ -21,6 +21,7 @@ const { locale, path, alternates } = Astro.props;
   <div class="right">
     <a class="nav-link" href={localeUrl(locale, 'archive')}>{t(locale, 'navArchive')}</a>
     <a class="nav-link" href={localeUrl(locale, 'about')}>{t(locale, 'navAbout')}</a>
+    <a class="nav-link" href={localeUrl(locale, 'resume')}>{t(locale, 'navResume')}</a>
     <SearchDialog {locale} />
     <LangSwitch {locale} {path} {alternates} />
     <ThemeToggle {locale} />

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<!--
+  public/Fangzheng-Ben-Chen-Resume.pdf 的来源文件。
+
+  这份是**通用版**简历 —— 不针对任何具体岗位，挂在 /resume 页面上供人下载。
+  逐岗位定制的那些在 jobs-application/applications/ 下，跟这份没有关系，
+  改这里不要去动那边，反过来也一样。
+
+  两点跟定制版不同：
+  - 不放手机号。这个 PDF 是公网可下载的，电话号码放上去就会被爬走。
+  - 联系邮箱用站内的 hello@ben-chen.com，不用私人 Gmail。
+
+  重新生成（macOS）：
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless=new --disable-gpu --no-pdf-header-footer \
+      --print-to-pdf=public/Fangzheng-Ben-Chen-Resume.pdf \
+      scripts/resume-pdf/resume.html
+
+  改完必须重新检查：两页以内、文本可选中、页眉留白走廊 ≥8%
+  （jobs-application 的 scripts/check_resume_header.py）。
+
+  版式沿用 Kami：羊皮纸底 #f5f4ed、油墨蓝 #1B365D、Charter 衬线，
+  跟站点的 tokens.css 同源。保持 ATS 安全 —— 纯文本流，没有图形化文字、
+  没有分栏表格、没有图片。
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fangzheng (Ben) Chen - Full-Stack Engineer Resume</title>
+<meta name="author" content="Fangzheng (Ben) Chen">
+<meta name="description" content="Full-stack engineer in Canberra building AI-backed products end to end: retrieval systems, LLM integration, and production web delivery.">
+<meta name="keywords" content="full-stack engineer, AI engineer, RAG, retrieval-augmented generation, embeddings, reranking, Python, FastAPI, TypeScript, React, Next.js, PHP, Laravel, PostgreSQL, AWS, Amazon Bedrock, Canberra">
+<meta name="generator" content="Kami">
+<style>
+  @page { size: A4; margin: 10.5mm 13mm; background: #f5f4ed; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --parchment: #f5f4ed; --border: #e8e6dc; --near-black: #141413;
+    --dark-warm: #3d3d3a; --olive: #504e49; --stone: #6b6a64;
+    --brand: #1B365D; --brand-tint: #EEF2F7;
+    --serif: Charter, Georgia, Palatino, "Times New Roman", serif;
+  }
+  html, body { background: var(--parchment); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { color: #141413; font-family: var(--serif); font-size: 9pt; line-height: 1.36; widows: 3; orphans: 3; }
+  a { color: #3d3d3a; text-decoration: none; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 3mm; padding-bottom: 2.1mm; border-bottom: 0.6pt solid var(--border); }
+  .header > div:first-child { flex-shrink: 0; }
+  .name { font-size: 24.5pt; font-weight: 500; letter-spacing: -0.2pt; line-height: 1; white-space: nowrap; }
+  .alias { font-size: 11.8pt; font-weight: 400; color: #6b6a64; }
+  .contact { text-align: right; font-size: 8.45pt; color: #6b6a64; line-height: 1.38; }
+  .contact .role { color: #1B365D; font-size: 9.5pt; font-weight: 500; }
+  .contact .positioning { color: #504e49; }
+  .contact .loc { color: #504e49; font-weight: 500; }
+  .section-title { font-size: 12pt; font-weight: 500; border-bottom: 0.5pt solid var(--border); padding-bottom: 0.7mm; margin: 3.3mm 0 1.4mm; display: flex; align-items: baseline; justify-content: space-between; gap: 2.5mm; }
+  .section-title .sub { font-weight: 400; font-size: 8.5pt; color: #6b6a64; letter-spacing: 0.2pt; }
+  section:first-of-type .section-title { margin-top: 0; }
+  .summary { font-size: 9.05pt; line-height: 1.4; }
+  .hl { color: #1B365D; }
+  .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 4mm; margin-top: 2.2mm; }
+  .metric { padding: 0.6mm 0 0.8mm; display: flex; flex-direction: column; gap: 0.4mm; min-width: 0; break-inside: avoid; }
+  .metric-value { font-size: 11.8pt; font-weight: 500; color: #1B365D; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .metric-label { font-size: 8.25pt; color: #504e49; line-height: 1.15; white-space: nowrap; }
+  .skill-line { padding: 0.7mm 0; border-bottom: 0.3pt dotted var(--border); font-size: 8.55pt; line-height: 1.33; }
+  .skill-line:last-child { border-bottom: none; }
+  .skill-label { color: #1B365D; font-weight: 500; }
+  .project { padding: 1.6mm 0; break-inside: avoid; }
+  .project:first-of-type { padding-top: 0.5mm; }
+  .proj-head { display: block; margin-bottom: 0.5mm; }
+  .proj-name { font-size: 10.3pt; font-weight: 500; }
+  .proj-kind { font-size: 8.45pt; color: #504e49; margin-left: 1.2mm; }
+  .proj-role { font-size: 8.25pt; color: #1B365D; font-weight: 500; margin-left: 1.2mm; white-space: nowrap; }
+  .proj-lines { display: block; width: 100%; }
+  .proj-row { display: block; margin-bottom: 0.35mm; }
+  .proj-label { display: inline-block; width: 19mm; margin-right: 1mm; font-size: 8.15pt; color: #1B365D; font-weight: 500; letter-spacing: 0.25pt; text-transform: uppercase; vertical-align: top; }
+  .proj-text { display: inline; font-size: 8.55pt; line-height: 1.34; }
+  .page-two { break-before: page; }
+  .page-two .section-title { margin-top: 7.5mm; margin-bottom: 3mm; }
+  .page-two section:first-child .section-title { margin-top: 0; }
+  .page-two .project { padding: 4mm 0; }
+  .selected-project { padding: 4.2mm 0; break-inside: avoid; }
+  .selected-title { font-size: 10.2pt; font-weight: 500; }
+  .selected-status { color: #1B365D; font-size: 8.3pt; font-weight: 500; margin-left: 1.4mm; text-transform: uppercase; }
+  .selected-stack { display: block; font-size: 8.2pt; color: #6b6a64; margin-top: 0.4mm; }
+  .selected-body { margin-top: 0.8mm; }
+  .edu-row { display: flex; justify-content: space-between; align-items: baseline; padding: 3.75mm 0; break-inside: avoid; }
+  .edu-row .school { font-weight: 500; font-size: 9.6pt; }
+  .edu-row .major { color: #504e49; font-size: 8.65pt; }
+  .edu-row .date { color: #6b6a64; font-size: 8.4pt; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .page-two .skill-line { padding: 4mm 0; }
+  .page-two section:last-child .section-title { margin-top: 9mm; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div><div class="name">Fangzheng <span class="alias">(Ben) Chen</span></div></div>
+  <div class="contact">
+    <span class="role">Full-Stack Engineer</span><br>
+    <span class="positioning">AI-Backed Products, End to End</span><br>
+    <a href="https://linkedin.com/in/ben-fz-chen">linkedin.com/in/ben-fz-chen</a> | <a href="https://github.com/ffzz">github.com/ffzz</a><br>
+    <a href="mailto:hello@ben-chen.com">hello@ben-chen.com</a><br>
+    <span class="loc">Canberra, ACT</span> | Australian Permanent Resident
+  </div>
+</div>
+
+<section>
+  <div class="section-title">Summary</div>
+  <div class="summary">Full-stack engineer who ships AI-backed products end to end. Built the retrieval-grounded chatbot behind <span class="hl">Small Business PEAK</span>, an Australian Government-funded service that national media reported as one of the first government-backed uses of an AI chatbot to explain regulatory change. Runs a live paid AI product with its own Stripe purchase-to-delivery loop, and is building a <span class="hl">Python retrieval and voice-agent platform</span> with hybrid dense/sparse retrieval and cross-encoder reranking. Five years of production delivery across consulting, SaaS and a production learning platform.</div>
+  <div class="metrics">
+    <div class="metric"><span class="metric-value">5 yrs</span><span class="metric-label">Production delivery</span></div>
+    <div class="metric"><span class="metric-value">20+</span><span class="metric-label">Client systems delivered</span></div>
+    <div class="metric"><span class="metric-value">30.5k</span><span class="metric-label">Python lines, 60k tests</span></div>
+    <div class="metric"><span class="metric-value">Gov't</span><span class="metric-label">Funded AI chatbot, in media</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="section-title">Core Skills</div>
+  <div class="skill-line"><span class="skill-label">AI &amp; LLM:</span> retrieval-augmented generation, embeddings, hybrid dense/sparse retrieval, reciprocal rank fusion, cross-encoder reranking, grounding and scope limits, prompt engineering, structured outputs, Amazon Bedrock, OpenAI and Anthropic APIs, LiveKit voice agents.</div>
+  <div class="skill-line"><span class="skill-label">Python &amp; backend:</span> Python 3.12, FastAPI, Pydantic v2, psycopg 3, PostgreSQL, queue-based workers, asynchronous processing, provider abstraction, pytest, ruff, mypy.</div>
+  <div class="skill-line"><span class="skill-label">Full-stack &amp; web:</span> TypeScript, React, Next.js, Node.js, PHP/Laravel, SQL, MySQL, Redis, REST APIs, webhooks, accessibility-aware and SEO-aware delivery.</div>
+  <div class="skill-line"><span class="skill-label">Delivery &amp; operations:</span> Docker, GitHub Actions CI, AWS, Cloudflare, Vercel, Supabase, Stripe, Git, Linux, OpenTelemetry, structured logging.</div>
+  <div class="skill-line"><span class="skill-label">Client &amp; product:</span> direct stakeholder scoping, requirement translation, end-to-end ownership across 20+ concurrent engagements, analytics instrumentation, iteration on live feedback.</div>
+</section>
+
+<section>
+  <div class="section-title">Work Experience</div>
+  <div class="project">
+    <div class="proj-head"><span class="proj-name">Independent Developer - AI Platform &amp; Web Projects</span><span class="proj-kind">Canberra</span><span class="proj-role">11/2025-Present</span></div>
+    <div class="proj-lines">
+      <div class="proj-row"><div class="proj-label">Role</div><div class="proj-text">Full-time independent engineer running a live paid SaaS product while building a <span class="hl">Python retrieval and voice-agent platform</span>.</div></div>
+      <div class="proj-row"><div class="proj-label">Actions</div><div class="proj-text">Own the full purchase-to-delivery loop for PicPolisher, including Stripe webhook handling designed so a retry or an out-of-order event cannot lose or duplicate an order. Building a companion Python service that ingests documents and websites, retrieves and reranks answers over them, plus a voice-agent prototype on LiveKit Agents.</div></div>
+      <div class="proj-row"><div class="proj-label">Impact</div><div class="proj-text">Grew the Python platform to roughly 30,500 lines of source across 140 modules, backed by roughly 60,000 lines of tests; PicPolisher remains live and processing real customer purchases.</div></div>
+    </div>
+  </div>
+
+  <div class="project">
+    <div class="proj-head"><span class="proj-name">Software Engineer - Acorn PLMS</span><span class="proj-kind">Canberra</span><span class="proj-role">05/2025-10/2025</span></div>
+    <div class="proj-lines">
+      <div class="proj-row"><div class="proj-label">Role</div><div class="proj-text">Built and maintained a core capability-evaluation module inside an established production learning platform.</div></div>
+      <div class="proj-row"><div class="proj-label">Actions</div><div class="proj-text">Integrated <span class="hl">Amazon Bedrock</span> into existing workflows inside established permission boundaries, then replaced cron-heavy processing with <span class="hl">queue-based jobs and caching</span>.</div></div>
+      <div class="proj-row"><div class="proj-label">Impact</div><div class="proj-text">Removed N+1 query patterns and improved production reliability; radar-chart reporting views drew positive feedback from clients, colleagues and a supervisor.</div></div>
+    </div>
+  </div>
+
+  <div class="project">
+    <div class="proj-head"><span class="proj-name">Full-stack Developer - OPF Consulting</span><span class="proj-kind">Canberra</span><span class="proj-role">05/2023-05/2025</span></div>
+    <div class="proj-lines">
+      <div class="proj-row"><div class="proj-label">AI delivery</div><div class="proj-text">Built the AI chatbot for <span class="hl">Small Business PEAK</span> (smallbusinesspeak.org.au), a COSBOA service funded by the Department of Employment and Workplace Relations. It answers small-business questions on workplace relations law, grounded in a curated corpus through embeddings, retrieval and reranking so answers stay inside source material.</div></div>
+      <!-- 标签列固定 19mm，"Client delivery" 会在标签里自己折行，
+           把正文首行挤到下一行。19mm 大约只放得下一个词。 -->
+      <div class="proj-row"><div class="proj-label">Clients</div><div class="proj-text">Delivered and maintained <span class="hl">more than 20 client websites and digital systems</span>, running scoping calls directly with non-technical stakeholders and translating requirements into production builds across many concurrent engagements.</div></div>
+      <div class="proj-row"><div class="proj-label">Impact</div><div class="proj-text">Australian media reported the Small Business PEAK launch as <span class="hl">one of the first government-backed uses of an AI chatbot</span> to explain regulatory change; the service remains live.</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="page-two">
+<section>
+  <div class="section-title">Work Experience<span class="sub">continued</span></div>
+  <div class="project">
+    <div class="proj-head"><span class="proj-name">Frontend Developer - Prudential Technology</span><span class="proj-kind">Shenzhen, China</span><span class="proj-role">10/2022-05/2023</span></div>
+    <div class="proj-lines">
+      <div class="proj-row"><div class="proj-label">Actions</div><div class="proj-text">Built a cross-platform lifestyle application from scratch on React, React Native and TypeScript, backed by Google Cloud and Firebase.</div></div>
+    </div>
+  </div>
+
+  <div class="project">
+    <div class="proj-head"><span class="proj-name">Full-stack Developer - Tencent</span><span class="proj-kind">Shenzhen, China</span><span class="proj-role">11/2021-09/2022</span></div>
+    <div class="proj-lines">
+      <div class="proj-row"><div class="proj-label">Actions</div><div class="proj-text">Built React and Ant Design interfaces for a user-segmentation and marketing platform, plus Node/Egg and MySQL service-layer features between those interfaces and back-end systems.</div></div>
+      <div class="proj-row"><div class="proj-label">Impact</div><div class="proj-text">Improved interaction quality and maintainability while the team's work contributed to <span class="hl">3x user growth</span>.</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-title">Projects<span class="sub">AI &amp; delivery evidence</span></div>
+  <div class="selected-project">
+    <div><span class="selected-title">hybrid-rag-service - Python retrieval &amp; voice-agent platform</span><span class="selected-status">In Development</span>
+      <span class="selected-stack">Python 3.12, FastAPI, Pydantic v2, psycopg 3, PostgreSQL, Docling, crawl4ai, LiveKit Agents, Docker</span></div>
+    <div class="selected-body proj-lines">
+      <div class="proj-row"><div class="proj-label">Built</div><div class="proj-text">A multi-tenant knowledge service that ingests documents and websites and answers questions over them, using hybrid dense/sparse retrieval, <span class="hl">reciprocal rank fusion</span> and cross-encoder reranking with calibrated confidence thresholds and an explicit degraded mode, plus a companion <span class="hl">voice-agent service on LiveKit Agents</span> with its own evaluation harness.</div></div>
+      <div class="proj-row"><div class="proj-label">Decisions</div><div class="proj-text">Kept the deployment footprint small - no separate vector database, no LangChain, no Kubernetes - so the service can be stood up inside a customer-controlled environment; queue-based workers handle document and website intake asynchronously.</div></div>
+    </div>
+  </div>
+
+  <div class="selected-project">
+    <div><span class="selected-title">PicPolisher - Paid AI product</span><span class="selected-status">Live</span>
+      <span class="selected-stack">Next.js, TypeScript, Supabase/PostgreSQL, Stripe, Vercel</span></div>
+    <div class="selected-body proj-lines">
+      <div class="proj-row"><div class="proj-label">Operate</div><div class="proj-text">The full path from purchase to delivery - authenticated customer flows, Stripe webhook events, database records and asynchronous generation - with explicit states so a retry or out-of-order webhook cannot lose or duplicate an order. <a href="https://picpolisher.com">picpolisher.com</a></div></div>
+      <div class="proj-row"><div class="proj-label">Owned</div><div class="proj-text">Product planning, engineering, deployment, analytics and iteration, as sole engineer.</div></div>
+    </div>
+  </div>
+
+  <div class="selected-project">
+    <div><span class="selected-title">Health-service websites</span><span class="selected-status">Client Work</span>
+      <span class="selected-stack">Next.js, TypeScript, AI-assisted delivery</span></div>
+    <div class="selected-body proj-lines">
+      <div class="proj-row"><div class="proj-label">Delivered</div><div class="proj-text">Production clinic websites including <a href="https://hhanda.com.au">hhanda.com.au</a> for Her Health &amp; Aesthetics and <a href="https://neurodiversityninjas.com.au">neurodiversityninjas.com.au</a>, covering service taxonomy, booking pathways, accessibility and launch.</div></div>
+      <div class="proj-row"><div class="proj-label">Method</div><div class="proj-text">Built AI-assisted end to end - generated click-through HTML wireframes for client sign-off before implementation, then reviewed every generated change against accessibility and content-structure standards before it shipped.</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-title">Education</div>
+  <div class="edu-row"><div><span class="school">Central China Normal University</span><span class="major"> - Master of Journalism</span></div><div class="date">09/2014-06/2017</div></div>
+  <div class="edu-row"><div><span class="school">Central China Normal University</span><span class="major"> - Double Bachelor of Information Technology and Journalism</span></div><div class="date">09/2010-06/2014</div></div>
+</section>
+
+<section>
+  <div class="section-title">Languages</div>
+  <div class="skill-line"><span class="skill-label">English:</span> professional fluency &nbsp;|&nbsp; <span class="skill-label">Mandarin Chinese:</span> native</div>
+</section>
+</div>
+</body>
+</html>

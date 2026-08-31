@@ -20,12 +20,33 @@ const AI_CRAWLERS = ['GPTBot', 'ClaudeBot', 'PerplexityBot', 'Google-Extended'];
  */
 const CONTENT_SIGNAL = 'Content-Signal: search=yes, ai-input=yes, ai-train=yes';
 
+/**
+ * 简历相关的路径。只对上面那几个训练型爬虫 Disallow，不对 `*`。
+ *
+ * 为什么要分开处理，而不是一条 `Disallow` 了事：
+ *
+ * Disallow 拦的是**抓取**，不是收录。对 Google 这类索引型爬虫用 Disallow，
+ * 它就永远读不到页面里的 `<meta name="robots" content="noindex">` ——
+ * 一旦别处有链接指过来，它照样可以凭锚文本收录一个没有摘要的条目，
+ * 结果比什么都不做更糟。所以简历页走的是「允许抓取 + 声明 noindex」
+ * （见 Resume.astro 传给 BaseLayout 的 noindex），PDF 走 HTTP 响应头
+ * `X-Robots-Tag`（见 public/_headers，PDF 里写不了 meta 标签）。
+ * 这两条声明都以爬虫能抓到为前提，所以这里**不能**对 `*` 加 Disallow。
+ *
+ * 训练型爬虫是另一回事：它们不建索引，noindex 对它们没有意义，
+ * robots.txt 是唯一能表达意图的地方。这是对本文件「显式允许 AI 爬虫」
+ * 那个立场的一处局部例外 —— 博客文章仍然欢迎抓取和引用，但简历带真名、
+ * 联系方式等身份信息，不希望进入训练或检索语料。
+ */
+const RESUME_PATHS = ['/resume', '/zh/resume', '/Fangzheng-Ben-Chen-Resume.pdf'];
+
 /** 一组 user-agent 规则。Content-Signal 按规范放在 User-agent 之后、Allow 之前。 */
-const rules = (agent: string) => [
+const rules = (agent: string, extraDisallow: string[] = []) => [
   `User-agent: ${agent}`,
   CONTENT_SIGNAL,
   'Allow: /',
   'Disallow: /admin',
+  ...extraDisallow.map((path) => `Disallow: ${path}`),
   '',
 ];
 
@@ -37,7 +58,9 @@ export const GET: APIRoute = ({ site }) => {
     '# 详见 https://contentsignals.org',
     '',
     ...rules('*'),
-    ...AI_CRAWLERS.flatMap(rules),
+    // 显式写成箭头函数：flatMap 会把 index 当第二个实参传进去，
+    // 直接 `flatMap(rules)` 会让 extraDisallow 收到 0、1、2 这样的数字。
+    ...AI_CRAWLERS.flatMap((agent) => rules(agent, RESUME_PATHS)),
     `Sitemap: ${new URL('sitemap-index.xml', site).href}`,
   ];
 
