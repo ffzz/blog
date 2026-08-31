@@ -9,6 +9,7 @@ const strings = {
   en: {
     skipToContent: 'Skip to content',
     navAbout: 'About',
+    navResume: 'Resume',
     navPosts: 'Writing',
     navNotes: 'Notes',
     navArchive: 'Archive',
@@ -47,6 +48,7 @@ const strings = {
   zh: {
     skipToContent: '跳到正文',
     navAbout: '关于',
+    navResume: '简历',
     navPosts: '文章',
     navNotes: '随笔',
     navArchive: '归档',

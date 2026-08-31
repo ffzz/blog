@@ -55,3 +55,19 @@
 
 /giscus-theme-dark.css
   Access-Control-Allow-Origin: *
+
+# ── 简历 PDF 不进搜索引擎 ─────────────────────────────────────
+# HTML 页面可以用 <meta name="robots" content="noindex">，PDF 不行 ——
+# 里面写不了 meta 标签，唯一的办法就是这个响应头。Google 明确支持
+# X-Robots-Tag 用于非 HTML 资源，PDF 是它点名的典型场景。
+#
+# 注意这里**不能**改成在 robots.txt 里 Disallow 这个文件：Disallow 拦的是
+# 抓取，爬虫因此永远读不到下面这行头，反而可能凭外链收录一个空条目。
+# 要让声明生效，前提是让它抓得到。同样的道理见 src/pages/robots.txt.ts
+# 里对训练型爬虫的处理 —— 那类爬虫不建索引，才只能靠 robots.txt。
+#
+# noarchive 一并加上：不希望搜索引擎留一份简历的快照副本，
+# 那会让一份已经过期的简历在网上比现役的活得还久。
+
+/Fangzheng-Ben-Chen-Resume.pdf
+  X-Robots-Tag: noindex, nofollow, noarchive
