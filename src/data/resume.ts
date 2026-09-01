@@ -191,7 +191,7 @@ export const RESUME: Record<Locale, ResumeContent> = {
     positioning: 'Full-stack engineer who ships AI-backed products end to end',
     location: 'Canberra, ACT, Australia',
     workRights: 'Australian Permanent Resident',
-    availability: 'Open to full-time roles — Canberra, Sydney, or Australia-remote',
+    availability: 'Open to full-time roles — Canberra, Sydney, or remote worldwide',
 
     heading: {
       stats: 'At a glance',
@@ -224,13 +224,13 @@ export const RESUME: Record<Locale, ResumeContent> = {
       layersCaption:
         'Each layer rests on the one before it. Most AI experience stops at the first two.',
       pipelineCaption:
-        'Deliberate constraints: no LangChain, no separate vector database, no Kubernetes. Retrieval runs on PostgreSQL, so the whole service fits inside a customer-controlled environment.',
+        'The same shape in both retrieval systems, and the same deliberate constraints: no LangChain, no separate vector database, no Kubernetes. Retrieval runs on PostgreSQL, so a deployment fits inside a customer-controlled environment.',
     },
 
     status: [
       'Since November 2025 I have been working independently full-time — running a paid AI product that real customers buy, and building a Python retrieval and voice-agent platform alongside it.',
       'Before that I spent two years at a Canberra consultancy delivering client systems, then six months inside a production learning platform. The independent stretch was a deliberate choice: I wanted to own something end to end, including the parts that are nobody’s favourite — billing edge cases, ingestion failures, the third rewrite of a retrieval heuristic.',
-      'I am now looking for a full-time engineering role where AI is part of the product rather than a demo. Canberra, Sydney, or Australia-remote.',
+      'I am now looking for a full-time engineering role where AI is part of the product rather than a demo. Canberra, Sydney, or remote anywhere in the world — I have worked across time zones before and am set up for it.',
     ],
 
     stats: [
@@ -275,28 +275,29 @@ export const RESUME: Record<Locale, ResumeContent> = {
         stack: ['Embeddings', 'Retrieval', 'Reranking', 'PHP', 'JavaScript'],
       },
       {
-        name: 'hybrid-rag-service — Python retrieval platform',
+        name: 'AI Front Desk — 24/7 phone agent for small business',
         status: 'In development',
         summary:
-          'A multi-tenant knowledge service that ingests documents and websites and answers questions over them. Near feature-complete, not publicly launched.',
+          'A voice agent that answers every inbound call and completes bookings end to end. Retrieval is one part of it — the rest is crawling, context compression, per-caller memory, and the guardrails a live phone call needs.',
         points: [
-          'Roughly 30,500 lines of source across 140 modules, backed by roughly 60,000 lines of tests — about two lines of test per line of source.',
-          'Hybrid retrieval: dense and sparse candidate generation fused with reciprocal rank fusion, then a cross-encoder rerank with calibrated confidence thresholds, cost-saving skip paths, and an explicit degraded mode when the rerank provider is unavailable.',
-          'Ingestion handles Docling document parsing with OCR, crawl4ai and browser rendering, robots-compliant crawling, a content quality gate, and queue-based workers.',
-          'Security work I am glad I did early: an SSRF guard that classifies loopback, private and reserved addresses and defeats decimal and octal literal-IP bypasses; malware scanning on uploads; PostgreSQL row-level security for tenant isolation.',
-          'Embeddings, reranking and generation sit behind ports, so a model can be swapped without touching domain logic.',
-          'A companion voice-agent service runs on LiveKit Agents with its own evaluation harness.',
+          'Roughly 126,000 lines of TypeScript across 660 files and 472 commits: a monorepo holding the agent runtime, an API, a merchant web app and a CLI.',
+          'Knowledge ingestion: Firecrawl-driven crawling with webhook callbacks and two scopes — whole-site sitemap discovery, or a single page with no discovery — behind SSRF-guarded URL validation shared by the browser and the server so the two checks cannot drift apart.',
+          'Retrieval: chunking, cached embeddings and pgvector search over a per-merchant knowledge base. One package among many, not the whole product.',
+          'Context: approved knowledge is compressed into a prompt-ready brief instead of dumping raw retrieval output into the prompt.',
+          'Memory, and the trust boundary around it: anything learned during a call can only be written as a candidate and never reaches the live prompt on its own. Only a merchant action approves one, and an approved fact cannot be silently downgraded by automatic extraction.',
+          'Memory writes are idempotent per tenant, caller and field, and a write failure is swallowed on purpose — memory is written during call teardown, so a database error must never take down the end of a call. The caller number is the identity key but never reaches the logs, and only structured field values are stored, never raw call text.',
+          'The parts a demo never has to handle: concurrency, emergency escalation, spam filtering, call recording, launch guardrails, and OpenTelemetry tracing across the whole turn.',
         ],
         stack: [
-          'Python 3.12',
-          'FastAPI',
-          'Pydantic v2',
-          'PostgreSQL',
-          'Docling',
-          'crawl4ai',
+          'TypeScript',
           'LiveKit Agents',
+          'Drizzle ORM',
+          'PostgreSQL',
+          'pgvector',
+          'Firecrawl',
+          'OpenAI',
+          'Twilio',
           'OpenTelemetry',
-          'Docker',
         ],
         current: true,
       },
@@ -356,14 +357,23 @@ export const RESUME: Record<Locale, ResumeContent> = {
         start: '2025-11',
         end: null,
         summary:
-          'Running a live paid SaaS product while building a Python retrieval and voice-agent platform.',
+          'Running a live paid SaaS product while building AI Front Desk, a voice agent for small business.',
         points: [
+          'Building AI Front Desk end to end: crawling and knowledge ingestion, retrieval, context compression, per-caller memory behind an explicit approval boundary, and an agent runtime that has to survive a real phone call.',
           'Own the full purchase-to-delivery loop for PicPolisher, including Stripe webhook handling designed so a retry or an out-of-order event cannot lose or duplicate an order.',
-          'Building a companion Python service that ingests documents and websites, retrieves and reranks answers over them, plus a voice-agent prototype on LiveKit Agents.',
-          'Grew the Python platform to roughly 30,500 lines of source across 140 modules, backed by roughly 60,000 lines of tests.',
+          'Also built a separate Python retrieval service — hybrid dense and sparse search with rank fusion and cross-encoder reranking — roughly 30,500 lines of source against 60,000 lines of tests.',
           'Delivered production clinic websites for independent clients, AI-assisted end to end with architecture and accessibility review staying mine.',
         ],
-        stack: ['Python', 'FastAPI', 'Next.js', 'TypeScript', 'PostgreSQL', 'Stripe', 'Docker'],
+        stack: [
+          'TypeScript',
+          'LiveKit Agents',
+          'Python',
+          'FastAPI',
+          'Next.js',
+          'PostgreSQL',
+          'Stripe',
+          'Docker',
+        ],
         current: true,
       },
       {
@@ -509,7 +519,7 @@ export const RESUME: Record<Locale, ResumeContent> = {
       {
         name: 'hybrid-rag-service',
         status: 'In development',
-        desc: 'A multi-tenant Python knowledge service: hybrid dense and sparse retrieval, rank fusion, cross-encoder reranking, and a companion LiveKit voice agent. Retrieval runs on PostgreSQL with no separate vector database.',
+        desc: 'A separate Python service from AI Front Desk above: a multi-tenant knowledge platform with hybrid dense and sparse retrieval, reciprocal rank fusion and cross-encoder reranking, fed by Docling and crawl4ai ingestion. Retrieval runs on PostgreSQL — no separate vector database, no LangChain, no Kubernetes.',
         stack: ['Python 3.12', 'FastAPI', 'PostgreSQL', 'Docling', 'crawl4ai', 'Docker'],
       },
       {
@@ -555,7 +565,7 @@ export const RESUME: Record<Locale, ResumeContent> = {
     positioning: '端到端交付 AI 产品的全栈工程师',
     location: '澳大利亚堪培拉',
     workRights: '澳洲永久居民',
-    availability: '开放全职机会 —— 堪培拉、悉尼或澳洲远程',
+    availability: '开放全职机会 —— 堪培拉、悉尼，或全球远程',
 
     heading: {
       stats: '几个数字',
@@ -585,13 +595,13 @@ export const RESUME: Record<Locale, ResumeContent> = {
       stackCaption: '条的长度是实际投入生产的时间，取自上方的经历，不是自评。',
       layersCaption: '每一层都建立在前一层之上。多数人的 AI 经验停在前两层。',
       pipelineCaption:
-        '几个刻意的约束：不用 LangChain、不引独立向量库、不上 Kubernetes。检索跑在 PostgreSQL 上，整套服务因此能部署进客户自己控制的环境。',
+        '两套检索系统是同一个形状，也是同样几个刻意的约束：不用 LangChain、不引独立向量库、不上 Kubernetes。检索跑在 PostgreSQL 上，因此整套部署能放进客户自己控制的环境。',
     },
 
     status: [
       '2025 年 11 月起我全职独立开发：运营一个有真实付费用户的 AI 产品，同时在建一个 Python 检索与语音 agent 平台。',
       '在那之前，我在堪培拉一家咨询公司做了两年客户系统交付，又在一个生产环境的学习平台里待了半年。转独立是个刻意的选择 —— 我想完整地拥有一个东西，包括那些没人爱碰的部分：计费的边界情况、摄取流程的失败重试、某个检索启发式的第三次重写。',
-      '现在在找一份全职工程岗位，希望 AI 是产品的一部分而不是一个演示。地点在堪培拉、悉尼，或澳洲远程。',
+      '现在在找一份全职工程岗位，希望 AI 是产品的一部分而不是一个演示。地点在堪培拉、悉尼，或者全球任何地方的远程 —— 跨时区协作我做过，也准备好了。',
     ],
 
     stats: [
@@ -635,28 +645,29 @@ export const RESUME: Record<Locale, ResumeContent> = {
         stack: ['Embedding', '检索', '重排', 'PHP', 'JavaScript'],
       },
       {
-        name: 'hybrid-rag-service —— Python 检索平台',
+        name: 'AI Front Desk —— 面向小微商户的 7×24 电话 agent',
         status: '开发中',
         summary:
-          '一个多租户知识服务，摄取文档与网站并在其上回答问题。功能接近完整，尚未公开发布。',
+          '一个接起每一通来电、并把预订完整走完的语音 agent。检索只是其中一块，其余是抓取、上下文压缩、按来电者的记忆，以及一通真实通话所需要的各种护栏。',
         points: [
-          '约 30,500 行源码分布在 140 个模块，配套约 60,000 行测试 —— 大致每一行源码对两行测试。',
-          '混合检索：稠密与稀疏两路召回经 reciprocal rank fusion 融合，再进 cross-encoder 重排。重排带置信度校准阈值、省成本的跳过路径，以及重排服务不可用时的显式降级模式。',
-          '摄取侧覆盖 Docling 文档解析（含 OCR）、crawl4ai 与浏览器渲染、遵守 robots 的抓取、内容质量闸门，以及基于队列的 worker。',
-          '有几件安全上的事庆幸做得早：SSRF 防护会分类环回、私有与保留地址，并挡住十进制与八进制字面量 IP 的绕过；上传做恶意软件扫描；用 PostgreSQL 行级安全做租户隔离。',
-          'Embedding、重排与生成都放在 port 之后，换模型不需要动领域逻辑。',
-          '配套的语音 agent 服务跑在 LiveKit Agents 上，有自己的评测框架。',
+          '约 126,000 行 TypeScript，660 个文件，472 次提交：一个 monorepo，装着 agent 运行时、API、商户端 Web 应用和一个 CLI。',
+          '知识摄取：基于 Firecrawl 的抓取，带 webhook 回调与两种范围 —— 整站 sitemap 发现，或只抓目标页不做发现。URL 校验的 SSRF 边界由浏览器端和服务端共用同一份实现，避免两处私网判定漂移。',
+          '检索：分块、带缓存的 embedding、在每个商户自己的知识库上做 pgvector 检索。它是众多包中的一个，不是产品本身。',
+          '上下文：已审核的知识会被压缩成一份可直接进提示词的 brief，而不是把原始检索结果整坨塞进提示词。',
+          '记忆，以及围绕它的信任边界：通话里学到的任何东西只能写成 candidate，绝不会自己进入实时提示词；只有商户的动作才能把它转成 approved，而已 approved 的事实不会被自动抽取悄悄降级。',
+          '记忆的写入按「租户 + 来电号码 + 字段」幂等去重；写失败一律吞掉——记忆是在通话收尾时写的，数据库出错绝不能把通话的结束流程带崩。来电号码作为身份键存储但不进日志，且只存结构化字段值，不存原始通话文本。',
+          '还有一堆演示永远不必面对的东西：并发、紧急情况升级、垃圾来电过滤、通话录音、上线护栏，以及贯穿整轮对话的 OpenTelemetry 追踪。',
         ],
         stack: [
-          'Python 3.12',
-          'FastAPI',
-          'Pydantic v2',
-          'PostgreSQL',
-          'Docling',
-          'crawl4ai',
+          'TypeScript',
           'LiveKit Agents',
+          'Drizzle ORM',
+          'PostgreSQL',
+          'pgvector',
+          'Firecrawl',
+          'OpenAI',
+          'Twilio',
           'OpenTelemetry',
-          'Docker',
         ],
         current: true,
       },
@@ -704,14 +715,23 @@ export const RESUME: Record<Locale, ResumeContent> = {
         city: '堪培拉',
         start: '2025-11',
         end: null,
-        summary: '运营一个已上线的付费 SaaS，同时在建 Python 检索与语音 agent 平台。',
+        summary: '运营一个已上线的付费 SaaS，同时在建 AI Front Desk —— 面向小微商户的语音 agent。',
         points: [
+          '端到端在建 AI Front Desk：抓取与知识摄取、检索、上下文压缩、带显式审核边界的来电者记忆，以及一套要能扛住真实通话的 agent 运行时。',
           '负责 PicPolisher 从购买到交付的完整链路，其中 Stripe webhook 的处理方式保证重试或乱序事件都不会丢单或重复出单。',
-          '在建一个配套的 Python 服务：摄取文档与网站，在其上检索并重排作答；另有一个基于 LiveKit Agents 的语音 agent 原型。',
-          '该 Python 平台已积累约 30,500 行源码、140 个模块，配套约 60,000 行测试。',
+          '另外做了一个独立的 Python 检索服务：稠密与稀疏混合召回，配排序融合与 cross-encoder 重排，约 30,500 行源码对 60,000 行测试。',
           '为独立客户交付了生产环境的诊所网站，全程 AI 辅助，架构与无障碍审查由我负责。',
         ],
-        stack: ['Python', 'FastAPI', 'Next.js', 'TypeScript', 'PostgreSQL', 'Stripe', 'Docker'],
+        stack: [
+          'TypeScript',
+          'LiveKit Agents',
+          'Python',
+          'FastAPI',
+          'Next.js',
+          'PostgreSQL',
+          'Stripe',
+          'Docker',
+        ],
         current: true,
       },
       {
@@ -839,7 +859,7 @@ export const RESUME: Record<Locale, ResumeContent> = {
       {
         name: 'hybrid-rag-service',
         status: '开发中',
-        desc: '多租户的 Python 知识服务：稠密与稀疏混合检索、排序融合、cross-encoder 重排，以及配套的 LiveKit 语音 agent。检索跑在 PostgreSQL 上，不引独立向量库。',
+        desc: '和上面的 AI Front Desk 是两个项目：一个多租户的 Python 知识服务，稠密与稀疏混合召回、reciprocal rank fusion、cross-encoder 重排，摄取侧接 Docling 与 crawl4ai。检索跑在 PostgreSQL 上 —— 不引独立向量库、不用 LangChain、不上 Kubernetes。',
         stack: ['Python 3.12', 'FastAPI', 'PostgreSQL', 'Docling', 'crawl4ai', 'Docker'],
       },
       {

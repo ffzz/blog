@@ -100,13 +100,14 @@
     <span class="positioning">AI-Backed Products, End to End</span><br>
     <a href="https://linkedin.com/in/ben-fz-chen">linkedin.com/in/ben-fz-chen</a> | <a href="https://github.com/ffzz">github.com/ffzz</a><br>
     <a href="mailto:hello@ben-chen.com">hello@ben-chen.com</a><br>
-    <span class="loc">Canberra, ACT</span> | Australian Permanent Resident
+    <span class="loc">Canberra, ACT</span> | Australian Permanent Resident<br>
+    Open to remote worldwide
   </div>
 </div>
 
 <section>
   <div class="section-title">Summary</div>
-  <div class="summary">Full-stack engineer who ships AI-backed products end to end. Built the retrieval-grounded chatbot behind <span class="hl">Small Business PEAK</span>, an Australian Government-funded service that national media reported as one of the first government-backed uses of an AI chatbot to explain regulatory change. Runs a live paid AI product with its own Stripe purchase-to-delivery loop, and is building a <span class="hl">Python retrieval and voice-agent platform</span> with hybrid dense/sparse retrieval and cross-encoder reranking. Five years of production delivery across consulting, SaaS and a production learning platform.</div>
+  <div class="summary">Full-stack engineer who ships AI-backed products end to end. Built the retrieval-grounded chatbot behind <span class="hl">Small Business PEAK</span>, an Australian Government-funded service that national media reported as one of the first government-backed uses of an AI chatbot to explain regulatory change. Runs a live paid AI product with its own Stripe purchase-to-delivery loop, and is building <span class="hl">AI Front Desk</span>, a 24/7 voice agent for small business spanning crawling, retrieval, context compression, per-caller memory and a live-call agent runtime. Five years of production delivery across consulting, SaaS and a production learning platform.</div>
   <div class="metrics">
     <div class="metric"><span class="metric-value">5 yrs</span><span class="metric-label">Production delivery</span></div>
     <div class="metric"><span class="metric-value">20+</span><span class="metric-label">Client systems delivered</span></div>
@@ -129,9 +130,9 @@
   <div class="project">
     <div class="proj-head"><span class="proj-name">Independent Developer - AI Platform &amp; Web Projects</span><span class="proj-kind">Canberra</span><span class="proj-role">11/2025-Present</span></div>
     <div class="proj-lines">
-      <div class="proj-row"><div class="proj-label">Role</div><div class="proj-text">Full-time independent engineer running a live paid SaaS product while building a <span class="hl">Python retrieval and voice-agent platform</span>.</div></div>
-      <div class="proj-row"><div class="proj-label">Actions</div><div class="proj-text">Own the full purchase-to-delivery loop for PicPolisher, including Stripe webhook handling designed so a retry or an out-of-order event cannot lose or duplicate an order. Building a companion Python service that ingests documents and websites, retrieves and reranks answers over them, plus a voice-agent prototype on LiveKit Agents.</div></div>
-      <div class="proj-row"><div class="proj-label">Impact</div><div class="proj-text">Grew the Python platform to roughly 30,500 lines of source across 140 modules, backed by roughly 60,000 lines of tests; PicPolisher remains live and processing real customer purchases.</div></div>
+      <div class="proj-row"><div class="proj-label">Role</div><div class="proj-text">Full-time independent engineer running a live paid SaaS product while building <span class="hl">AI Front Desk</span>, a 24/7 voice agent for small business.</div></div>
+      <div class="proj-row"><div class="proj-label">Actions</div><div class="proj-text">Building AI Front Desk end to end — Firecrawl-based knowledge ingestion, pgvector retrieval, context compression, per-caller memory behind an explicit merchant-approval boundary, and a live-call agent runtime. Own the full purchase-to-delivery loop for PicPolisher, including Stripe webhook handling designed so a retry or an out-of-order event cannot lose or duplicate an order.</div></div>
+      <div class="proj-row"><div class="proj-label">Impact</div><div class="proj-text">Grew AI Front Desk to roughly <span class="hl">126,000 lines of TypeScript</span> across 660 files and 472 commits, alongside a separate Python retrieval service of 30,500 lines against 60,000 lines of tests; PicPolisher remains live and processing real customer purchases.</div></div>
     </div>
   </div>
 
@@ -178,11 +179,11 @@
 <section>
   <div class="section-title">Projects<span class="sub">AI &amp; delivery evidence</span></div>
   <div class="selected-project">
-    <div><span class="selected-title">hybrid-rag-service - Python retrieval &amp; voice-agent platform</span><span class="selected-status">In Development</span>
-      <span class="selected-stack">Python 3.12, FastAPI, Pydantic v2, psycopg 3, PostgreSQL, Docling, crawl4ai, LiveKit Agents, Docker</span></div>
+    <div><span class="selected-title">AI Front Desk - 24/7 voice agent for small business</span><span class="selected-status">In Development</span>
+      <span class="selected-stack">TypeScript, LiveKit Agents, Drizzle ORM, PostgreSQL/pgvector, Firecrawl, OpenAI, Twilio, OpenTelemetry</span></div>
     <div class="selected-body proj-lines">
-      <div class="proj-row"><div class="proj-label">Built</div><div class="proj-text">A multi-tenant knowledge service that ingests documents and websites and answers questions over them, using hybrid dense/sparse retrieval, <span class="hl">reciprocal rank fusion</span> and cross-encoder reranking with calibrated confidence thresholds and an explicit degraded mode, plus a companion <span class="hl">voice-agent service on LiveKit Agents</span> with its own evaluation harness.</div></div>
-      <div class="proj-row"><div class="proj-label">Decisions</div><div class="proj-text">Kept the deployment footprint small - no separate vector database, no LangChain, no Kubernetes - so the service can be stood up inside a customer-controlled environment; queue-based workers handle document and website intake asynchronously.</div></div>
+      <div class="proj-row"><div class="proj-label">Built</div><div class="proj-text">A phone agent that answers inbound calls and completes bookings end to end - roughly 126,000 lines of TypeScript across 660 files. Retrieval is one package among many; the rest is <span class="hl">Firecrawl-based crawling</span> behind SSRF-guarded URL validation, knowledge compressed into a prompt-ready brief, per-caller memory, and the agent runtime around a live call.</div></div>
+      <div class="proj-row"><div class="proj-label">Decisions</div><div class="proj-text">Memory carries an explicit trust boundary: anything learned mid-call is written only as a <span class="hl">candidate</span> and never reaches the live prompt until a merchant approves it, approved facts cannot be silently downgraded by automatic extraction, and write failures are swallowed so a database error cannot take down the end of a call.</div></div>
     </div>
   </div>
 
