@@ -49,7 +49,8 @@ const {
     <a class="skip-link" href="#main">{t(locale, 'skipToContent')}</a>
 
     <div class="shell" data-width={width}>
-      <div class="bar">
+      <slot name="hero" />
+      <div id="blog-content" class="bar">
         <Header {locale} {path} {alternates} />
       </div>
       <main id="main" data-width={width}>

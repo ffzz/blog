@@ -1,6 +1,14 @@
 {
   "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@designcodeio/threeui": ["src/shaders/sylva-living-world/SylvaLivingWorldScene.tsx"],
+      "@designcodeio/threeui/style.css": ["src/shaders/threeui.css"]
+    }
+  },
   "include": [".astro/types.d.ts", "**/*"],
+
   // worker/ 是独立的 Cloudflare Workers 运行时环境（KVNamespace 等全局类型
   // 跟 Astro 的 DOM/浏览器类型环境不是一回事），用自己的 worker/tsconfig.json。
   "exclude": ["dist", "worker"]

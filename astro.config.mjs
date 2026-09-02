@@ -1,4 +1,6 @@
 // @ts-check
+import { fileURLToPath } from 'node:url';
+import react from '@astrojs/react';
 import { unified } from '@astrojs/markdown-remark';
 import { defineConfig } from 'astro/config';
 
@@ -7,6 +9,19 @@ import { SITE_ORIGIN } from './src/site-origin.mjs';
 
 // https://astro.build/config
 export default defineConfig({
+  integrations: [react()],
+  vite: {
+    resolve: {
+      alias: {
+        '@designcodeio/threeui/style.css': fileURLToPath(new URL('./src/shaders/threeui.css', import.meta.url)),
+        '@designcodeio/threeui': fileURLToPath(new URL('./src/shaders/sylva-living-world/SylvaLivingWorldScene.tsx', import.meta.url)),
+      },
+    },
+    build: {
+      chunkSizeWarningLimit: 1000,
+    },
+  },
+
   // canonical / sitemap / OG 图全部从这里派生。上线前替换 src/site-origin.mjs。
   site: SITE_ORIGIN,
 

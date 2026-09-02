@@ -1,5 +1,6 @@
 ---
 import JsonLd from '../components/JsonLd.astro';
+import LivingWorldHero from '../components/LivingWorldHero.astro';
 import PostList from '../components/PostList.astro';
 import { HOME_RECENT_POSTS, SITE, type Locale } from '../consts';
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -28,6 +29,7 @@ const hasMore = all.length > entries.length;
   title={site.name}
   description={site.tagline}
 >
+  <LivingWorldHero slot="hero" />
   <JsonLd data={schema} />
   {/* 首页 h1 承载站点核心定位 —— 这是全站权重最高的一个标题。 */}
   <section class="intro">
