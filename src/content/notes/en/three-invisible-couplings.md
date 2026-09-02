@@ -26,9 +26,9 @@ async function submitRefund(req: RefundRequest, dryRun: boolean): Promise<Refund
 await submitRefund(req, true)
 ```
 
-That `true` leaks two facts: `submitRefund` has more than one path inside it, and `dryRun` skips some of the steps. A reader has to know that internal arrangement before they can say what this call does. One parameter is carrying the refund data and an instruction about execution at the same time.
+**That `true` leaks two facts**: `submitRefund` has more than one path inside it, and `dryRun` skips some of the steps. A reader has to know that internal arrangement before they can say what this call does. One parameter is carrying the refund data and an instruction about execution at the same time.
 
-The return value adds a second problem. When `dryRun` is true, nothing was submitted, so what belongs in `RefundResult.status`, and does the amount mean an estimate or a result? One type carries two meanings, and the caller has to read the boolean a second time to work out which one it is.
+The return value adds a second problem. When `dryRun` is true, nothing was submitted, so what belongs in `RefundResult.status`, and does the amount mean an estimate or a result? **One type carries two meanings**, and the caller has to read the boolean a second time to work out which one it is.
 
 Split the two paths and the function name and the return type each say what they mean:
 
@@ -38,9 +38,9 @@ async function previewRefund(req: RefundRequest): Promise<RefundPreview>
 async function submitRefund(req: RefundRequest): Promise<RefundResult>
 ```
 
-That is a reasonable place to pin the definition: coupling measures how much two modules have to know about each other. The more they know, the tighter they are tied, and the more likely a change in one pulls at the other. `dryRun` stands out because the caller is forced to know how `submitRefund` is arranged inside.
+That is a reasonable place to pin the definition: **coupling measures how much two modules have to know about each other**. The more they know, the tighter they are tied, and the more likely a change in one pulls at the other. `dryRun` stands out because the caller is forced to know how `submitRefund` is arranged inside.
 
-One distinction is worth drawing, between a control parameter and plain configuration. `formatAmount(m, { showCurrency: true })` also takes a boolean, but it describes what the output should look like instead of asking the caller to pick a business process. The two sides still share the meaning of the argument, which is ordinary data coupling. `dryRun` exposes the callee's control flow on top of that, which is what drops it into control coupling.
+One distinction is worth drawing, between a control parameter and plain configuration. `formatAmount(m, { showCurrency: true })` also takes a boolean, but it describes what the output should look like instead of asking the caller to pick a business process. The two sides still share the meaning of the argument, which is ordinary data coupling. **`dryRun` exposes the callee's control flow on top of that, which is what drops it into control coupling.**
 
 ## Where the six levels come from
 
@@ -61,7 +61,7 @@ The table has been tidied up since. On its lineage, what I could verify is secon
 
 ## In production code, coupling lives outside the imports
 
-The couplings above sit in function signatures where the compiler and the IDE can both see them. The harder parts of production code show up at runtime, in shared state, or behind a layer that looks neutral. When imports drop away, those connections do not go with them.
+The couplings above sit in function signatures where the compiler and the IDE can both see them. The harder parts of production code show up at runtime, in shared state, or behind a layer that looks neutral. **When imports drop away, those connections do not go with them.**
 
 ### An event bus moves coupling from compile time to run time
 
@@ -95,9 +95,16 @@ Now it knows `EventBus` and nothing else. Two imports gone, constructor shorter.
 
 The compiler sees the `emit` and can check the types `EventBus` exposes. If the event name is only a string, it cannot enumerate the subscribers from it, and it knows nothing about the order they run in or how their failures propagate. An IDE can find every occurrence of the string, though it cannot prove those hits are the whole business flow.
 
-Checked against the scale, the first version passed nothing but a `refundId` between `RefundService` and `RefundLedger`, which is data coupling at level 6. In the second version, publisher and subscriber both depend on the event name and the payload shape, which is external coupling at level 3. For this one business connection, a dependency the compiler could enumerate has turned into a runtime convention that has to be tracked some other way.
+Checked against the scale, the first version passed nothing but a `refundId` between `RefundService` and `RefundLedger`, which is data coupling at level 6. In the second version, publisher and subscriber both depend on the event name and the payload shape, which is external coupling at level 3. **For this one business connection, a dependency the compiler could enumerate has turned into a runtime convention that has to be tracked some other way.**
 
-Event buses still have their place: across processes, across teams, or where the subscriber genuinely should not be known to the publisher. There is a blunt way to test how strong the business dependency is. Temporarily remove the subscriber and see whether the main flow still holds up. Lose the analytics or audit subscriber and you are down one data source, which is usually fine to handle asynchronously. Lose the ledger and the books are wrong, so that link needs stronger delivery and failure guarantees. This test only ranks business dependency. Deployment boundaries, throughput, and availability across processes are separate trade-offs.
+The move everybody calls decoupling walked three levels in the wrong direction:
+
+```mermaid
+flowchart LR
+   A["Direct call<br/>passes only refundId<br/>level 6 · data"] -->|"to an event bus"| B["Event bus<br/>shares name · payload · order<br/>level 3 · external"]
+```
+
+Event buses still have their place: across processes, across teams, or where the subscriber genuinely should not be known to the publisher. **There is a blunt way to test how strong the business dependency is.** Temporarily remove the subscriber and see whether the main flow still holds up. Lose the analytics or audit subscriber and you are down one data source, which is usually fine to handle asynchronously. Lose the ledger and the books are wrong, so that link needs stronger delivery and failure guarantees. This test only ranks business dependency. Deployment boundaries, throughput, and availability across processes are separate trade-offs.
 
 ### Shared mutable state: no import needed to affect each other
 
@@ -108,9 +115,9 @@ export const refundCache = new Map<string, Refund>()
 
 The reconciliation job writes to it, risk reads from it. Both modules may well import `shared-cache.ts` without either referencing the other. A text search lists everyone who touches this `Map` and says nothing about which reads have to happen after which writes.
 
-Say risk reads a refund as `Submitted` and starts to clear it. Before the clearance finishes, the reconciliation job flips the same refund to `Failed`. The `Map` did not hand back a stale value; the trouble is that reading the state and acting on it are two separate moments. Risk carries on with a decision that has already expired.
+Say risk reads a refund as `Submitted` and starts to clear it. Before the clearance finishes, the reconciliation job flips the same refund to `Failed`. The `Map` did not hand back a stale value; **the trouble is that reading the state and acting on it are two separate moments**. Risk carries on with a decision that has already expired.
 
-This kind of connection is common coupling at level 2, one notch looser than reading and writing the other module's internals directly. What makes it hard to find is equally specific: tools can locate the shared object, but not who owns the writes, what order things must happen in, or which sequences need to be atomic.
+This kind of connection is common coupling at level 2, one notch looser than reading and writing the other module's internals directly. What makes it hard to find is equally specific: **tools can locate the shared object, but not who owns the writes, what order things must happen in, or which sequences need to be atomic.**
 
 What risk needs is the ability to query. Give it a read-only interface, with the implementation living outside the shared state. The dependency becomes findable again, and risk never gets a write handle. Who gets to define that interface is the subject of notes 7 and 8.
 
@@ -118,17 +125,43 @@ What risk needs is the ability to query. Give it a read-only interface, with the
 
 Several forms calling several data-layer methods directly gives you a mesh. Put a controller in the middle and the graph becomes a star. The shape is clearer, but if the controller fills up with switches that branch by caller, the same amount of knowledge is now concentrated in one place.
 
-Change a data-layer method and the controller changes. A form grows one more case and the controller gains a branch. `Form1` and `Form3`, which had never heard of each other, now take turns editing the same file. The amount of code you have to open and verify has not gone down. The dependency moved.
+Change a data-layer method and the controller changes. A form grows one more case and the controller gains a branch. `Form1` and `Form3`, which had never heard of each other, now take turns editing the same file. **The amount of code you have to open and verify has not gone down. The dependency moved.**
 
-To tell whether the layer is a real boundary, try changing the implementation behind it. If callers are unaffected and the interface still describes the same thing in stable business words, the layer absorbed the change. If every change means adding another caller branch to the switch, the layer is a clearing house for details. That test comes back in note 7, on dependency inversion.
+Both shapes side by side:
+
+```mermaid
+flowchart TB
+   subgraph MESH["Before · mesh"]
+     direction LR
+     F1["Form1"] --> D1["DataA"]
+     F1 --> D2["DataB"]
+     F2["Form2"] --> D1
+     F2 --> D3["DataC"]
+     F3["Form3"] --> D2
+     F3 --> D3
+   end
+   subgraph STAR["After · star"]
+     direction LR
+     G1["Form1"] --> C["Controller"]
+     G2["Form2"] --> C
+     G3["Form3"] --> C
+     C --> E1["DataA"]
+     C --> E2["DataB"]
+     C --> E3["DataC"]
+   end
+```
+
+The star does have fewer lines. The price is that the controller becomes the only junction: every new case in any form, and every change to any data-layer method, lands in the same file. `Form1` and `Form3` never used to know about each other, and now they take turns editing one file.
+
+To tell whether the layer is a real boundary, try changing the implementation behind it. If callers are unaffected and the interface still describes the same thing in stable business words, the layer absorbed the change. **If every change means adding another caller branch to the switch, the layer is a clearing house for details.** That test comes back in note 7, on dependency inversion.
 
 ## Direction: toward the stable side, and no cycles
 
 Once the connections are visible, they need a direction. I keep three rules here. They cover a narrow range, but each one can be checked directly.
 
-Start with cycles. A depends on B, B depends on C, C depends on A, and the three modules now behave like one module when it comes to change: touch one and all three need verifying again. Cycles are one of the few structural problems a tool can find for you. Both `madge` and `dependency-cruiser` do it.
+Start with cycles. A depends on B, B depends on C, C depends on A, and the three modules now behave like one module when it comes to change: **touch one and all three need verifying again**. Cycles are one of the few structural problems a tool can find for you. Both `madge` and `dependency-cruiser` do it.
 
-Then direction. Dependencies should point toward the more stable side, where stable means depended on by many and depending on few, and therefore expensive to change. `Money` can be depended on by all four channels; it should not know about any specific channel. Wire it the other way and adding a channel means editing `Money`, where two of the four invariants listed in the [opening essay](/notes/programming-taste-in-the-agent-era/) also live.
+Then direction. **Dependencies should point toward the more stable side**, where stable means depended on by many and depending on few, and therefore expensive to change. `Money` can be depended on by all four channels; it should not know about any specific channel. Wire it the other way and adding a channel means editing `Money`, where two of the four invariants listed in the [opening essay](/notes/programming-taste-in-the-agent-era/) also live.
 
 Last, visibility. The connections in this note can be reordered by how much a tool helps you when the convention changes:
 
@@ -139,9 +172,9 @@ Last, visibility. The connections in this note can be reordered by how much a to
 | Global mutable object | Search finds the users, but who writes, in what order, and relative to which reads still has to be reconstructed by hand |
 | Event name as a string | The string can be found, and it is hard to prove the hits cover the full meaning |
 
-The later rows all have uses. What they share is the cost of moving part of "who depends on whom" out of the compiler and into tests, docs, runtime checks, or someone's memory. Every one of those you fail to build is one more thing a maintainer has to remember.
+The later rows all have uses. **What they share is the cost of moving part of "who depends on whom" out of the compiler** and into tests, docs, runtime checks, or someone's memory. Every one of those you fail to build is one more thing a maintainer has to remember.
 
-These three rules govern the shape, direction, and visibility of a dependency. They cannot tell you whether the dependency should exist. That goes back to the previous note: will these two modules change together because of the same change?
+These three rules govern the shape, direction, and visibility of a dependency. **They cannot tell you whether the dependency should exist.** That goes back to the previous note: will these two modules change together because of the same change?
 
 ## Counting imports as a coupling metric, wrong twice
 
@@ -149,9 +182,21 @@ I used to treat "add an intermediate layer" as the standard answer to coupling. 
 
 I also treated direct-call-to-event as a coupling reduction, on the evidence of fewer imports. Checked line by line against the scale, `RefundService` and `RefundLedger` had been passing only the data the other side needed. After the switch both ends share a string, a payload, and a runtime convention. The change may still be worth making at some deployment boundaries, but "fewer imports, therefore lower coupling" does not hold.
 
-Both mistakes came from the same convenient proxy. Import counts measure symbols in a source file. The coupling table asks how much you have to know to understand and change a connection. Put an event bus, shared state, or a middle layer in front of them and the two give different answers.
+**Both mistakes came from the same convenient proxy.** Import counts measure symbols in a source file. The coupling table asks how much you have to know to understand and change a connection. Put an event bus, shared state, or a middle layer in front of them and the two give different answers.
+
+Those two mistakes sent me back to where the table came from. What it was built to answer in 1974 was whether a change in one module drags another along. The levels describe how much the two sides know about each other, which was never the same question as how many import lines there are. Compressed down to "lower coupling is better", the first half disappeared and only the proxy was left. **That is what going back to the source buys you: a slogan turned back into the trouble it was written for, and a trouble is something you can check on the spot.**
 
 These days, when I look at a dependency, I start by assuming its convention changes. Can the compiler list everything that breaks? Whatever has to be filled in by search, docs, and memory is the part of that connection the imports never showed.
+
+## What this note concludes
+
+- **Coupling measures how much two modules know about each other, not how many imports there are.** Import counts measure symbols in a source file; the scale asks how much you have to know to understand and change a connection.
+- **A parameter like `dryRun` lands in control coupling**, because it exposes the callee's control flow on top of the data. `formatAmount(m, { showCurrency: true })` describes what the output should look like, which is ordinary data coupling.
+- **Swapping in an event bus moves you down the scale.** Passing only a `refundId` was data coupling; sharing an event name, a payload shape, and an execution order is external coupling. Worth doing across processes or teams, but it is not decoupling.
+- **Shared mutable state is common coupling at level 2, one notch looser than reading the other module's internals.** Search lists the users. It cannot list who owns the writes, what order things must happen in, or which sequences need to be atomic.
+- **A middle layer does not decouple on its own.** Mesh to star only reshapes the graph. The knowledge that used to be spread around collects in the controller, and not one fewer file has to be open at the same time.
+- **Dependencies should point toward the more stable side, and must not cycle.** Three modules in a cycle behave like one module when it comes to change, and cycles are one of the few structural problems a tool can find for you.
+- **"Lower coupling is better" backfires as an acceptance criterion.** It rewards moving dependencies out of sight rather than making the system better. Whether a dependency should exist at all is a business question: remove the subscriber for a moment and see whether the main flow still holds. Going back to the 1974 source is what turns the slogan back into that question.
 
 The next note is on single responsibility, back on the cohesion side.
 
