@@ -5,13 +5,11 @@ pubDate: 2026-09-12
 tags: ['ai', 'llm-api', 'engineering']
 ---
 
-Same Llama 3.3 70B. OpenRouter and DeepInfra charge $0.10 per million input tokens; Together charges $1.04. Ten times. DeepSeek V4-Flash costs $0.06 on DeepInfra, while DeepSeek's own off-peak price is $0.22 — nearly a quarter of the source price.[1][2]
+I researched eight LLM API aggregator platforms: OpenRouter, B.AI, EasyRouter, SiliconFlow, Novita, DeepInfra, Groq, and Together. I checked their pricing pages, privacy policies, data-center disclosures, and three 2026 audit papers, trying to work out how much of the price gap between platforms for the same model is a real cost difference and how much is just positioning.
 
-That gap reads like a simple choice: find the cheapest one, everything else is savings.
+The order that came out runs against most people's instinct: price should be the last thing you check. The reason is a regression result from the CISPA paper — across the shadow APIs they audited, price ratio had no predictive power over accuracy degradation.[18] Paying more buys nothing toward "the model is at least real."
 
-I went through eight providers' pricing pages, privacy policies, and data-center disclosures, plus three 2026 audit papers, and the order that came out runs the other way. Price should be the last thing you check. The reason isn't "cheap means bad" folk wisdom — it's a regression result from the CISPA paper: across the shadow APIs they audited, price ratio had no predictive power over accuracy degradation.[18] Paying more buys nothing toward "the model is at least real."
-
-Every price and policy term in this piece is a snapshot from September 9, 2026. This market can move in three days; check the provider's own site before acting on any number here. The eight covered are OpenRouter, B.AI, EasyRouter, SiliconFlow, Novita, DeepInfra, Groq, and Together.
+Every price and policy term in this piece is a snapshot from September 9, 2026. This market can move in three days; check the provider's own site before acting on any number here.
 
 ## The Tenfold Gap Comes From Platform Positioning, Not the Model
 
@@ -86,7 +84,7 @@ The more irreversible and the less observable a mistake is, the earlier it goes.
 
 The next six sections follow this order.
 
-## Check One: Data You Send Can't Be Recalled
+## Privacy Policy: Together Sets the Bar, B.AI and EasyRouter Barely Have One
 
 Once a request is sent, who can retain it, train on it, or hand it to someone else. This goes first because a prompt you've sent can't be recalled, and nothing will ever tell you what happened to it.
 
@@ -105,7 +103,7 @@ I read all eight privacy policies line by line for this. The gap here is bigger 
 
 Sourced from each platform's public privacy policy, pulled 2026-09-09.[6][8][9][11][12][13][15][16]
 
-### The Three With the Most Detailed Policies
+### The Three Most Detailed Policies: Together, OpenRouter, SiliconFlow
 
 Together is the only one of the eight offering Zero Data Retention, and it doesn't train by default — training requires explicit opt-in.[16] The tradeoff is written into the policy: ZDR only runs forward, and once it's on, the platform itself can no longer access, export, or delete data from before.
 
@@ -113,7 +111,7 @@ OpenRouter's structure is worth calling out on its own. The platform itself does
 
 SiliconFlow takes a different route: explicit denial of use in pretraining or fine-tuning, destruction immediately after inference and unrecoverable, data stored within mainland China, under the PIPL framework rather than GDPR.[11] The tradeoff is real-name verification and a content-safety review pipeline on both input and output.
 
-### The Two Thinnest Policies
+### The Two Thinnest Policies: B.AI and EasyRouter
 
 B.AI's privacy policy has no GDPR clause, no retention period, no training clause, and doesn't disclose data location. At the same time the policy itself admits it will "collect, log, and store" user input, using it in anonymized form to improve its infrastructure and API network.[8] Fewer clauses doesn't mean lower risk — here it means no written constraint at all.
 
@@ -135,7 +133,7 @@ The mechanism holds regardless: a relay sits between the user and the upstream m
 
 Two framework-level facts sit on the compliance side. Serving unregistered overseas models to users in mainland China doesn't satisfy the registration and security-assessment requirements under China's Interim Measures for the Management of Generative AI Services.[25] And transmitting mainland users' personal information overseas and retaining it, once the cumulative count passes 100,000 people, can trigger the filing obligation under the Measures for Security Assessment of Cross-Border Data Transfers.[26] Both constraints bind the platform rather than the individual developer, and together they decide whether a relay path can keep existing.
 
-## Check Two: Hop Count Decides Whether Anything Else Can Be Verified
+## Gateway Routing: Direct-Compute Platforms Have the Fewest Hops, Relays the Least Transparency
 
 Between sending a request and it reaching the model, how many nodes can read and write the plaintext. This check comes before model authenticity because hop count decides whether the later checks can even be verified — the longer the chain, the more any single compromised node poisons everything downstream, and there's no way from the outside to tell whether a response was tampered with.
 
@@ -161,7 +159,7 @@ The boundary needs to be exact. Those 428 came from Taobao, Xianyu, and public c
 
 Among the eight, SiliconFlow, Novita, DeepInfra, Groq, and Together run their own compute or connect directly upstream, and don't fall into the category these studies audited. OpenRouter is an aggregator that routes to legitimate providers' own endpoints. B.AI and EasyRouter operate as relay/resale platforms, inheriting this category's structural problems — but this piece found no case-specific evidence against either.
 
-## Check Three: Model Substitution Won't Reveal Itself
+## Model Substitution: No Confirmed Cases Among the Eight, OpenRouter Treated as the Academic Benchmark
 
 Hop count estimated, next comes whether it can be verified at all. This check's defining trait is that it's detectable but never self-reports — if you don't actively test for it, you'll never know.
 
@@ -187,7 +185,7 @@ The five direct-inference platforms have no substitution evidence; their risk si
 
 B.AI and EasyRouter operate as relay/resale platforms, and neither has been named in a substitution accusation. The 36Kr piece that covers this space is about "celebrities entering the business," not an accusation of model swapping.[30] What they inherit is the verification difficulty of the whole category, not an individual case.
 
-## Check Four: Billing Errors and Context Loss Don't Throw Errors
+## Billing and Context: Overcharges and Truncation Don't Surface on Their Own
 
 A real model doesn't guarantee a real bill.
 
@@ -205,11 +203,11 @@ Two more operations sit on the same structure — industry reporting mentions bo
 
 ### This Sits Ahead of Latency Because It Won't Surface on Its Own
 
-The reason matches check three: it takes a purpose-built test to catch. The billing page doesn't flag it, the response is a perfectly normal string of text, and losing context doesn't throw an error.
+The reason matches the previous check: it takes a purpose-built test to catch. The billing page doesn't flag it, the response is a perfectly normal string of text, and losing context doesn't throw an error.
 
 Latency is the opposite. Slow shows up on day one, and switching away costs nothing more than changing a base URL.
 
-## Check Five: Latency and Region
+## Latency and Region: No One Covers Asia-Pacific, Groq Has the Hardest Numbers
 
 Performance only comes up here, because performance problems announce themselves — run it for a day and slow versus fast is obvious, and switching away is cheap.
 
@@ -234,13 +232,13 @@ The other seven either run a single data center or don't disclose one at all. Gr
 
 "Route me to something near my region" was an item I pulled out on its own when I was drafting the research outline. Having gone through all eight, this is the cleanest conclusion of the bunch: users in Asia-Pacific currently have no option at all. The only regional routing that exists was built for compliance, not for speed, and it isn't in Asia-Pacific either way.
 
-### Latency Numbers That Hold Up
+### Latency Numbers That Hold Up: Groq's Official Throughput Table
 
 Groq's per-model throughput numbers are the most quantifiable set on the market: Llama 3.3 70B at 280 tokens/s, GPT OSS 20B at 1000, Qwen3.6-27B at 500.[14] Named model, actual number, retestable.
 
 OpenRouter doesn't publish absolute figures, but offers `sort=latency` and `preferred_max_latency` parameters, routing based on a five-minute window's p50 through p99.[3] What it hands you is a filtering mechanism — you pick your own latency ceiling and it picks the endpoint.
 
-### Latency Numbers That Don't
+### Latency Numbers That Don't: EasyRouter, Novita, and SiliconFlow's Marketing Claims
 
 EasyRouter's "12ms P99 first-token latency" and "99.99% SLA," Novita's "200ms latency," and SiliconFlow's "up to 70% latency reduction, 3–5x throughput" — none of the three come with a methodology or an absolute baseline.[9][12][11] A claim like "70% reduction" can't be checked without knowing the denominator; this piece treats it as unverified.
 
@@ -252,9 +250,9 @@ A few figures for scale: DeepSeek V4-Flash runs about 125.7 tokens/s with a firs
 
 Within that same aggregated dataset, Llama 3.3 70B's 87.4 tokens/s and Groq's official 280 tokens/s differ by more than threefold — the first is a cross-provider median, the second is a single-hardware measurement. The two numbers don't conflict; they're answering different questions.
 
-One last point ties back to check two: multi-hop routing is itself a structural latency risk. B.AI's relay architecture is confirmed, and its own materials warn of unstable entry points requiring switching. This piece found no third-party latency measurement and no quantifiable user-complaint evidence for it — community search is limited by anti-scraping restrictions, and I'm not inventing a conclusion here.
+One last point ties back to gateway routing: multi-hop relays are themselves a structural latency risk. B.AI's relay architecture is confirmed, and its own materials warn of unstable entry points requiring switching. This piece found no third-party latency measurement and no quantifiable user-complaint evidence for it — community search is limited by anti-scraping restrictions, and I'm not inventing a conclusion here.
 
-## Check Six: Price Comes Last
+## Price: Half the Cheapest Cells Are Subsidies, Not a Cost Edge
 
 Once the first five checks have filtered the field, comparing prices means something.
 
@@ -324,7 +322,7 @@ OpenRouter doesn't mark up inference itself, but charges on top-ups — 5.5% on 
 
 Once fees and service tiers are factored in, the platform with the lowest sticker price isn't necessarily the one you end up paying least to.
 
-### Subsidized Prices Won't Last
+### Subsidized Prices Won't Last: SiliconFlow Sells at a Loss, B.AI Runs on Promotions
 
 Some of the cheapest cells in that table aren't a cost advantage — they're a subsidy.
 
@@ -366,7 +364,7 @@ A platform burning cash on subsidies might change its price or shut down after y
 
 The industry backdrop explains where this money is coming from. China's daily token-call volume went from roughly 100 billion in early 2024 to about 140 trillion in March 2026 — more than a thousandfold increase in two-plus years.[33] Over the same stretch, the gateway layer itself has been getting acquired and attacked: Portkey was acquired by Palo Alto Networks and folded into its AI security product line, while LiteLLM suffered a dependency-package attack in March 2026 that hit over 46,000 development environments.[30]
 
-### A Scorecard and Its Limits
+### A Scorecard and Its Limits: OpenRouter Ranks First Overall
 
 The scoring rubric goes before the table. What follows is a weighted result across five dimensions, each scored 1 to 10: price 25%, model coverage and authenticity 25%, latency and routing 15%, privacy and compliance 20%, ecosystem and trust 15%. This is my own subjective weighting of the snapshot data, not a third-party rating — a different set of weights produces a different ranking.
 
@@ -387,7 +385,7 @@ The bottom three share one thing: key information is opaque — data-center loca
 
 Price carries the highest weight in that table, 25%, while the whole piece argues price should come last. Those two don't contradict each other — they're answers to different questions.
 
-The weighted score ranks overall experience: given every dimension clears some bar, which one is the better deal all in. The elimination order ranks decision sequence: what to check first, and what to check last, so a mistake doesn't land somewhere irreversible. A platform can score high on the weighted table and still deserve elimination at check one for a specific use case — if data can't leave the country, OpenRouter's 8.8 doesn't help you.
+The weighted score ranks overall experience: given every dimension clears some bar, which one is the better deal all in. The elimination order ranks decision sequence: what to check first, and what to check last, so a mistake doesn't land somewhere irreversible. A platform can score high on the weighted table and still deserve elimination on the privacy-policy check for a specific use case — if data can't leave the country, OpenRouter's 8.8 doesn't help you.
 
 ## Scenario Fit, and Four Conditions That Change the Order
 
@@ -395,12 +393,12 @@ Put the six checks into concrete scenarios first.
 
 | Need | Pick | Why |
 | --- | --- | --- |
-| Broad aggregation, widest model coverage | OpenRouter | 400+ models, transparent pricing; its check-one weakness sits upstream, not on the platform |
+| Broad aggregation, widest model coverage | OpenRouter | 400+ models, transparent pricing; its privacy-policy weakness sits upstream, not on the platform |
 | Cheapest possible open models | DeepInfra | DeepSeek V4-Flash runs about a quarter of the official price |
 | Speed first | Groq | Hardest published per-model throughput data, but a small catalog and data in the US |
 | Direct access from mainland China, compliance first | SiliconFlow | Domestic storage, denies training, registered entity; comes with real-name and content review |
 | Privacy most sensitive | Together | Only one offering ZDR with no training by default |
-| Crypto payment, borderless access | B.AI, cautiously | The only crypto-native aggregator, but weakest at check one — not for sensitive data |
+| Crypto payment, borderless access | B.AI, cautiously | The only crypto-native aggregator, but weakest on privacy policy — not for sensitive data |
 | Anything else | Hold off on EasyRouter | Pricing page, privacy policy, and domain ownership are all unconfirmed |
 
 This order breaks down under four conditions.
@@ -411,7 +409,7 @@ Compliance conditions can shift. If upstream restrictions on resale and unsuppor
 
 Ownership can change. An acquisition can shift a platform's incentive structure with every technical metric staying exactly the same — what needs re-judging is whether it still has a reason to stay neutral.
 
-Finally, this order is built for individuals and small teams. Enterprise procurement runs its own DPA, audit, and vendor-assessment process, where checks one and two turn into contract clauses instead of something you read off a privacy policy.
+Finally, this order is built for individuals and small teams. Enterprise procurement runs its own DPA, audit, and vendor-assessment process, where privacy and gateway routing turn into contract clauses instead of something you read off a policy page.
 
 Having gone through all eight, the one thing I'm most sure of is the least conclusion-shaped: of these six checks, price is the only one you can get wrong and fix again the same day. And that's exactly why it's the easiest one to compare — and the easiest one to check first.
 
