@@ -1,5 +1,5 @@
 ---
-title: "Choosing an LLM API Provider: Price Is the Last Filter, Not the First"
+title: "AI Model Provider Research: Quality, Price, Privacy, and Latency"
 description: The same model can cost ten times more on one platform than another, yet three 2026 audit papers found that price predicts nothing about whether you're getting the real model. This note checks pricing pages, privacy policies, data-center disclosures, and the papers themselves across eight providers, then orders the elimination by how reversible a mistake is.
 pubDate: 2026-09-12
 tags: ['ai', 'llm-api', 'engineering']
@@ -13,7 +13,7 @@ I went through eight providers' pricing pages, privacy policies, and data-center
 
 Every price and policy term in this piece is a snapshot from September 9, 2026. This market can move in three days; check the provider's own site before acting on any number here. The eight covered are OpenRouter, B.AI, EasyRouter, SiliconFlow, Novita, DeepInfra, Groq, and Together.
 
-## Where the Tenfold Gap Comes From
+## The Tenfold Gap Comes From Platform Positioning, Not the Model
 
 Pull the gap apart first. Is it the model, or something else.
 
@@ -31,9 +31,9 @@ GPT-5.x, Claude, and Gemini are only sold by two of the eight — OpenRouter and
 
 So on the closed-flagship side, the question "how much does the same model vary across platforms" has exactly one comparable pair, and the answer for that pair is zero.
 
-### The Whole Gap Sits in Open and Domestic Models
+### The Whole Gap Sits in Open-Weight Models
 
-Every multiple shows up on the open-weight and Chinese-model side. Each platform there is running a different business, and the price reflects the business:
+Every multiple shows up on the open-weight side taken as a whole. Each platform there is running a different business, and the price reflects the business:
 
 DeepInfra and OpenRouter sit at the cheap end — one is a dedicated inference cloud for open models, the other aggregates providers and surfaces the cheapest endpoint. Groq's Llama 3.3 costs six times more than the cheap end, because what it sells is LPU-hardware latency, and speed is the pricing story. Together's Llama 3.3 is the most expensive on the market; its customers are enterprises moving to open weights, and the price carries dedicated deployment and compliance overhead. SiliconFlow prices in yuan close to the official rate, no markup and no subsidy, plus an off-peak discount. B.AI charges official rate one-to-one on mainstream models, and the discounts come from promotions — on the snapshot date, GLM-5.3-Flash, Tencent Hunyuan Hy3, and Xiaomi MiMo-V2.5 were all free, and DeepSeek V4-Flash was half price.[1]
 
@@ -41,7 +41,7 @@ The gap comes almost entirely from what the platform is, not from the model. The
 
 That's as far as the price data goes on its own. It doesn't answer the other question: is the cheap end selling the same thing.
 
-## Why Price Can't Go First
+## Price Has No Predictive Power Over Whether the Model Is Real
 
 Three papers audited this market systematically in 2026, and they each measured a different kind of failure.
 
@@ -57,7 +57,7 @@ That result kills a specific strategy outright: sort by price, then pick the pri
 
 One note on evidence strength while I'm here. A line circulating in Chinese coverage claims a shadow API's profit margin roughly equals the compliance cost it skips. I couldn't find that phrasing in the CISPA paper itself — the closest is "these sellers simultaneously violate service agreements and regulatory requirements."[18] That line is likely a media paraphrase, and this piece treats it as unverified.
 
-### What Each of the Three Papers Measured
+### The Three Papers Measured Three Different Kinds of Failure
 
 The three papers cover three different questions, and citing them interchangeably introduces errors.
 
@@ -86,7 +86,7 @@ The more irreversible and the less observable a mistake is, the earlier it goes.
 
 The next six sections follow this order.
 
-## Check One: Where Can the Data Go
+## Check One: Data You Send Can't Be Recalled
 
 Once a request is sent, who can retain it, train on it, or hand it to someone else. This goes first because a prompt you've sent can't be recalled, and nothing will ever tell you what happened to it.
 
@@ -135,7 +135,7 @@ The mechanism holds regardless: a relay sits between the user and the upstream m
 
 Two framework-level facts sit on the compliance side. Serving unregistered overseas models to users in mainland China doesn't satisfy the registration and security-assessment requirements under China's Interim Measures for the Management of Generative AI Services.[25] And transmitting mainland users' personal information overseas and retaining it, once the cumulative count passes 100,000 people, can trigger the filing obligation under the Measures for Security Assessment of Cross-Border Data Transfers.[26] Both constraints bind the platform rather than the individual developer, and together they decide whether a relay path can keep existing.
 
-## Check Two: How Many Hops Is This Path
+## Check Two: Hop Count Decides Whether Anything Else Can Be Verified
 
 Between sending a request and it reaching the model, how many nodes can read and write the plaintext. This check comes before model authenticity because hop count decides whether the later checks can even be verified — the longer the chain, the more any single compromised node poisons everything downstream, and there's no way from the outside to tell whether a response was tampered with.
 
@@ -147,7 +147,7 @@ Two of them ran adaptive evasion: the first 50 requests came back clean, and inj
 
 The researchers also ran a contamination experiment. One deliberately leaked OpenAI key generated 100 million tokens of GPT-5.4 traffic and at least seven Codex sessions; a weakly configured honeypot generated 2 billion billed tokens, 99 sets of credentials, 440 Codex sessions, 401 of which were already running in autonomous mode.[19]
 
-### How to Estimate Hop Count for a Given Path
+### Hop Count Isn't Published — Estimate It From Proxy Signals
 
 Platforms don't publish this number. What you can check instead is a handful of proxy signals:
 
@@ -161,7 +161,7 @@ The boundary needs to be exact. Those 428 came from Taobao, Xianyu, and public c
 
 Among the eight, SiliconFlow, Novita, DeepInfra, Groq, and Together run their own compute or connect directly upstream, and don't fall into the category these studies audited. OpenRouter is an aggregator that routes to legitimate providers' own endpoints. B.AI and EasyRouter operate as relay/resale platforms, inheriting this category's structural problems — but this piece found no case-specific evidence against either.
 
-## Check Three: Is It Actually the Model It Claims to Be
+## Check Three: Model Substitution Won't Reveal Itself
 
 Hop count estimated, next comes whether it can be verified at all. This check's defining trait is that it's detectable but never self-reports — if you don't actively test for it, you'll never know.
 
@@ -187,7 +187,7 @@ The five direct-inference platforms have no substitution evidence; their risk si
 
 B.AI and EasyRouter operate as relay/resale platforms, and neither has been named in a substitution accusation. The 36Kr piece that covers this space is about "celebrities entering the business," not an accusation of model swapping.[30] What they inherit is the verification difficulty of the whole category, not an individual case.
 
-## Check Four: Is the Billing and Context Honest
+## Check Four: Billing Errors and Context Loss Don't Throw Errors
 
 A real model doesn't guarantee a real bill.
 
@@ -197,13 +197,13 @@ Silent truncation is a separate category. In a 25-turn conversation test, some g
 
 Context shrinkage is harder to notice than billing overcharges. The model keeps answering, the tone stays normal, it's just forgotten something set twenty turns back. In long conversations and agent workflows, this kind of degradation gets misread as the model simply not being capable enough.
 
-### Why This Bias Has an Economic Motive
+### This Bias Pays Off Because Billing Relies on Self-Reported Counts
 
 The IMMACULATE paper files token overbilling as its own category of structural economic-motive bias in black-box LLM APIs, and offers an audit framework built on verifiable computation.[21] The logic is plain: billing is based on the token count the gateway itself reports, and the caller has no independent count to check it against.
 
 Two more operations sit on the same structure — industry reporting mentions both but this piece found no named, evidenced case for either: quietly switching the backend to a cheaper version at a model refresh without lowering the price, and queuing, rate-limiting, or degrading free and low-tier users.[30] GateScope did measure significant latency-stability variance across platforms; this kind of multi-tenant throttling is widespread but unobservable from outside.[20]
 
-### Why This Sits Ahead of Latency
+### This Sits Ahead of Latency Because It Won't Surface on Its Own
 
 The reason matches check three: it takes a purpose-built test to catch. The billing page doesn't flag it, the response is a perfectly normal string of text, and losing context doesn't throw an error.
 
@@ -234,13 +234,13 @@ The other seven either run a single data center or don't disclose one at all. Gr
 
 "Route me to something near my region" was an item I pulled out on its own when I was drafting the research outline. Having gone through all eight, this is the cleanest conclusion of the bunch: users in Asia-Pacific currently have no option at all. The only regional routing that exists was built for compliance, not for speed, and it isn't in Asia-Pacific either way.
 
-### Which Latency Numbers Hold Up
+### Latency Numbers That Hold Up
 
 Groq's per-model throughput numbers are the most quantifiable set on the market: Llama 3.3 70B at 280 tokens/s, GPT OSS 20B at 1000, Qwen3.6-27B at 500.[14] Named model, actual number, retestable.
 
 OpenRouter doesn't publish absolute figures, but offers `sort=latency` and `preferred_max_latency` parameters, routing based on a five-minute window's p50 through p99.[3] What it hands you is a filtering mechanism — you pick your own latency ceiling and it picks the endpoint.
 
-### Which Ones Don't
+### Latency Numbers That Don't
 
 EasyRouter's "12ms P99 first-token latency" and "99.99% SLA," Novita's "200ms latency," and SiliconFlow's "up to 70% latency reduction, 3–5x throughput" — none of the three come with a methodology or an absolute baseline.[9][12][11] A claim like "70% reduction" can't be checked without knowing the denominator; this piece treats it as unverified.
 
@@ -254,7 +254,7 @@ Within that same aggregated dataset, Llama 3.3 70B's 87.4 tokens/s and Groq's of
 
 One last point ties back to check two: multi-hop routing is itself a structural latency risk. B.AI's relay architecture is confirmed, and its own materials warn of unstable entry points requiring switching. This piece found no third-party latency measurement and no quantifiable user-complaint evidence for it — community search is limited by anti-scraping restrictions, and I'm not inventing a conclusion here.
 
-## Check Six: Only Now Look at Price
+## Check Six: Price Comes Last
 
 Once the first five checks have filtered the field, comparing prices means something.
 
@@ -306,7 +306,7 @@ Output price, same units:
 
 2026-09-09 snapshot; SiliconFlow converted at a 7.2 exchange rate; EasyRouter has no public price sheet and is dropped from the table.[1] The B.AI column shows list price — on the snapshot date it also ran promotions: DeepSeek V4-Flash at half price, GLM-5.3 at 10% off. SiliconFlow's DeepSeek figures are the off-peak rate; peak doubles it.
 
-### How to Read These Two Tables
+### Three Things to Watch When Reading These Two Tables
 
 Three easy places to trip.
 
@@ -324,7 +324,7 @@ OpenRouter doesn't mark up inference itself, but charges on top-ups — 5.5% on 
 
 Once fees and service tiers are factored in, the platform with the lowest sticker price isn't necessarily the one you end up paying least to.
 
-### How Sustainable Is the Subsidized Price
+### Subsidized Prices Won't Last
 
 Some of the cheapest cells in that table aren't a cost advantage — they're a subsidy.
 
@@ -336,7 +336,7 @@ Today's price isn't next year's price. If production traffic is already routed t
 
 By this section my read has gone more conservative than it started: half the brightest cells in that table exist because someone else is footing the bill, and that arrangement has an expiration date.
 
-## What the Eight Actually Are
+## Eight Platforms: Positioning and Weak Points
 
 Six checks down, here's what each of the eight looks like.
 
@@ -358,7 +358,7 @@ B.AI is Justin Sun and TRON's crypto-native aggregator, launched April 2026, wit
 
 EasyRouter is a project from Fu Sheng and Cheetah Mobile, claiming 50-plus models and 200-plus teams in use.[9] Right now the slogan outruns the substance — domain ownership, pricing page, and the discounts it's credited with in coverage are all unconfirmed, and there's a separate allegation of NewAPI code copying and AGPLv3 violation, but the primary text is no longer accessible, so this piece treats it as unverified.[31]
 
-### Why Scale Counts Toward Trust
+### Scale Is a Migration-Cost Estimate, Not a Moral Score
 
 Factoring funding and margin into the assessment isn't a moral judgment — it's estimating migration cost.
 
@@ -383,13 +383,13 @@ The scoring rubric goes before the table. What follows is a weighted result acro
 
 The bottom three share one thing: key information is opaque — data-center location, pricing page, privacy policy, funding — the specific gap differs but there's always one. In a category built on black boxes, opacity itself should cost points. That's an explicit rule I applied while scoring, and it's fair to drop it and recompute if you don't agree with it.
 
-### The Scorecard and the Elimination Order Are Two Different Questions
+### The Scorecard and the Elimination Order Answer Different Things
 
 Price carries the highest weight in that table, 25%, while the whole piece argues price should come last. Those two don't contradict each other — they're answers to different questions.
 
 The weighted score ranks overall experience: given every dimension clears some bar, which one is the better deal all in. The elimination order ranks decision sequence: what to check first, and what to check last, so a mistake doesn't land somewhere irreversible. A platform can score high on the weighted table and still deserve elimination at check one for a specific use case — if data can't leave the country, OpenRouter's 8.8 doesn't help you.
 
-## When This Order Should Change
+## Scenario Fit, and Four Conditions That Change the Order
 
 Put the six checks into concrete scenarios first.
 
