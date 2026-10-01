@@ -8,6 +8,38 @@ astro dev --background
 
 Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
 
+## Publishing
+
+Production (https://ben-chen.com, Cloudflare Worker `personal-blog`) is published **locally**, not from CI:
+
+```sh
+git pull        # pick up CMS commits and the CI font-subset write-back first
+pnpm deploy     # pnpm build -> cf-wrangler build -> cf deploy --prebuilt (token from .env.local)
+```
+
+- GitHub Actions (`.github/workflows/ci.yml`) only runs a build check on push/PR; it **does not deploy**.
+  The repo secret `CLOUDFLARE_API_TOKEN` is no longer used and can be deleted.
+- Pushing to `main` (including a Sveltia CMS "Publish" at `/admin`) does not change the live site; run `pnpm deploy`.
+- Dry run: `pnpm build && pnpm cf:output && node --env-file=.env.local ./node_modules/cf/bin/cf deploy --prebuilt --dry-run`.
+- Do not use `cf build` (static Astro has no Build Output); `wrangler.jsonc` is kept only for rollback.
+- Full guide: `PRD/2026-08-09-publishing-guide.md`.
+
+## Publishing
+
+Production (https://ben-chen.com, Cloudflare Worker `personal-blog`) is published **locally**, not from CI:
+
+```sh
+git pull        # pick up CMS commits and the CI font-subset write-back first
+pnpm deploy     # pnpm build -> cf-wrangler build -> cf deploy --prebuilt (token from .env.local)
+```
+
+- GitHub Actions (`.github/workflows/ci.yml`) only runs a build check on push/PR; it **does not deploy**.
+  The repo secret `CLOUDFLARE_API_TOKEN` is no longer used and can be deleted.
+- Pushing to `main` (including a Sveltia CMS "Publish" at `/admin`) does not change the live site; run `pnpm deploy`.
+- Dry run: `pnpm build && pnpm cf:output && node --env-file=.env.local ./node_modules/cf/bin/cf deploy --prebuilt --dry-run`.
+- Do not use `cf build` (static Astro has no Build Output); `wrangler.jsonc` is kept only for rollback.
+- Full guide: `PRD/2026-08-09-publishing-guide.md`.
+
 ## Documentation
 
 Full documentation: https://docs.astro.build

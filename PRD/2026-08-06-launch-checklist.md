@@ -14,6 +14,10 @@
 > `npm run deploy` 变为 `git push`。剩余待办只有 C 组（邮件订阅相关，仍暂缓）、F 组验收、
 > G 组 SEO 提交，以及 B4（访问统计）。
 >
+> **2026-10-01 更新：撤销 E4。** 发布改回本地 `pnpm deploy`（`cf deploy --prebuilt`），
+> GitHub Actions 只保留构建校验（`.github/workflows/ci.yml`），不再部署，也不再需要仓库 secret
+> `CLOUDFLARE_API_TOKEN`。下面 E4 行保留当时的决策记录，已标注作废。
+>
 > **2026-08-12 更新：B4 完成，并处置了一次 Cloudflare 安全扫描。** 访问统计已启用（走手动 snippet
 > 嵌入，不是边缘自动注入，两条路径只能选一条，见 B4）。安全扫描的 6 条发现修 3 拒 3，
 > 全部理由与回归测试留档在新增的 I 组。
@@ -83,7 +87,7 @@
 | E1 | `src/site-origin.mjs` 里的 `SITE_ORIGIN` 换成真实域名 | ✅ | `https://ben-chen.com` |
 | E2 | 首次部署：`wrangler deploy` | ✅ | 实际走的是纯静态路径，跳过了 C1/C3——`wrangler.jsonc` 精简为只有 `assets`，没有 Worker。以后要开邮件订阅时再把 `main`/`kv_namespaces`/`vars`/`run_worker_first` 加回来 |
 | E3 | 绑定自定义域名到 Workers 项目 | ✅ | 用 Cloudflare API（`PUT /accounts/:id/workers/domains`）直接绑的，没走 Dashboard 点击——domain 的 zone 已经在同一个 Cloudflare 账号下，API token 权限够用，比图形界面更快 |
-| E4 | （可选）配置"push 即部署"的 CI | ✅ | 2026-08-10 落地 `.github/workflows/deploy.yml`：push `main` → `npm run fonts`（有变动则回写提交）→ `npm run build` → `wrangler-action` 部署。选 GitHub Actions 而非 Cloudflare 的 Connect to Git，是因为需要一个**有网络**的构建环境来重跑字体子集——CMS 在浏览器里发文时作者没机会补字，而 `fonts:check` 缺字即失败。附带收益：干净 checkout 消除了 `node_modules/.astro` 缓存导致的幽灵页面（本地部署曾把已删除的 `/zh/notes/only-chinese/` 一直发上线） |
+| E4 | （可选）配置"push 即部署"的 CI | ↩️ 已撤销（2026-10-01） | **以下为历史记录**：2026-08-10 落地 `.github/workflows/deploy.yml`：push `main` → `npm run fonts`（有变动则回写提交）→ `npm run build` → `wrangler-action` 部署（后来改为 `cf deploy --prebuilt`，现已整体撤销，部署只走本地 `pnpm deploy`，`deploy.yml` 改名为只做构建校验的 `ci.yml`）。选 GitHub Actions 而非 Cloudflare 的 Connect to Git，是因为需要一个**有网络**的构建环境来重跑字体子集——CMS 在浏览器里发文时作者没机会补字，而 `fonts:check` 缺字即失败。附带收益：干净 checkout 消除了 `node_modules/.astro` 缓存导致的幽灵页面（本地部署曾把已删除的 `/zh/notes/only-chinese/` 一直发上线） |
 
 ---
 
