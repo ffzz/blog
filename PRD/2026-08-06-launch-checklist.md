@@ -55,7 +55,7 @@
 
 | # | 任务 | 优先级 | 说明 |
 | --- | --- | --- | --- |
-| C1 | 创建真实 Cloudflare KV namespace | 🔴 | `wrangler kv namespace create SUBSCRIBE_KV`，把返回的 id 填进 `wrangler.jsonc` 替换 `TODO_RUN_WRANGLER_KV_NAMESPACE_CREATE`。需要你先 `wrangler login` 授权 |
+| C1 | 创建真实 Cloudflare KV namespace | 🔴 | `wrangler kv namespace create SUBSCRIBE_KV`，把返回的 id 填进 `wrangler.jsonc` 替换 `TODO_RUN_WRANGLER_KV_NAMESPACE_CREATE`。需要你先 `wrangler login` 授权（cf 等价命令：`cf kv namespaces create`，仅用 `cf schema` 核对过接口，需 `--title`，未实际执行） |
 | C2 | 注册 Resend 账号 + 验证发信域名 | 🔴（若上线即开订阅）| 域名验证（DNS 记录）依赖 B1 先完成。拿到后：API key、发信地址填 `RESEND_FROM_EMAIL`、创建一个 Segment 拿 `RESEND_SEGMENT_ID` |
 | C3 | 设置 Worker 密钥 | 🔴（若上线即开订阅）| `wrangler secret put RESEND_API_KEY`、`wrangler secret put TOKEN_SIGNING_SECRET`（后者随便生成一串够长的随机字符串即可，不需要记住，只用于签名校验）。**绝不进仓库**，PRD 已定 |
 | C4 | 决定订阅功能是否随首次上线一起开 | 🟡 | 见下方"D 组"——已经默认按①（先隐藏）落地：`EMAIL_SUBSCRIBE_ENABLED` 开关目前是 `false`，Footer 不会渲染订阅表单，等 C1–C3 都配好了、把这个开关翻成 `true` 即可 |

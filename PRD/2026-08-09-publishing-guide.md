@@ -285,7 +285,7 @@ export const AUTHOR: Author = {
 
 | 位置 | 谁用 | 放什么 |
 | --- | --- | --- |
-| `.env.local`（本地，不进 git） | 你电脑上跑 `npm run deploy` / `npm run whoami` 时，`wrangler` 命令行工具自己要用 | `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID` |
+| `.env.local`（本地，不进 git） | 你电脑上跑 `npm run deploy` / `npm run whoami` 时，`cf` 命令行工具（`cf auth whoami`、`cf deploy --prebuilt`）自己要用 | `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID` |
 | **GitHub repo secret**（仓库设置里） | **GitHub Actions 自动部署时用** | `CLOUDFLARE_API_TOKEN`，跟 `.env.local` 里那个是**同一个值**，两处都要有 |
 | `.dev.vars`（本地，不进 git） | 以后真的启用邮件订阅功能时，本地测试 Worker 用 | `RESEND_API_KEY`、`TOKEN_SIGNING_SECRET`——现在是假值，因为功能还没开 |
 
