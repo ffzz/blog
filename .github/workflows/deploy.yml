@@ -58,8 +58,14 @@ jobs:
 
       - run: pnpm build
 
-      # account_id 已内联在 wrangler.jsonc，所以只需要 apiToken 一个 secret
-      - uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: deploy
+      # 不用 `cf build`：它检测到 Astro 只会跑 `astro build`，而静态 Astro 不产出
+      # Build Output（见 wrangler.config.ts）。这里把上一步的 ./dist 打包成
+      # .cloudflare/output/v0/，再用 --prebuilt 原样发布。Wrangler 打出来的
+      # Build Output 不记录 mode，所以 deploy 不能带 --mode。
+      - run: pnpm cf:output
+
+      # accountId 已内联在 cloudflare.config.ts，所以只需要 API token 一个 secret
+      - run: pnpm exec cf deploy --prebuilt
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_SEND_TELEMETRY: 'false'

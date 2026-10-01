@@ -14,8 +14,8 @@
     "fonts:check": "node scripts/heading-font.mjs --check",
     "og:fonts": "node scripts/og-fonts.mjs",
     "cf:output": "cf-wrangler build",
-    "whoami": "node --env-file=.env.local ./node_modules/wrangler/bin/wrangler.js whoami",
-    "deploy": "node --env-file=.env.local ./node_modules/wrangler/bin/wrangler.js deploy"
+    "whoami": "node --env-file=.env.local ./node_modules/cf/bin/cf auth whoami",
+    "deploy": "pnpm cf:output && node --env-file=.env.local ./node_modules/cf/bin/cf deploy --prebuilt"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.2",
