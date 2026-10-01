@@ -5,7 +5,7 @@
 > [PRD](2026-08-04-blog-kami-prd.md)，上线前还差什么看
 > [launch-checklist](2026-08-06-launch-checklist.md)。
 >
-> **2026-10-01 更新（以本节为准）**：**发布改回本地 `pnpm deploy`，GitHub Actions 不再部署。**
+> **2026-10-01 更新（以本节为准）**：**发布改回本地 `pnpm run deploy`，GitHub Actions 不再部署。**
 > `git push` 只会触发 `.github/workflows/ci.yml`——它只做构建校验（和 push 到 main 时的字体子集回写），
 > **不会上线**。GitHub 仓库里的 `CLOUDFLARE_API_TOKEN` secret 不再被任何 workflow 使用，
 > 可以去 https://github.com/ffzz/blog/settings/secrets/actions 删掉。第 2、5、6、9、10、12 节已同步，
@@ -21,7 +21,7 @@
 - 站点是**纯静态**部署在 Cloudflare Workers 上，域名 `ben-chen.com` 已经绑定好。
 - 代码仓库是 **https://github.com/ffzz/blog**，**公开仓库**。公开是 Giscus 评论的硬性前提
   （giscus 要求仓库公开，否则读者看不到评论）。密钥都在 `.gitignore` 里，没有进过仓库。
-- **上线靠在本地跑 `pnpm deploy`**；`git push` 只做版本管理和 CI 构建校验，**不会**上线。见第 5 节。
+- **上线靠在本地跑 `pnpm run deploy`**；`git push` 只做版本管理和 CI 构建校验，**不会**上线。见第 5 节。
 - **评论已开启**（Giscus + GitHub Discussions）。见第 7 节。
 - **浏览器后台已接通**：https://ben-chen.com/admin/ 可以直接写文章、发布。见第 6 节。
 - **邮件订阅仍未开启**——代码都在，只是没接 Resend 账号。见第 11 节。
@@ -32,14 +32,14 @@
 
 ## 2. 两条发布路径
 
-写文章有两条路，**都通向同一个终点**：`main` 分支上的一次 commit，再由你在本地 `pnpm deploy` 上线。
+写文章有两条路，**都通向同一个终点**：`main` 分支上的一次 commit，再由你在本地 `pnpm run deploy` 上线。
 
 | | 路径 A：浏览器后台 | 路径 B：本地 Markdown |
 | --- | --- | --- |
 | 在哪写 | https://ben-chen.com/admin/ | 你电脑上的编辑器 |
 | 适合 | 手机上、别人电脑上、只想改个错字 | 长文、要本地预览、要插图排版 |
 | 怎么发布 | 点 Publish（只提交到 `main`，**不会上线**） | `git push`（同样不会上线） |
-| 之后 | 回到本地 `git pull`，再 `pnpm deploy` | `pnpm deploy` |
+| 之后 | 回到本地 `git pull`，再 `pnpm run deploy` | `pnpm run deploy` |
 | 详见 | 第 6 节 | 第 3–5 节 |
 
 **两条路不要同时用。** 后台点 Publish 是直接往 `main` 提交，你本地那份就落后了；下次本地
@@ -125,7 +125,7 @@ pnpm dev
 
 ## 5. 发布上线
 
-### 5.1 正常发布：本地 `pnpm deploy`
+### 5.1 正常发布：本地 `pnpm run deploy`
 
 ```bash
 cd /Volumes/U-disk/Projects/blog
@@ -133,10 +133,10 @@ git pull                       # 先拉：后台发的文章、CI 回写的字�
 git add <改动的文件>
 git commit -m "发布：xxx 文章"
 git push                       # 只是存档 + 触发 CI 构建校验，不会上线
-pnpm deploy                    # ★ 真正上线：pnpm build → cf-wrangler build → cf deploy --prebuilt
+pnpm run deploy                    # ★ 真正上线：pnpm build → cf-wrangler build → cf deploy --prebuilt
 ```
 
-`pnpm deploy`（`package.json` 里的 `deploy` 脚本）依次做三件事：`pnpm build`（含字体缺字检查、
+`pnpm run deploy`（`package.json` 里的 `deploy` 脚本）依次做三件事：`pnpm build`（含字体缺字检查、
 产物校验、pagefind 索引）→ `cf-wrangler build`（把 `./dist` 打成 `.cloudflare/output/v0/`）→
 `node --env-file=.env.local ./node_modules/cf/bin/cf deploy --prebuilt`。凭据来自本地 `.env.local`
 （`CLOUDFLARE_API_TOKEN`，不进 git，见第 9 节）。
@@ -146,12 +146,12 @@ pnpm deploy                    # ★ 真正上线：pnpm build → cf-wrangler b
 
 **push 之后 GitHub Actions 会跑什么**：只有 `.github/workflows/ci.yml`——装依赖、（push 到 main 时）
 补字体子集并回写、`pnpm build`。绿勾说明"构建能过"，**不代表已上线**。红叉说明 main 上的内容现在
-构建不过（比如后台发的文章有问题），本地 `pnpm deploy` 也会同样失败，先修再发。
+构建不过（比如后台发的文章有问题），本地 `pnpm run deploy` 也会同样失败，先修再发。
 
 ### 5.2 本地发布的前提：先拉、先清缓存
 
 Astro 把文章索引缓存在 `node_modules/.astro/data-store.json` 里，而**删掉一篇文章的源文件
-并不会清掉这个缓存里的条目**。结果是本地构建会把已经删掉的文章重新生成出来，`pnpm deploy`
+并不会清掉这个缓存里的条目**。结果是本地构建会把已经删掉的文章重新生成出来，`pnpm run deploy`
 再原样发上线。
 
 这不是理论问题：2026-08 之前本地部署时，`https://ben-chen.com/zh/notes/only-chinese/` 一直是
@@ -160,7 +160,7 @@ Astro 把文章索引缓存在 `node_modules/.astro/data-store.json` 里，而**
 检查这类"幽灵页面"，但**删过文章的话，部署前仍建议先清一次缓存**：
 
 ```bash
-rm -rf node_modules/.astro dist && pnpm deploy
+rm -rf node_modules/.astro dist && pnpm run deploy
 ```
 
 ### 5.3 CI 仍会自动往你的仓库提交东西（字体子集）
@@ -172,7 +172,7 @@ rm -rf node_modules/.astro dist && pnpm deploy
 并把更新后的字体文件自动提交回 `main`，提交者显示为 `github-actions[bot]`，信息是
 `chore: 同步中文标题字体子集`。
 
-对你的影响：**本地开始写、以及 `pnpm deploy` 之前先 `git pull`**，否则会撞上 non-fast-forward，
+对你的影响：**本地开始写、以及 `pnpm run deploy` 之前先 `git pull`**，否则会撞上 non-fast-forward，
 或者拿着缺字的子集去构建。如果 CI 还没来得及回写，本地 `pnpm build` 报缺字，就自己跑一次
 `pnpm fonts`（需要联网）再构建，`public/fonts/` 的改动记得提交。
 
@@ -214,7 +214,7 @@ Token 只存在你这台设备的浏览器 localStorage 里，不会进仓库，
 
 - **Slug 字段决定文件名和 URL**，规则跟第 3.1 节完全一样，发布后不要改。
 - 点 **Publish** = 直接提交到 `main`，中间没有复核环节。**自 2026-10-01 起这一步不会再自动上线**
-  （CI 不再部署）：提交成功后，要回到电脑上 `git pull` 再 `pnpm deploy`，文章才会出现在
+  （CI 不再部署）：提交成功后，要回到电脑上 `git pull` 再 `pnpm run deploy`，文章才会出现在
   https://ben-chen.com。想先存不发就把 **Draft** 打开（`draft: true` 的文章不会出现在正式站点上）。
 - 插图会传到 `public/images/`，正文里引用路径是 `/images/xxx.png`。
 
@@ -280,7 +280,7 @@ export const AUTHOR: Author = {
 
 | 位置 | 谁用 | 放什么 |
 | --- | --- | --- |
-| `.env.local`（本地，不进 git） | 你电脑上跑 `pnpm deploy` / `pnpm whoami` 时，`cf` 命令行工具（`cf auth whoami`、`cf deploy --prebuilt`）自己要用 | `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID` |
+| `.env.local`（本地，不进 git） | 你电脑上跑 `pnpm run deploy` / `pnpm whoami` 时，`cf` 命令行工具（`cf auth whoami`、`cf deploy --prebuilt`）自己要用 | `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID` |
 | `.dev.vars`（本地，不进 git） | 以后真的启用邮件订阅功能时，本地测试 Worker 用 | `RESEND_API_KEY`、`TOKEN_SIGNING_SECRET`——现在是假值，因为功能还没开 |
 
 **GitHub 仓库里不再需要任何 Cloudflare 凭据。** 之前 GitHub Actions 自动部署用的 repo secret
@@ -300,7 +300,7 @@ Dashboard → My Profile → API Tokens 里确认：只保留本地 `.env.local`
 
 **push 之后网站没变**
 
-正常：push（以及后台 Publish）不会上线。回本地 `git pull` 再 `pnpm deploy`（第 5.1 节）。
+正常：push（以及后台 Publish）不会上线。回本地 `git pull` 再 `pnpm run deploy`（第 5.1 节）。
 
 **GitHub Actions 是红叉**
 
@@ -311,7 +311,7 @@ gh run view --log-failed
 ```
 
 红叉意味着 main 现在**构建不过**（不是"没上线"——本来就不会自动上线）。本地 `pnpm build` 复现并修掉，
-否则 `pnpm deploy` 也会失败。
+否则 `pnpm run deploy` 也会失败。
 
 **Actions 报字体缺字**
 
@@ -334,7 +334,7 @@ Error: 字体子集缺少 N 个字符：...
 
 **后台点了 Publish，网站上没有这篇文章**
 
-正常：后台只提交到 `main`，不再自动上线（第 6.3 节）。回本地 `git pull` 后 `pnpm deploy`。
+正常：后台只提交到 `main`，不再自动上线（第 6.3 节）。回本地 `git pull` 后 `pnpm run deploy`。
 
 **评论区文字发白、几乎看不清**
 
@@ -362,16 +362,16 @@ CI 自动提交过字体子集，或者你在后台发过文章，远端比你�
 
 **删掉的文章还在线上**
 
-见 5.2。`rm -rf node_modules/.astro dist` 之后重新 `pnpm deploy`。
+见 5.2。`rm -rf node_modules/.astro dist` 之后重新 `pnpm run deploy`。
 
-**`pnpm deploy` 报鉴权失败**
+**`pnpm run deploy` 报鉴权失败**
 
 `.env.local` 里的 `CLOUDFLARE_API_TOKEN` 过期了。跑 `pnpm whoami` 确认，去
 Cloudflare Dashboard → My Profile → API Tokens 重新生成，只需要更新 `.env.local`（第 9 节）。
 
 **改完内容，浏览器上没变化**
 
-先确认你已经跑过 `pnpm deploy` 且成功了（push 不会上线）。是的话再强制刷新（Cmd+Shift+R）排除浏览器缓存。
+先确认你已经跑过 `pnpm run deploy` 且成功了（push 不会上线）。是的话再强制刷新（Cmd+Shift+R）排除浏览器缓存。
 
 **域名打不开**
 
@@ -400,7 +400,7 @@ cd /Volumes/U-disk/Projects/blog
 git pull               # 写之前、部署之前先拉（后台发的文章、CI 回写的字体都在远端）
 pnpm dev               # 本地预览，改文件自动刷新
 git push               # 存档 + 触发 CI 构建校验（不会上线）
-pnpm deploy            # ★ 发布：本地构建并上线（凭据来自 .env.local）
+pnpm run deploy            # ★ 发布：本地构建并上线（凭据来自 .env.local）
 gh run watch           # 看 CI 构建校验进度
 gh run view --log-failed   # CI 红叉时看是哪一步炸了
 

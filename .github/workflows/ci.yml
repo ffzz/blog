@@ -1,4 +1,4 @@
-# 只做构建校验，不发布。发布走本地 `pnpm deploy`（见 README / PRD/2026-08-09-publishing-guide.md）。
+# 只做构建校验，不发布。发布走本地 `pnpm run deploy`（见 README / PRD/2026-08-09-publishing-guide.md）。
 # 所以这里没有任何 Cloudflare 凭据，仓库也不需要 CLOUDFLARE_API_TOKEN 这个 secret。
 #
 # 仍然保留两件事：

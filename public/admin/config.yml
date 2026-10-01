@@ -13,7 +13,7 @@ backend:
   # Sveltia 的 editorial workflow（publish_mode: editorial_workflow）官方
   # 尚未实现，文档标注要等 1.0 才有。所以后台点一次 Publish = 直接往 main
   # 提交一次，中间没有复核环节。2026-10-01 起 CI 不再部署（只做构建校验），
-  # 提交后要在本地 git pull && pnpm deploy 才会上线。
+  # 提交后要在本地 git pull && pnpm run deploy 才会上线。
   # 想先存不发就把 draft 勾上（draft: true 不会出现在正式站点）。
   branch: main
 
