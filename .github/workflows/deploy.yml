@@ -23,20 +23,22 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: pnpm/action-setup@v6
+
       - uses: actions/setup-node@v7
         with:
-          node-version: 24 # package.json engines: >=22.12.0
-          cache: npm
+          node-version-file: package.json # volta.node
+          cache: pnpm
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
-      # 在 CMS 里发一篇带新汉字标题的文章时，作者没有机会跑 npm run fonts，
-      # 而 npm run build 第一步就是 fonts:check —— 缺字直接失败，文章发不出去。
+      # 在 CMS 里发一篇带新汉字标题的文章时，作者没有机会跑 pnpm fonts，
+      # 而 pnpm build 第一步就是 fonts:check —— 缺字直接失败，文章发不出去。
       # 这一步补齐子集：它要联网拉 Google Fonts 的 text= 精确子集，而
       # GitHub Actions 有网络（当初把子集预生成提交进仓库，是为了让
       # Cloudflare Workers Builds 那条无网络的构建路径也能跑，不是禁止联网）。
       - name: 重新生成中文标题字体子集
-        run: npm run fonts
+        run: pnpm fonts
 
       # 只有真的变了才提交。用 GITHUB_TOKEN 推的 commit 不会再触发 workflow
       # （GitHub 的递归保护），所以这里不会死循环。
@@ -54,7 +56,7 @@ jobs:
           # 万一撞上并发提交推不上去，不该因此中断这次部署——下次构建会再补一遍。
           git push || echo '::warning::字体子集回写失败（可能有并发提交），不阻断部署'
 
-      - run: npm run build
+      - run: pnpm build
 
       # account_id 已内联在 wrangler.jsonc，所以只需要 apiToken 一个 secret
       - uses: cloudflare/wrangler-action@v4

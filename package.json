@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=24"
   },
   "scripts": {
     "dev": "astro dev",
@@ -41,5 +41,9 @@
     "subset-font": "^2.7.0",
     "typescript": "^7.0.2",
     "wrangler": "^4.118.0"
+  },
+  "packageManager": "pnpm@12.8.1",
+  "volta": {
+    "node": "26.10.0"
   }
 }
