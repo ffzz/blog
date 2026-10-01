@@ -13,6 +13,7 @@
     "fonts": "node scripts/heading-font.mjs",
     "fonts:check": "node scripts/heading-font.mjs --check",
     "og:fonts": "node scripts/og-fonts.mjs",
+    "cf:output": "cf-wrangler build",
     "whoami": "node --env-file=.env.local ./node_modules/wrangler/bin/wrangler.js whoami",
     "deploy": "node --env-file=.env.local ./node_modules/wrangler/bin/wrangler.js deploy"
   },
@@ -37,10 +38,11 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "@types/sanitize-html": "^2.16.1",
+    "cf": "1.0.0-beta.5",
     "pagefind": "^1.5.2",
     "subset-font": "^2.7.0",
     "typescript": "^7.0.2",
-    "wrangler": "^4.118.0"
+    "wrangler": "^4.144.0"
   },
   "packageManager": "pnpm@12.8.1",
   "volta": {
