@@ -222,3 +222,114 @@
   padding-left: 0;
   margin-top: 0;
 }
+
+/* ── 内嵌图形：文章里手写的 HTML 图（<figure class="viz">）──
+   与代码块、Mermaid 同一套语言：填充色浮起 + 单边竖线，不画闭合边框。
+   正文字体而非标题字体 —— 中文标题字体是按标题用字子集化的。
+   Markdown 里写这类 HTML 时块内不能留空行，否则会被切成段落。 */
+.prose figure.viz {
+  margin-inline: 0;
+  font-size: var(--size-small);
+  line-height: var(--lh-dense);
+  letter-spacing: normal;
+}
+
+.viz-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-md);
+}
+
+.viz-card {
+  background: var(--ivory);
+  border-left: 2px solid var(--brand);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.viz-kicker {
+  font-size: var(--size-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+
+.viz-title {
+  font-size: var(--size-lead);
+  color: var(--text-1);
+  margin-block: 0.15rem 0.35rem;
+}
+
+.viz-note {
+  color: var(--text-3);
+}
+
+.viz-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: var(--space-sm);
+}
+
+.viz-chips span {
+  background: var(--tag-bg);
+  border-radius: var(--radius-sm);
+  padding: 0.1em 0.55em;
+  font-size: var(--size-caption);
+  color: var(--text-2);
+}
+
+/* 卡片之间的连接：一个居中的箭头加可选说明 */
+.viz-link {
+  text-align: center;
+  color: var(--text-4);
+  font-size: var(--size-caption);
+  padding-block: var(--space-xs);
+}
+
+/* 步骤时间线：编号圆点 + 左侧竖线 */
+.prose .viz-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: viz-step;
+}
+
+.prose .viz-steps li {
+  counter-increment: viz-step;
+  position: relative;
+  margin: 0;
+  padding: 0 0 var(--space-lg) 2.75rem;
+}
+
+.prose .viz-steps li:last-child {
+  padding-bottom: 0;
+}
+
+.viz-steps li::before {
+  content: counter(viz-step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--parchment);
+  font-size: var(--size-caption);
+  display: grid;
+  place-items: center;
+}
+
+.viz-steps li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: calc(0.875rem - 0.5px);
+  top: 1.75rem;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+.viz-steps .viz-chips {
+  margin-top: var(--space-xs);
+}
