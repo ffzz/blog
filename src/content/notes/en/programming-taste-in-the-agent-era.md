@@ -1,8 +1,7 @@
 ---
 title: 'Rereading Classic Design Principles in the Age of AI'
 description: "Coding agents can apply SOLID or the Law of Demeter in seconds, which begs the question: are decades-old design principles still worth studying? Tracing the seven classic principles back to their original papers reveals six unrelated origins across twenty-two years—and explains why they often give contradictory advice on the exact same code."
-pubDate: 2026-08-31T09:00:00
-updatedDate: 2026-11-17
+pubDate: 2026-09-01
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'ai']
 ---
@@ -135,9 +134,9 @@ Around these invariants sit four refund channels (original card, wallet balance,
 - Open-Closed · [First Identify Which Way the Code Will Grow](/notes/open-closed-only-the-guessed-axis/)
 - Liskov Substitution · [A Subtype Must Seamlessly Stand In for Its Supertype](/notes/liskov-what-the-signature-does-not-check/)
 - Dependency Inversion · [What Inverts Is Who Owns the Interface](/notes/dependency-inversion-who-owns-the-interface/)
-- Interface Segregation · An interface is a slice taken from the client's point of view
-- Law of Demeter · The middleman's dilemma
-- Composite Reuse · Inheritance publishes your invariants
+- Interface Segregation · [An Interface Is a Slice from the Client's Point of View](/notes/interface-segregation-client-perspective-slice/)
+- Law of Demeter · [Balancing Direct Knowledge Against Middleman Bloat](/notes/law-of-demeter-the-middlemans-dilemma/)
+- Composite Reuse · [Prefer Object Composition to Keep Invariants Private](/notes/composite-reuse-inheritance-publishes-invariants/)
 
 ## References
 

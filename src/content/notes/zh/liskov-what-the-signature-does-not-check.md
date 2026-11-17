@@ -1,8 +1,7 @@
 ---
 title: 里氏替换：子类必须能无缝顶替父类
 description: 为什么一段代码明明 100% 通过了 TypeScript 编译器检查，换入某个子类或实现类之后却在运行时把业务账本搞崩？本文从正方形继承长方形的经典悖论讲到退款系统的真实故障，追溯 1987 年 Liskov 原文与四条行为契约，拆解抛异常、假装成功与可变状态带来的替换陷阱。
-pubDate: 2026-09-01T08:00:00
-updatedDate: 2026-11-18
+pubDate: 2026-09-30
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'typescript']
 ---
@@ -356,9 +355,9 @@ flowchart TD
 - 开闭 · [先判断代码会往哪个方向变](/zh/notes/open-closed-only-the-guessed-axis/)
 - 里氏替换 · 子类必须能无缝顶替父类（本文）
 - 依赖倒置 · [倒置的是接口的归属](/zh/notes/dependency-inversion-who-owns-the-interface/)
-- 接口隔离 · 接口是客户端视角的切片
-- 迪米特 · 得墨忒耳与中间人的两难
-- 合成复用 · 继承会把不变量公开出去
+- 接口隔离 · [接口是客户端视角的切片](/zh/notes/interface-segregation-client-perspective-slice/)
+- 迪米特 · [在穿透调用与中间人之间找平衡](/zh/notes/law-of-demeter-the-middlemans-dilemma/)
+- 合成复用 · [用对象组合替代类继承来保护不变量](/zh/notes/composite-reuse-inheritance-publishes-invariants/)
 
 ## 参考资料
 

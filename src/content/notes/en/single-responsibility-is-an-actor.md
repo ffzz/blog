@@ -1,8 +1,7 @@
 ---
 title: 'Single Responsibility: One Responsibility Maps to One Group of Stakeholders'
 description: "The Single Responsibility Principle is often reduced to the slogan 'a class should do only one thing'—a rule that falls apart in practice because 'one thing' can be sliced infinitely thin. Tracing SRP back to Robert C. Martin's original writing shows that a responsibility is defined by the group of people (the actor) who will ask for changes. Using a real refund rounding bug, this note explains how to slice modules by actor and why over-splitting code for a single actor doubles maintenance cost."
-pubDate: 2026-08-31T12:00:00
-updatedDate: 2026-11-18
+pubDate: 2026-09-18
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'typescript']
 ---
@@ -266,9 +265,9 @@ That brings us to Note 5: **the Open-Closed Principle**.
 - Open-Closed · [First Identify Which Way the Code Will Grow](/notes/open-closed-only-the-guessed-axis/)
 - Liskov Substitution · [A Subtype Must Seamlessly Stand In for Its Supertype](/notes/liskov-what-the-signature-does-not-check/)
 - Dependency Inversion · [What Inverts Is Who Owns the Interface](/notes/dependency-inversion-who-owns-the-interface/)
-- Interface Segregation · An interface is a slice taken from the client's point of view
-- Law of Demeter · The middleman's dilemma
-- Composite Reuse · Inheritance publishes your invariants
+- Interface Segregation · [An Interface Is a Slice from the Client's Point of View](/notes/interface-segregation-client-perspective-slice/)
+- Law of Demeter · [Balancing Direct Knowledge Against Middleman Bloat](/notes/law-of-demeter-the-middlemans-dilemma/)
+- Composite Reuse · [Prefer Object Composition to Keep Invariants Private](/notes/composite-reuse-inheritance-publishes-invariants/)
 
 ## References
 

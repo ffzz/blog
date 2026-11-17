@@ -1,8 +1,7 @@
 ---
 title: 'Liskov Substitution: A Subtype Must Seamlessly Stand In for Its Supertype'
 description: "Why does code that passes 100% of TypeScript's strict compiler checks still blow up in production when you swap in a new implementation? Walking from the classic Rectangle/Square paradox to a real refund reversal bug, this note traces Barbara Liskov's 1987 and 1994 papers, unpacks the four behavioral contract rules, and shows how to catch what type signatures miss."
-pubDate: 2026-09-01T08:00:00
-updatedDate: 2026-11-18
+pubDate: 2026-09-30
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'typescript']
 ---
@@ -348,9 +347,9 @@ At this point in the series, we have clean, behaviorally honest interfaces like 
 - Open-Closed · [First Identify Which Way the Code Will Grow](/notes/open-closed-only-the-guessed-axis/)
 - Liskov Substitution · A Subtype Must Seamlessly Stand In for Its Supertype *(this note)*
 - Dependency Inversion · [What Inverts Is Who Owns the Interface](/notes/dependency-inversion-who-owns-the-interface/)
-- Interface Segregation · An interface is a slice taken from the client's point of view
-- Law of Demeter · The middleman's dilemma
-- Composite Reuse · Inheritance publishes your invariants
+- Interface Segregation · [An Interface Is a Slice from the Client's Point of View](/notes/interface-segregation-client-perspective-slice/)
+- Law of Demeter · [Balancing Direct Knowledge Against Middleman Bloat](/notes/law-of-demeter-the-middlemans-dilemma/)
+- Composite Reuse · [Prefer Object Composition to Keep Invariants Private](/notes/composite-reuse-inheritance-publishes-invariants/)
 
 ## References
 

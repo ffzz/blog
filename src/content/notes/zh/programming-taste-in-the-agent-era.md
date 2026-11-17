@@ -1,8 +1,7 @@
 ---
 title: 在 AI 时代重读编程原则
 description: Agent 写代码比人快得多，那些几十年前的设计原则还有必要学吗？我把常说的七条设计原则逐一查回原始出处，发现它们来自六拨互不相干的人、横跨二十二年，甚至会在同一段代码上给出截然相反的建议。这是《编程思想》系列的序章。
-pubDate: 2026-08-31T09:00:00
-updatedDate: 2026-11-17
+pubDate: 2026-09-01
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'ai']
 ---
@@ -135,9 +134,9 @@ flowchart TB
 - 开闭 · [先判断代码会往哪个方向变](/zh/notes/open-closed-only-the-guessed-axis/)
 - 里氏替换 · [子类必须能无缝顶替父类](/zh/notes/liskov-what-the-signature-does-not-check/)
 - 依赖倒置 · [倒置的是接口的归属](/zh/notes/dependency-inversion-who-owns-the-interface/)
-- 接口隔离 · 接口是客户端视角的切片
-- 迪米特 · 得墨忒耳与中间人的两难
-- 合成复用 · 继承会把不变量公开出去
+- 接口隔离 · [接口是客户端视角的切片](/zh/notes/interface-segregation-client-perspective-slice/)
+- 迪米特 · [在穿透调用与中间人之间找平衡](/zh/notes/law-of-demeter-the-middlemans-dilemma/)
+- 合成复用 · [用对象组合替代类继承来保护不变量](/zh/notes/composite-reuse-inheritance-publishes-invariants/)
 
 ## 参考资料
 

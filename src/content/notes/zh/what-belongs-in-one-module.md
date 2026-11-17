@@ -1,8 +1,7 @@
 ---
 title: 内聚：判断标准是修改代码时要一起改
 description: 到底什么样的代码才配住进同一个文件？把名字相似、干同一类活的代码塞进一个类，往往只会得到低档的逻辑内聚；而为了追求小函数去硬拆业务规则，又会把原本完整的功能内聚拆碎。本文从退款系统的真实代码出发，由浅入深讲透内聚的本质与三个常见误区。
-pubDate: 2026-08-31T10:00:00
-updatedDate: 2026-11-18
+pubDate: 2026-09-06
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'architecture', 'typescript']
 ---
@@ -326,9 +325,9 @@ export async function bootstrapRefundWorker(): Promise<void> {
 - 开闭 · [先判断代码会往哪个方向变](/zh/notes/open-closed-only-the-guessed-axis/)
 - 里氏替换 · [子类必须能无缝顶替父类](/zh/notes/liskov-what-the-signature-does-not-check/)
 - 依赖倒置 · [倒置的是接口的归属](/zh/notes/dependency-inversion-who-owns-the-interface/)
-- 接口隔离 · 接口是客户端视角的切片
-- 迪米特 · 得墨忒耳与中间人的两难
-- 合成复用 · 继承会把不变量公开出去
+- 接口隔离 · [接口是客户端视角的切片](/zh/notes/interface-segregation-client-perspective-slice/)
+- 迪米特 · [在穿透调用与中间人之间找平衡](/zh/notes/law-of-demeter-the-middlemans-dilemma/)
+- 合成复用 · [用对象组合替代类继承来保护不变量](/zh/notes/composite-reuse-inheritance-publishes-invariants/)
 
 ## 参考资料
 

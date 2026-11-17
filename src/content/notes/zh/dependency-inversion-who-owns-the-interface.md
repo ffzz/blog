@@ -1,8 +1,7 @@
 ---
 title: 依赖倒置：倒置的是接口的归属
 description: 很多人以为「面向接口编程」就是依赖倒置，于是照着底层 SDK 的方法签名原样抄出一个 IXxxService。结果底层一改，高层业务照样跟着改。本文从退款冲正的经典场景出发，层层拆解「真假倒置」的差别、DIP 与 DI/IoC 的关系，以及哪些边界根本不需要倒置。
-pubDate: 2026-09-01T09:00:00
-updatedDate: 2026-11-18
+pubDate: 2026-10-06
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'architecture', 'typescript']
 ---
@@ -361,9 +360,9 @@ flowchart LR
 - 开闭 · [先判断代码会往哪个方向变](/zh/notes/open-closed-only-the-guessed-axis/)
 - 里氏替换 · [子类必须能无缝顶替父类](/zh/notes/liskov-what-the-signature-does-not-check/)
 - 依赖倒置 · 倒置的是接口的归属（本文）
-- 接口隔离 · 接口是客户端视角的切片
-- 迪米特 · 得墨忒耳与中间人的两难
-- 合成复用 · 继承会把不变量公开出去
+- 接口隔离 · [接口是客户端视角的切片](/zh/notes/interface-segregation-client-perspective-slice/)
+- 迪米特 · [在穿透调用与中间人之间找平衡](/zh/notes/law-of-demeter-the-middlemans-dilemma/)
+- 合成复用 · [用对象组合替代类继承来保护不变量](/zh/notes/composite-reuse-inheritance-publishes-invariants/)
 
 ## 参考资料
 

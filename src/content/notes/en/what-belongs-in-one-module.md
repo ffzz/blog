@@ -1,8 +1,7 @@
 ---
 title: 'Cohesion: The Standard Is What Must Change Together'
 description: "What code actually belongs in the same file? Grouping functions together just because their names look similar or they all 'do refunds' produces low-grade logical cohesion, while splintering business invariants into tiny files destroys functional cohesion. Using real code from our refund subsystem, this note walks through the six levels of cohesion and three common traps."
-pubDate: 2026-08-31T10:00:00
-updatedDate: 2026-11-18
+pubDate: 2026-09-06
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'architecture', 'typescript']
 ---
@@ -320,9 +319,9 @@ That brings us to Note 3: **Coupling**.
 - Open-Closed · [First Identify Which Way the Code Will Grow](/notes/open-closed-only-the-guessed-axis/)
 - Liskov Substitution · [A Subtype Must Seamlessly Stand In for Its Supertype](/notes/liskov-what-the-signature-does-not-check/)
 - Dependency Inversion · [What Inverts Is Who Owns the Interface](/notes/dependency-inversion-who-owns-the-interface/)
-- Interface Segregation · An interface is a slice taken from the client's point of view
-- Law of Demeter · The middleman's dilemma
-- Composite Reuse · Inheritance publishes your invariants
+- Interface Segregation · [An Interface Is a Slice from the Client's Point of View](/notes/interface-segregation-client-perspective-slice/)
+- Law of Demeter · [Balancing Direct Knowledge Against Middleman Bloat](/notes/law-of-demeter-the-middlemans-dilemma/)
+- Composite Reuse · [Prefer Object Composition to Keep Invariants Private](/notes/composite-reuse-inheritance-publishes-invariants/)
 
 ## References
 

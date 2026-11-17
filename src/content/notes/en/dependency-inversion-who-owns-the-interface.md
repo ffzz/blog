@@ -1,8 +1,7 @@
 ---
 title: 'Dependency Inversion: What Inverts Is Who Owns the Interface'
 description: "Adding an interface between two modules doesn't automatically invert their dependency. If the interface is just a carbon copy of the low-level SDK's method signatures, the high-level business logic is still at the mercy of low-level details. Using our refund reversal flow, this note walks from the classic motivation for DIP through fake inversion, interface ownership, DIP vs. DI/IoC, and when not to invert at all."
-pubDate: 2026-09-01T09:00:00
-updatedDate: 2026-11-18
+pubDate: 2026-10-06
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'architecture', 'typescript']
 ---
@@ -357,9 +356,9 @@ That brings us to Note 8: **the Interface Segregation Principle**.
 - Open-Closed · [First Identify Which Way the Code Will Grow](/notes/open-closed-only-the-guessed-axis/)
 - Liskov Substitution · [A Subtype Must Seamlessly Stand In for Its Supertype](/notes/liskov-what-the-signature-does-not-check/)
 - Dependency Inversion · What Inverts Is Who Owns the Interface *(this note)*
-- Interface Segregation · An interface is a slice taken from the client's point of view
-- Law of Demeter · The middleman's dilemma
-- Composite Reuse · Inheritance publishes your invariants
+- Interface Segregation · [An Interface Is a Slice from the Client's Point of View](/notes/interface-segregation-client-perspective-slice/)
+- Law of Demeter · [Balancing Direct Knowledge Against Middleman Bloat](/notes/law-of-demeter-the-middlemans-dilemma/)
+- Composite Reuse · [Prefer Object Composition to Keep Invariants Private](/notes/composite-reuse-inheritance-publishes-invariants/)
 
 ## References
 

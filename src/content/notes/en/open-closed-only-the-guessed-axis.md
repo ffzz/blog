@@ -1,8 +1,7 @@
 ---
 title: 'The Open-Closed Principle: First Identify Which Way the Code Will Grow'
 description: "The Open-Closed Principle is famous for its slogan—'open for extension, closed for modification'—but no design can be closed against every kind of change at once. In our refund system, organizing code by channel makes adding a new channel effortless while making a new operation painful; organizing by operation flips that trade-off upside down. This note unpacks competing axes of change, the Expression Problem, and when to add abstraction."
-pubDate: 2026-08-31T13:00:00
-updatedDate: 2026-11-18
+pubDate: 2026-09-24
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'typescript']
 ---
@@ -287,9 +286,9 @@ That brings us to Note 6: **the Liskov Substitution Principle**.
 - Open-Closed · First Identify Which Way the Code Will Grow *(this note)*
 - Liskov Substitution · [A Subtype Must Seamlessly Stand In for Its Supertype](/notes/liskov-what-the-signature-does-not-check/)
 - Dependency Inversion · [What Inverts Is Who Owns the Interface](/notes/dependency-inversion-who-owns-the-interface/)
-- Interface Segregation · An interface is a slice taken from the client's point of view
-- Law of Demeter · The middleman's dilemma
-- Composite Reuse · Inheritance publishes your invariants
+- Interface Segregation · [An Interface Is a Slice from the Client's Point of View](/notes/interface-segregation-client-perspective-slice/)
+- Law of Demeter · [Balancing Direct Knowledge Against Middleman Bloat](/notes/law-of-demeter-the-middlemans-dilemma/)
+- Composite Reuse · [Prefer Object Composition to Keep Invariants Private](/notes/composite-reuse-inheritance-publishes-invariants/)
 
 ## References
 

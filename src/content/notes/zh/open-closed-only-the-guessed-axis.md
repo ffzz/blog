@@ -1,8 +1,7 @@
 ---
 title: 开闭原则：先判断代码会往哪个方向变
 description: 开闭原则常被背成「对扩展开放，对修改封闭」，但没有任何一套代码能对所有方向的变化都免修改扩展。同一套退款系统，按渠道拆类时加渠道轻松、加操作费劲；按操作写函数时加操作轻松、加渠道费劲。本文从这两条正交的变化轴出发，讲透开闭原则保护的边界、两代历史演进与常见误区。
-pubDate: 2026-08-31T13:00:00
-updatedDate: 2026-11-18
+pubDate: 2026-09-24
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'typescript']
 ---
@@ -287,9 +286,9 @@ Martin 在 2013 年专门写文章澄清过：**开闭原则的目的是防止�
 - 开闭 · 先判断代码会往哪个方向变（本文）
 - 里氏替换 · [子类必须能无缝顶替父类](/zh/notes/liskov-what-the-signature-does-not-check/)
 - 依赖倒置 · [倒置的是接口的归属](/zh/notes/dependency-inversion-who-owns-the-interface/)
-- 接口隔离 · 接口是客户端视角的切片
-- 迪米特 · 得墨忒耳与中间人的两难
-- 合成复用 · 继承会把不变量公开出去
+- 接口隔离 · [接口是客户端视角的切片](/zh/notes/interface-segregation-client-perspective-slice/)
+- 迪米特 · [在穿透调用与中间人之间找平衡](/zh/notes/law-of-demeter-the-middlemans-dilemma/)
+- 合成复用 · [用对象组合替代类继承来保护不变量](/zh/notes/composite-reuse-inheritance-publishes-invariants/)
 
 ## 参考资料
 

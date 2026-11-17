@@ -1,8 +1,7 @@
 ---
 title: 耦合：衡量的是两个模块互相了解多少
 description: 怎么判断两个模块是不是绑得太死？数文件头部的 import 行数往往会给出反方向的信号：把直接调用改成事件总线或全局缓存后，import 少了，两个模块在运行时共享的暗语却更多了。本文从参数控制耦合出发，拆解三种看不见的隐形耦合与依赖方向规则。
-pubDate: 2026-08-31T11:00:00
-updatedDate: 2026-11-18
+pubDate: 2026-09-11
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'architecture', 'typescript']
 ---
@@ -268,9 +267,9 @@ function calculateRefundFee(amount: Money, feeRateBps: number): Money
 - 开闭 · [先判断代码会往哪个方向变](/zh/notes/open-closed-only-the-guessed-axis/)
 - 里氏替换 · [子类必须能无缝顶替父类](/zh/notes/liskov-what-the-signature-does-not-check/)
 - 依赖倒置 · [倒置的是接口的归属](/zh/notes/dependency-inversion-who-owns-the-interface/)
-- 接口隔离 · 接口是客户端视角的切片
-- 迪米特 · 得墨忒耳与中间人的两难
-- 合成复用 · 继承会把不变量公开出去
+- 接口隔离 · [接口是客户端视角的切片](/zh/notes/interface-segregation-client-perspective-slice/)
+- 迪米特 · [在穿透调用与中间人之间找平衡](/zh/notes/law-of-demeter-the-middlemans-dilemma/)
+- 合成复用 · [用对象组合替代类继承来保护不变量](/zh/notes/composite-reuse-inheritance-publishes-invariants/)
 
 ## 参考资料
 
