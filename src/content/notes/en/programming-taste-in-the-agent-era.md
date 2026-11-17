@@ -1,7 +1,7 @@
 ---
 title: 'Tracing Programming Ideas Back to Their Sources in the Age of AI'
 description: "AI writes code faster every month, so are design principles from decades ago still worth learning? I traced the seven principles of object-oriented design back to their sources: six unrelated groups of people, twenty-two years apart, and at least two of them give opposite advice about the same code. After that I use them as seven questions to ask. This is the opening note of the Programming Thinking series."
-pubDate: 2026-08-19
+pubDate: 2026-08-31T09:00:00
 updatedDate: 2026-11-17
 tags: ['programming-thinking', 'design-principles', 'ai']
 ---
