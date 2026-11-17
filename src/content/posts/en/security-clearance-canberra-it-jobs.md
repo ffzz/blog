@@ -2,7 +2,8 @@
 title: 'What a Security Clearance Is for IT Jobs in Canberra'
 description: Canberra's IT job ads may include a second eligibility screen alongside the technical requirements. Notes on clearance levels, the application process, what gets investigated, and the obligations that follow — compiled from Australian Government sources.
 pubDate: 2026-08-09
-tags: ['career', 'security-clearance', 'canberra']
+category: practice-career
+tags: ['career', 'canberra']
 ---
 
 Hunting for IT work in Canberra comes with a particular kind of tedium: every listing has to be read end to end just to find out whether it needs a security clearance.

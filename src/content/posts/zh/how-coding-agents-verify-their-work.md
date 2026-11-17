@@ -2,6 +2,7 @@
 title: 当 90% 的代码由 AI 编写：如何用证据闭环管住 Coding Agent
 description: 当 AI 写代码的速度远超人类阅读速度，逐行盯 Diff 就成了研发流程里最大的瓶颈。本文拆解 Claude Code 团队的内部验证体系，结合端到端测试、属性测试、差异测试与防作弊工程护栏，还原一套能同时驾驭上百个 Agent 的验证方法论。
 pubDate: 2026-11-17
+category: ai-engineering
 tags: ['ai', 'agents', 'testing', 'software-engineering']
 ---
 

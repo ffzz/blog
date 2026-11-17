@@ -2,7 +2,8 @@
 title: AI 搜索凭什么引用你：GEO 的机制、证据和误解
 description: GEO 和 AEO 的建议很多，其中对「被检索到」和「被引用」的区分并不总是清楚。这篇笔记把生成式搜索拆成六个环节，逐条核对各家厂商的官方披露、学术论文的原始数据，以及一些流传较广的说法。
 pubDate: 2026-08-10
-tags: ['ai', 'geo', 'seo']
+category: ai-engineering
+tags: ['ai', 'llm', 'seo']
 ---
 
 这半年关于 GEO（Generative Engine Optimization）和 AEO（Answer Engine Optimization）的文章很多，其中一些结论互相矛盾。

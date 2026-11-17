@@ -2,7 +2,8 @@
 title: AI 模型供应商调研：质量、价格、隐私和延迟
 description: 同一个模型跨平台价差最高十倍，而 2026 年的三篇审计论文给出的结论是，价格无法预测拿到手的是不是真模型。这篇笔记核对了八家平台的定价页、隐私政策、机房披露和论文原始数据，排出一个按不可逆程度组织的排除顺序。
 pubDate: 2026-09-12
-tags: ['ai', 'llm-api', 'engineering']
+category: ai-engineering
+tags: ['ai', 'llm', 'software-engineering']
 ---
 
 我调研了 8 家 API 大模型的聚合平台：OpenRouter、B.AI、EasyRouter、硅基流动、Novita、DeepInfra、Groq、Together。核对了它们的定价页、隐私政策、机房披露，以及 2026 年的三篇审计论文，想搞清楚同一个模型跨平台的价差里，哪些是真实的成本差异，哪些只是平台定位不同。

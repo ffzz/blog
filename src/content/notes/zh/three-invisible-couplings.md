@@ -3,7 +3,8 @@ title: 耦合：量的是互相了解多少，不是 import 有几行
 description: 耦合量的是两个模块之间互相了解多少，不是 import 有几行。直接调用换成事件总线后 import 少了两行，依赖并没有消失，只是从编译器能看见的地方挪到了看不见的地方。本文从参数里的控制耦合讲到事件总线、共享状态和中间层这三种 import 之外的连接，再给出依赖方向与成环的可检查规则。
 pubDate: 2026-08-31T11:00:00
 updatedDate: 2026-09-13
-tags: ['programming-thinking', 'design-principles', 'typescript']
+category: software-design
+tags: ['programming-thinking', 'design-principles', 'software-engineering', 'architecture', 'typescript']
 ---
 
 > 《编程思想》系列第 3/10 篇。这一季的立论在[序章](/zh/notes/programming-taste-in-the-agent-era/)。

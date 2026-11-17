@@ -2,7 +2,8 @@
 title: What to Do with an Old Phone, Tablet or Laptop
 description: Research notes on putting retired devices back to work. A tablet suits an always-on screen, a phone suits sensor and small-server jobs, and an old computer suits a home server. Links to more than 100 open-source projects and apps, with ready-made options kept apart from ideas I have not tested, plus the battery and security issues of leaving old hardware plugged in.
 pubDate: 2026-11-17
-tags: ['self-hosting', 'home-server', 'hardware']
+category: practice-career
+tags: ['self-hosting', 'hardware']
 ---
 
 I wanted to find work for the old phones, tablets and computers I have lying around, so I read through a round of reviews and tutorials in English and Chinese, from Android Central, Tom's Guide, PCWorld and HackerNoon to ITHome and Bilibili columns, and added some ideas of my own. [1][4][7][8][12] These are my notes.

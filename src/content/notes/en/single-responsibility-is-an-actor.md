@@ -3,7 +3,8 @@ title: 'Single Responsibility: A Responsibility Is Not a Task, It Is Someone Who
 description: "Single responsibility is usually taught as \"a class should do one thing\", which cannot be applied because \"one thing\" cannot be decided. The criterion that can be applied is a person: a responsibility is someone who will come asking. This note follows one rounding change through a refund service, watches four groups of requirements share one method, and shows why splitting by the slogan to the end costs double."
 pubDate: 2026-08-31T12:00:00
 updatedDate: 2026-09-13
-tags: ['programming-thinking', 'design-principles', 'typescript']
+category: software-design
+tags: ['programming-thinking', 'design-principles', 'software-engineering', 'typescript']
 ---
 
 > The fourth of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era/).

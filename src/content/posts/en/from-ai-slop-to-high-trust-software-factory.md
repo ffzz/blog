@@ -2,6 +2,7 @@
 title: 'From AI Slop to 11,000 PRs a Month: Building a High-Trust Software Factory'
 description: "When a single engineer can ship 3,000 pull requests a month and a team can merge 11,000 PRs at a ~0.5% revert rate, the secret isn't a longer AGENTS.md file. It's replacing prose reminders with enforceable architecture, deterministic gates, and runtime & formal verification."
 pubDate: 2026-11-17
+category: ai-engineering
 tags: ['ai', 'agents', 'software-engineering', 'architecture', 'testing']
 ---
 

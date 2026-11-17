@@ -2,6 +2,7 @@
 title: 'When AI Writes 90% of the Code: Keeping Coding Agents Honest with Evidence Loops'
 description: "When coding agents generate changes faster than humans can read diffs, manual line-by-line review becomes the bottleneck. Here is how the Claude Code team uses end-to-end, property-based, and differential testing—backed by tamper-proof verification gates—to run dozens of agents in parallel."
 pubDate: 2026-11-17
+category: ai-engineering
 tags: ['ai', 'agents', 'testing', 'software-engineering']
 ---
 

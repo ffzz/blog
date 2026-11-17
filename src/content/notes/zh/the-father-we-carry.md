@@ -2,7 +2,8 @@
 title: 文化心理观察：精神父亲，从家庭到社会
 description: 从中国互联网公司的扁平化承诺，到家书、教鞭和催婚，观察成长环境中的权威关系如何进入组织，以及台湾经历带来的另一种可能。
 pubDate: 2026-09-14
-tags: ['culture', 'society', 'authority']
+category: culture-notes
+tags: ['culture', 'society']
 draft: false
 ---
 

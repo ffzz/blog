@@ -1,5 +1,5 @@
 ---
-import type { Locale } from '../consts';
+import { categoryLabel, type Locale } from '../consts';
 import { postUrl, type LocalizedEntry } from '../lib/i18n';
 import { formatDate, isoDate, t } from '../lib/ui';
 
@@ -25,6 +25,8 @@ const { locale, entries } = Astro.props;
           </time>
           <span aria-hidden="true"> · </span>
           <span class="kind">{t(locale, collection === 'posts' ? 'kindPost' : 'kindNote')}</span>
+          <span aria-hidden="true"> · </span>
+          <span>{categoryLabel(entry.data.category, locale)}</span>
         </p>
       </li>
     ))

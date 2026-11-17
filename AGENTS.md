@@ -26,6 +26,26 @@ Always write `pnpm run deploy`: bare `pnpm deploy` is pnpm's built-in workspace-
 - Do not use `cf build` (static Astro has no Build Output); `wrangler.jsonc` is kept only for rollback.
 - Full guide: `PRD/2026-08-09-publishing-guide.md`.
 
+## Content Taxonomy & Tagging Rules
+
+When writing, editing, or translating any post (`src/content/posts/`) or note (`src/content/notes/`), always follow these rules (also packaged in `.claude/skills/blog-taxonomy/SKILL.md`):
+
+1. **Collection (`posts` vs `notes`)**:
+   - `posts`: Technical deep dives, engineering guides, research, and career/practical articles.
+   - `notes`: Series notes (e.g., *Programming Thinking*) and personal/cultural essays.
+2. **Required `category` (pick exactly one from `src/consts.ts` -> `CATEGORIES`)**:
+   - `ai-engineering`: AI engineering, coding agents, LLMs, prompt engineering, and AI search/GEO.
+   - `software-design`: Software architecture, design principles, and programming thinking.
+   - `practice-career`: Practical tech setups, hardware/self-hosting, and IT career topics.
+   - `culture-notes`: Cultural, social, and personal reflections.
+3. **Tags (`tags` in frontmatter)**:
+   - Use lowercase hyphenated keys (`kebab-case`), typically 2–4 per article, matching bilingual pairs (`zh` and `en` must use identical `category` and `tags`).
+   - Prefer existing tags defined in `TAG_LABELS` inside `src/lib/tags.ts`:
+     `ai`, `agents`, `software-engineering`, `programming-thinking`, `design-principles`, `typescript`, `architecture`, `testing`, `llm`, `seo`, `self-hosting`, `hardware`, `career`, `canberra`, `culture`, `society`.
+   - Avoid creating single-use fragmented tags (`TAG_PAGE_MIN_POSTS = 3` requires ≥ 3 posts per locale to generate a tag page).
+   - If a new tag is genuinely needed, **you must add its `en` and `zh` display names to `TAG_LABELS` in `src/lib/tags.ts`** before committing.
+4. **Pre-publish verification**: Run `heading-font.mjs`, `og-fonts.mjs`, `astro build`, `verify-build.mjs`, and `pagefind` before deploying.
+
 ## Documentation
 
 Full documentation: https://docs.astro.build

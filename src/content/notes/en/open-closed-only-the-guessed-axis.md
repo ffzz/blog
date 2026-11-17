@@ -3,7 +3,8 @@ title: 'The Open-Closed Principle: Which Changes Should the Design Accommodate?'
 description: "The open-closed principle is usually stated as \"open for extension, closed for modification\" — but it only holds along the axis of change the design chose. This note contrasts two changes in a refund system — adding a channel is easy, adding an operation touches every implementation — compares interfaces with union types, and covers what the principle protects, what the compiler can flag, and when an abstraction earns its place."
 pubDate: 2026-08-31T13:00:00
 updatedDate: 2026-09-13
-tags: ['programming-thinking', 'design-principles', 'typescript']
+category: software-design
+tags: ['programming-thinking', 'design-principles', 'software-engineering', 'typescript']
 ---
 
 > The fifth of ten notes in the Programming Thinking series. The case behind the series is in the [opening essay](/notes/programming-taste-in-the-agent-era/).

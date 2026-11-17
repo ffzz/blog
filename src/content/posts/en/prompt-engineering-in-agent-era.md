@@ -2,7 +2,8 @@
 title: 'Have Prompt Engineers Disappeared? First Principles for Prompting in the Agent Era'
 description: As prompts become part of the agent harness, the work expands from phrasing to task specifications, context, tools, permissions and evals. This article returns to how language models generate answers, then works out what a useful prompt needs today.
 pubDate: 2026-08-11
-tags: ['ai', 'prompt-engineering', 'agents']
+category: ai-engineering
+tags: ['ai', 'agents', 'llm']
 ---
 
 The same prompt worked beautifully with one model yesterday. Today, with a different model, the answer rambles, drops a constraint and tries to use a tool it was never meant to touch. That experience tends to produce two opposing reactions. Some people search for ever more precise wording. Others decide that models are now smart enough for prompt engineering to retire.

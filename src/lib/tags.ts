@@ -11,9 +11,22 @@ import { LOCALES, TAG_PAGE_MIN_POSTS } from '../consts';
  * 找个时间批量补全，不阻塞发文。
  */
 const TAG_LABELS: Record<string, Record<Locale, string>> = {
-  design: { en: 'Design', zh: '设计' },
-  typography: { en: 'Typography', zh: '排版' },
-  meta: { en: 'Meta', zh: '元话题' },
+  ai: { en: 'AI', zh: 'AI' },
+  agents: { en: 'Agents', zh: 'Agent' },
+  'software-engineering': { en: 'Software Engineering', zh: '软件工程' },
+  'programming-thinking': { en: 'Programming Thinking', zh: '编程思想' },
+  'design-principles': { en: 'Design Principles', zh: '设计原则' },
+  typescript: { en: 'TypeScript', zh: 'TypeScript' },
+  architecture: { en: 'Architecture', zh: '架构' },
+  testing: { en: 'Testing & Verification', zh: '测试与验证' },
+  llm: { en: 'LLM', zh: '大语言模型' },
+  seo: { en: 'SEO & GEO', zh: 'SEO 与 GEO' },
+  'self-hosting': { en: 'Self-Hosting', zh: '自托管' },
+  hardware: { en: 'Hardware', zh: '硬件' },
+  career: { en: 'Career', zh: '职业发展' },
+  canberra: { en: 'Canberra', zh: '堪培拉' },
+  culture: { en: 'Culture', zh: '文化观察' },
+  society: { en: 'Society', zh: '社会观察' },
 };
 
 export function tagLabel(tag: string, locale: Locale): string {

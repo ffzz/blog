@@ -3,7 +3,8 @@ title: 'Cohesion: The Test Is "Must Change Together", Not "Looks Related"'
 description: "Cohesion measures what earns the elements inside a module the right to live together. The test is not \"looks related\" — handlers that branch by refund channel have near-identical names and still land on the second rung of the 1974 scale. This note walks a refund system from the utility class nobody defends to the logical cohesion that gets past review, then asks when splitting lowers cohesion, and how Parnas drew boundaries before the code existed."
 pubDate: 2026-08-31T10:00:00
 updatedDate: 2026-09-13
-tags: ['programming-thinking', 'design-principles', 'typescript']
+category: software-design
+tags: ['programming-thinking', 'design-principles', 'software-engineering', 'architecture', 'typescript']
 ---
 
 > The second of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era/).

@@ -2,7 +2,8 @@
 title: Prompt Engineer 消失了吗：Agent 时代的 Prompt 第一性原理
 description: 当 Prompt 成为 Agent harness 的一部分，提示词工程的重心也从措辞技巧转向任务规格、上下文、工具、权限和评测。本文从大模型生成机制出发，重新回答 Prompt 怎样起作用，以及今天应该怎样写。
 pubDate: 2026-08-11
-tags: ['ai', 'prompt-engineering', 'agents']
+category: ai-engineering
+tags: ['ai', 'agents', 'llm']
 ---
 
 同一段 Prompt，昨天在一个模型上很好用，今天换到另一个模型，回答忽然变长、漏掉限制，甚至开始调用不该用的工具。这种经历很容易让人得出两个相反的判断：有人继续寻找更精巧的措辞，有人认为模型已经足够聪明，Prompt Engineering 可以退休了。

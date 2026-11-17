@@ -3,7 +3,8 @@ title: 开闭原则：先判断代码会往哪里变
 description: 开闭原则的标准表述是「对扩展开放，对修改封闭」，但它只对设计时选中的那条变化轴成立。本文用退款系统对比两种变化——加渠道轻松、加操作要动遍实现——比较接口与联合类型两种组织方式，讲清开闭原则保护的范围、编译器能指出的遗漏，以及什么时候值得增加抽象。
 pubDate: 2026-08-31T13:00:00
 updatedDate: 2026-09-13
-tags: ['programming-thinking', 'design-principles', 'typescript']
+category: software-design
+tags: ['programming-thinking', 'design-principles', 'software-engineering', 'typescript']
 ---
 
 > 《编程思想》系列第 5/10 篇。这一季的立论在[序章](/zh/notes/programming-taste-in-the-agent-era/)。

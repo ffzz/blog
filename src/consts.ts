@@ -170,3 +170,23 @@ export const HOME_RECENT_POSTS = 5;
 /** 内容分型。技术文章承担 SEO 流量，随笔建立个人连接。PRD §4.1。 */
 export const COLLECTIONS = ['posts', 'notes'] as const;
 export type CollectionName = (typeof COLLECTIONS)[number];
+
+/** 主题分类。 */
+export const CATEGORIES = [
+  'ai-engineering',
+  'software-design',
+  'practice-career',
+  'culture-notes',
+] as const;
+export type CategoryName = (typeof CATEGORIES)[number];
+
+export const CATEGORY_LABELS: Record<CategoryName, Record<Locale, string>> = {
+  'ai-engineering': { en: 'AI Engineering', zh: 'AI 工程' },
+  'software-design': { en: 'Software Design', zh: '软件设计' },
+  'practice-career': { en: 'Practice & Career', zh: '实践与职场' },
+  'culture-notes': { en: 'Culture & Essays', zh: '文化随笔' },
+};
+
+export function categoryLabel(category: CategoryName, locale: Locale): string {
+  return CATEGORY_LABELS[category][locale];
+}

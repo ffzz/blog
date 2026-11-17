@@ -2,7 +2,8 @@
 title: "AI Model Provider Research: Quality, Price, Privacy, and Latency"
 description: The same model can cost ten times more on one platform than another, yet three 2026 audit papers found that price predicts nothing about whether you're getting the real model. This note checks pricing pages, privacy policies, data-center disclosures, and the papers themselves across eight providers, then orders the elimination by how reversible a mistake is.
 pubDate: 2026-09-12
-tags: ['ai', 'llm-api', 'engineering']
+category: ai-engineering
+tags: ['ai', 'llm', 'software-engineering']
 ---
 
 I researched eight LLM API aggregator platforms: OpenRouter, B.AI, EasyRouter, SiliconFlow, Novita, DeepInfra, Groq, and Together. I checked their pricing pages, privacy policies, data-center disclosures, and three 2026 audit papers, trying to work out how much of the price gap between platforms for the same model is a real cost difference and how much is just positioning.

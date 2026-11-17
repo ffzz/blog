@@ -3,7 +3,8 @@ title: 单一职责：职责不是一件事，是一个会来提要求的人
 description: 单一职责常被讲成「一个类只做一件事」，这句话在判断具体代码时会失效，因为「一件事」没法判定。这条原则给出的判据是：职责是一个会来提要求的人。本文沿着一次退款金额取整的改动，看四类需求怎样挤进同一个方法，以及照口号拆到极致为什么代价是双倍的。
 pubDate: 2026-08-31T12:00:00
 updatedDate: 2026-09-13
-tags: ['programming-thinking', 'design-principles', 'typescript']
+category: software-design
+tags: ['programming-thinking', 'design-principles', 'software-engineering', 'typescript']
 ---
 
 > 《编程思想》系列第 4/10 篇。这一季的立论在[序章](/zh/notes/programming-taste-in-the-agent-era/)。

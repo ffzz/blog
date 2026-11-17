@@ -1,7 +1,7 @@
 ---
 import { render } from 'astro:content';
 
-import type { CollectionName, Locale } from '../consts';
+import { categoryLabel, type CollectionName, type Locale } from '../consts';
 import Giscus from '../components/Giscus.astro';
 import JsonLd from '../components/JsonLd.astro';
 import Sidenotes from '../components/Sidenotes.astro';
@@ -33,7 +33,7 @@ const { Content, headings } = await render(entry);
 
 // hreflang、语言切换器都吃这个结果。只上报实际存在的语言版本。
 const alternates = await getAvailableLocales(collection, slug);
-const { title, description, pubDate, updatedDate, tags } = entry.data;
+const { title, description, pubDate, updatedDate, category, tags } = entry.data;
 const path = postPath(collection, slug);
 
 // 薄内容护栏（PRD §4.2）：未达标签页门槛的标签不能链接到一个不存在的页面，
@@ -76,6 +76,8 @@ const breadcrumbSchema = breadcrumbList(locale, sectionLabel, title, path);
         <time datetime={isoDate(pubDate)}>{formatDate(pubDate, locale)}</time>
         <span aria-hidden="true"> · </span>
         <span class="kind">{t(locale, collection === 'posts' ? 'kindPost' : 'kindNote')}</span>
+        <span aria-hidden="true"> · </span>
+        <span>{categoryLabel(category, locale)}</span>
         {
           updatedDate && (
             <>

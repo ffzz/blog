@@ -3,7 +3,8 @@ title: 里氏替换：子类必须能无缝顶替父类
 description: 面向编程新人的里氏替换讲解：用长方形与正方形看清“类型检查通过、行为却被破坏”是怎么回事，理解它为什么是多态的前提，追溯 1987 年原始论文到 SOLID 的发展，再逐个分析正方形能否继承长方形、抛异常算不算违约、编译器能查多少等模糊地带。
 pubDate: 2026-09-02T14:00:00
 updatedDate: 2026-09-13
-tags: ['programming-thinking', 'design-principles', 'typescript']
+category: software-design
+tags: ['programming-thinking', 'design-principles', 'software-engineering', 'typescript']
 ---
 
 > 《编程思想》系列第 6/10 篇。这一季的立论在[序章](/zh/notes/programming-taste-in-the-agent-era/)。

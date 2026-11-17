@@ -1,5 +1,6 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
+import { CATEGORIES } from './consts';
 
 /**
  * 两个 collection 共用的 frontmatter 契约。
@@ -12,6 +13,7 @@ const postSchema = z.object({
   description: z.string(),
   pubDate: z.coerce.date(),
   updatedDate: z.coerce.date().optional(),
+  category: z.enum(CATEGORIES),
   tags: z.array(z.string()).default([]),
   heroImage: z.string().optional(),
   draft: z.boolean().default(false),

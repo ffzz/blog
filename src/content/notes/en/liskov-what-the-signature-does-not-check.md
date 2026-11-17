@@ -3,7 +3,8 @@ title: 'Liskov Substitution: A Subtype Must Seamlessly Stand In for Its Supertyp
 description: 'An introduction to the Liskov substitution principle for programmers new to it: see with rectangles and squares what "passes the type check, breaks the behaviour" means, why the principle underpins polymorphism, how it grew from the 1987 paper into SOLID, and where the grey areas live — can a square inherit from a rectangle, is throwing an exception a violation, and how much the compiler can check.'
 pubDate: 2026-09-02T14:00:00
 updatedDate: 2026-09-13
-tags: ['programming-thinking', 'design-principles', 'typescript']
+category: software-design
+tags: ['programming-thinking', 'design-principles', 'software-engineering', 'typescript']
 ---
 
 > The sixth of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era/).

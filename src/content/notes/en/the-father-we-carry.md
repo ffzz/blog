@@ -2,7 +2,8 @@
 title: 'The Father We Carry: From Family to Public Life'
 description: From the promise of flat management in China to family letters, classroom punishment and pressure to marry, an essay on how early experiences of authority shape public life.
 pubDate: 2026-09-14
-tags: ['culture', 'society', 'authority']
+category: culture-notes
+tags: ['culture', 'society']
 draft: false
 ---
 

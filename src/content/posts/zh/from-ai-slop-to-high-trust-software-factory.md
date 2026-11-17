@@ -2,6 +2,7 @@
 title: 从 AI Slop 到单月 11,000 个 PR：如何构建高信任的软件工程工厂
 description: 当一个工程师每月能借助 Agent 向生产环境交付 3,000 个 PR、整个团队单月合并 11,000 个 PR 且回滚率维持在 0.5% 时，靠的不是写更长的 AGENTS.md，而是把自然语言叮嘱变成可执行架构、确定性门禁与形式化验证。
 pubDate: 2026-11-17
+category: ai-engineering
 tags: ['ai', 'agents', 'software-engineering', 'architecture', 'testing']
 ---
 

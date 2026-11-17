@@ -3,7 +3,8 @@ title: 'Coupling: It Measures Mutual Knowledge, Not Import Counts'
 description: "Coupling measures how much two modules have to know about each other, not how many imports there are. Replace a direct call with an event bus and two imports disappear, but the dependency has not gone anywhere — it has moved out of the compiler's sight. This note walks from control coupling in a parameter to the three connections that live outside imports — event buses, shared state, middle layers — and ends with checkable rules for dependency direction and cycles."
 pubDate: 2026-08-31T11:00:00
 updatedDate: 2026-09-13
-tags: ['programming-thinking', 'design-principles', 'typescript']
+category: software-design
+tags: ['programming-thinking', 'design-principles', 'software-engineering', 'architecture', 'typescript']
 ---
 
 > The third of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era/).

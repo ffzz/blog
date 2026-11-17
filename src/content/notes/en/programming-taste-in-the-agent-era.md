@@ -3,7 +3,8 @@ title: 'Rereading Classic Design Principles in the Age of AI'
 description: "Coding agents can apply SOLID or the Law of Demeter in seconds, which begs the question: are decades-old design principles still worth studying? Tracing the seven classic principles back to their original papers reveals six unrelated origins across twenty-two years—and explains why they often give contradictory advice on the exact same code."
 pubDate: 2026-08-31T09:00:00
 updatedDate: 2026-11-17
-tags: ['programming-thinking', 'design-principles', 'ai']
+category: software-design
+tags: ['programming-thinking', 'design-principles', 'software-engineering', 'ai']
 ---
 
 > The cheaper it gets to generate code, the more valuable engineering judgment becomes. This series is my attempt to dust off classic software design principles, trace each one back to its original paper, and figure out where it still holds up—and where it breaks.

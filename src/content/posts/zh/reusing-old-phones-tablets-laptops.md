@@ -2,7 +2,8 @@
 title: 闲置的旧手机、旧平板和旧电脑还能做什么
 description: 一份旧设备再利用的调研笔记：平板适合做常亮的信息屏，手机适合做传感器和小服务器，旧电脑适合做家庭服务器。文中给出 100 多个开源项目和 app 的链接，标明哪些是现成方案、哪些是我还没验证的设想，以及长期插电的电池和安全问题。
 pubDate: 2026-11-17
-tags: ['self-hosting', 'home-server', 'hardware']
+category: practice-career
+tags: ['self-hosting', 'hardware']
 ---
 
 我想给手边闲置的旧手机、旧平板和旧电脑找点事做，于是翻了一圈中英文测评和教程，包括 Android Central、Tom's Guide、PCWorld、HackerNoon、IT 之家和 B 站专栏，又自己补了一些想法。[1][4][7][8][12] 这篇是整理后的笔记。

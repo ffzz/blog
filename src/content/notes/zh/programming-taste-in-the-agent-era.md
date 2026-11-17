@@ -3,7 +3,8 @@ title: 在 AI 时代重读编程原则
 description: Agent 写代码比人快得多，那些几十年前的设计原则还有必要学吗？我把常说的七条设计原则逐一查回原始出处，发现它们来自六拨互不相干的人、横跨二十二年，甚至会在同一段代码上给出截然相反的建议。这是《编程思想》系列的序章。
 pubDate: 2026-08-31T09:00:00
 updatedDate: 2026-11-17
-tags: ['programming-thinking', 'design-principles', 'ai']
+category: software-design
+tags: ['programming-thinking', 'design-principles', 'software-engineering', 'ai']
 ---
 
 > 代码越是容易生成，人对代码好坏的判断力就越值钱。这个系列是我把那些上了年纪的设计原则重新翻出来，逐条查清它们的出处、适用边界与失效场景的笔记。

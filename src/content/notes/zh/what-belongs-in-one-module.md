@@ -3,7 +3,8 @@ title: 内聚：判据是「必须一起改」，不是「看起来相关」
 description: 内聚（cohesion）量的是一个模块里的元素凭什么放在一起。判据不是「看起来相关」——按渠道分支的 handler 名字高度相似，落在 1974 年那份等级表的第二档。本文用退款系统从一眼假的工具类讲到一眼真的逻辑内聚，再看拆分什么时候反而降低内聚，以及 Parnas 怎么划还没写的边界。
 pubDate: 2026-08-31T10:00:00
 updatedDate: 2026-09-13
-tags: ['programming-thinking', 'design-principles', 'typescript']
+category: software-design
+tags: ['programming-thinking', 'design-principles', 'software-engineering', 'architecture', 'typescript']
 ---
 
 > 《编程思想》系列第 2/10 篇。这一季的立论在[序章](/zh/notes/programming-taste-in-the-agent-era/)。

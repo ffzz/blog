@@ -2,7 +2,8 @@
 title: 文化心理观察：离开精神父亲之后，如何学会平等
 description: 从澳洲职场里的拘束与对赏识的依赖，谈一个人如何习惯平等、接受他人的自由，以及民主习惯怎样在日常生活中形成。
 pubDate: 2026-09-14T23:32:00+10:00
-tags: ['culture', 'society', 'authority']
+category: culture-notes
+tags: ['culture', 'society']
 draft: false
 ---
 

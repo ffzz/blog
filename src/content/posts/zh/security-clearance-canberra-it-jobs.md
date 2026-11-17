@@ -2,7 +2,8 @@
 title: 在堪培拉找 IT 工作，Security Clearance 到底是什么
 description: 堪培拉的 IT 招聘广告里藏着另一套筛选体系。这篇笔记整理了 Security Clearance 的等级划分、申请流程、调查范围和长期义务，资料来自澳大利亚政府公开文件。
 pubDate: 2026-08-09
-tags: ['career', 'security-clearance', 'canberra']
+category: practice-career
+tags: ['career', 'canberra']
 ---
 
 在堪培拉找 IT 工作，有件事特别磨人：每看到一个岗位，都得先把那一长串招聘广告从头读到尾，确认它到底要不要 security clearance。
