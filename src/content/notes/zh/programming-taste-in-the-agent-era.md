@@ -134,7 +134,7 @@ flowchart TB
 - 单一职责 · [职责不是一件事，是一个会来提要求的人](/zh/notes/single-responsibility-is-an-actor/)
 - 开闭 · [先判断代码会往哪里变](/zh/notes/open-closed-only-the-guessed-axis/)
 - 里氏替换 · [子类必须能无缝顶替父类](/zh/notes/liskov-what-the-signature-does-not-check/)
-- 依赖倒置 · 倒置的是接口的归属
+- 依赖倒置 · [倒置的是接口的归属](/zh/notes/dependency-inversion-who-owns-the-interface/)
 - 接口隔离 · 接口是客户端视角的切片
 - 迪米特 · 得墨忒耳与中间人的两难
 - 合成复用 · 继承会把不变量公开出去

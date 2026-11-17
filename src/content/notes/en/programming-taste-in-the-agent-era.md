@@ -134,7 +134,7 @@ Around these invariants sit four refund channels (original card, wallet balance,
 - Single Responsibility · [A responsibility is not a task, it is someone who will ask](/notes/single-responsibility-is-an-actor/)
 - Open-Closed · [Which changes should the design accommodate?](/notes/open-closed-only-the-guessed-axis/)
 - Liskov Substitution · [A subtype must seamlessly stand in for its supertype](/notes/liskov-what-the-signature-does-not-check/)
-- Dependency Inversion · What inverts is who owns the interface
+- Dependency Inversion · [What inverts is who owns the interface](/notes/dependency-inversion-who-owns-the-interface/)
 - Interface Segregation · An interface is a slice taken from the client's point of view
 - Law of Demeter · The middleman's dilemma
 - Composite Reuse · Inheritance publishes your invariants
