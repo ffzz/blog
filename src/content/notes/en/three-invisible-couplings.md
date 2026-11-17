@@ -60,7 +60,7 @@ The term control coupling comes out of "Structured Design" by Stevens, Myers, an
 
 The `dryRun` example lands at level 4. Split into two operations, each request carries only what it needs, and the connection moves toward level 6.
 
-The table has been tidied up since. On its lineage, what I could verify is second-hand: the 1974 paper had a level called hybrid coupling that later disappeared from textbooks, and external and stamp were added afterwards. I could not get hold of the paper itself, so treat that history as reported rather than checked. The six-level table is still useful. What is worth keeping is the ordering: how much two modules have to know about each other, or about some third party, to work together at all.
+The six-level table is a later arrangement. I checked it against the 1974 paper, which has no six-level list: it says the strength of coupling depends on three factors, namely how complicated the interface is, whether a connection refers to a module or to something inside it, and whether data or control is passed. By what is passed, data is the loosest, control comes next, and the tightest kind is called hybrid, meaning one module modifies another module's code; that kind has dropped out of today's textbooks. The paper treats common environments separately, and the names external and stamp do not appear in it. The six-level table is still useful. What is worth keeping is the ordering: how much two modules have to know about each other, or about some third party, to work together at all.
 
 ## In production code, coupling lives outside the imports
 
@@ -187,7 +187,7 @@ I also treated direct-call-to-event as a coupling reduction, on the evidence of 
 
 **Both mistakes came from the same convenient proxy.** Import counts measure symbols in a source file. The coupling table asks how much knowledge it takes to understand and change a connection. Put an event bus, shared state, or a middle layer in front of them and the two give different answers.
 
-Those two mistakes sent me back to where the table came from. As far as I can tell, the 1974 work set out to answer whether a change in one module drags another along. The levels describe how much the two sides know about each other, which was never the same question as how many import lines there are. Compressed down to "lower coupling is better", the first half disappeared and only the proxy was left. **That is what going back to the source buys you: a slogan turned back into the trouble it was written for, and a trouble is something you can check on the spot.**
+Those two mistakes sent me back to where the table came from. The 1974 paper set out to answer whether a change in one place carries errors into another, and it measures the complexity of an interface by how much information is needed to state or understand the connection. That was never the same question as how many import lines there are. Compressed down to "lower coupling is better", the first half disappeared and only the proxy was left. **That is what going back to the source buys you: a slogan turned back into the trouble it was written for, and a trouble is something you can check on the spot.**
 
 These days, when I look at a dependency, I start by assuming its convention changes. Can the compiler list everything that breaks? Whatever has to be filled in by search, docs, and memory is the part of that connection the imports never showed.
 

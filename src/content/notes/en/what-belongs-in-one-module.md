@@ -36,7 +36,7 @@ Code like this is rarer in real projects than you might expect, because it is so
 
 ## Where the six levels come from
 
-Cohesion and coupling come from "Structured Design", published by Stevens, Myers, and Constantine in the IBM Systems Journal in 1974 [1]. The ideas are older than the paper; Constantine was using them by the mid-1960s.
+Cohesion and coupling come from "Structured Design", published by Stevens, Myers, and Constantine in the IBM Systems Journal in 1974 [1]. The ideas are older than the paper, which opens by saying they came out of nearly ten years of research by Constantine.
 
 The paper gives six levels, lowest to highest:
 
@@ -179,7 +179,7 @@ I first judged `RefundHandler` by whether its elements looked alike and decided 
 
 Used as an acceptance criterion, the scale produces a counter-intuitive result: to keep the level looking respectable, people tend to split modules into smaller pieces. The `add` and `assertSameCurrency` example above shows where that leads. Take two functions that join forces on one job and separate them, and the level goes down. **Chasing the level can move you down the scale.** The criterion is not on the table. It is in the system this code lives in, and what changes together is something only that business can answer.
 
-This is also why the 1974 paper is worth going back to. The scale was built as a scorecard for one job: how to cut a Fortran program into modules. Every level sits behind a specific decision about a specific split. Once it was lifted out into the slogan "higher cohesion is better", the trouble it was built for left the room, and splitting further looked right by default, right up to the point where `add` and the currency check came apart and the level fell anyway. **The spirit of a principle is the trouble it was written for. You read that trouble off the business, not off the table.**
+This is also why the 1974 paper is worth going back to. The scale was built as a scorecard for one job: how to cut a program into modules. The paper gives each level a definition, an example, and the reason it sits where it does. Once it was lifted out into the slogan "higher cohesion is better", the trouble it was built for left the room, and splitting further looked right by default, right up to the point where `add` and the currency check came apart and the level fell anyway. **The spirit of a principle is the trouble it was written for. You read that trouble off the business, not off the table.**
 
 ## What this note concludes
 

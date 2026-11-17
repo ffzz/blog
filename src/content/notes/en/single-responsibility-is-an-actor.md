@@ -14,7 +14,7 @@ The most repeated slogan for single responsibility is "a class should do one thi
 
 Finance asked for a change: round refund amounts down to the cent, no longer half-up.
 
-The change landed on the rounding line inside `computeAmount`. Two other lines moved with it: the amount recorded in the audit log, and the display string the support console builds. All three take their value from what `computeAmount` returns. On the day it shipped, the support console showed two extra decimal places, and the amount format in the audit log changed too.
+The change landed on the rounding line inside `computeAmount`. Two other lines moved with it: the amount recorded in the audit log, and the display string the support console builds. All three take their value from what `computeAmount` returns. On the day it shipped, some refund amounts in the support console were one cent lower than before, and so were the matching amounts in the audit log. Neither support nor compliance had asked for anything, yet the numbers they saw had changed.
 
 Nobody wrote anything wrong in those three places. The trouble was where they lived. This is the code before the change, with injected dependencies and field declarations left out:
 

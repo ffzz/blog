@@ -1,23 +1,24 @@
 ---
-title: 'Seven Design Principles Are Not a Pyramid'
-description: "The seven principles of object-oriented design are usually drawn as a pyramid, each layer holding up the next. Check where each one came from and the picture falls apart: six unrelated groups of people, twenty-two years apart, and at least two of them give opposite advice about the same code. This is the opening note of the Programming Thinking series."
+title: 'Tracing Programming Ideas Back to Their Sources in the Age of AI'
+description: "AI writes code faster every month, so are design principles from decades ago still worth learning? I traced the seven principles of object-oriented design back to their sources: six unrelated groups of people, twenty-two years apart, and at least two of them give opposite advice about the same code. After that I use them as seven questions to ask. This is the opening note of the Programming Thinking series."
 pubDate: 2026-08-19
+updatedDate: 2026-11-17
 tags: ['programming-thinking', 'design-principles', 'ai']
 ---
 
 > AI can write more of our code every month, which makes the judgement we have built up worth more, not less. This series is me taking these ageing principles back off the shelf, checking where each one came from, where it holds, and where it breaks. Reviewing the old to understand the new.
 
-These are my notes on the seven principles of object-oriented design.
+Agents write code faster than I do now, and most of the time I cannot fault what they produce. That leaves a question I cannot walk around: high cohesion and low coupling, SOLID, the Law of Demeter. Are design principles from decades ago still worth the hours?
 
-They started with a question I could not answer properly. Agents write code faster than I do now, and most of the time I cannot fault what they produce, so are thirty-year-old principles still worth the hours? **Yes, though not for the reason you would expect.** The seven give contradictory advice about the same piece of code, and which one to follow depends on guessing which way that code will grow. **That guess cannot be outsourced yet.**
+My answer is yes, with a different way of learning them. I used to learn a principle by memorising its slogan and definition, so that I could follow it when I wrote code. Following it is the part an agent already does faster than I do. The part it cannot do for me comes one step earlier: the seven principles give opposite advice about the same piece of code, and which one to follow this time depends on which way the code will grow and who will come asking for changes. Making that call requires knowing what trouble each principle was proposed to solve.
 
-This opening note sets out where each of the seven came from. Having checked, I am not going to reproduce the diagram that stacks them into a pyramid.
+So this series learns them by tracing sources: take each principle back to where it came from, look at the specific problem it faced when it appeared, then hold it against today's code. This opening note sets out where each of the seven came from, and one picture I gave up after checking.
 
-## Where they came from
+## Where the seven principles came from
 
-The usual drawing looks like this: high cohesion and low coupling at the bottom, the seven principles in the middle, design patterns above them, object-oriented development on top. Each layer holds up the next, and the whole thing reads like a system someone derived.
+Textbooks often draw a pyramid: high cohesion and low coupling at the bottom, the seven design principles in the middle, design patterns above them, object-oriented development on top. Each layer holds up the next, and it looks like a system someone derived.
 
-Checked one at a time, here is where they come from:
+Checked one by one, this is where they came from:
 
 | Concept | Who | Year | Source |
 |---|---|---|---|
@@ -30,45 +31,45 @@ Checked one at a time, here is where they come from:
 | Interface segregation (ISP) | Robert C. Martin | 1996 | C++ Report, collected in "Design Principles and Design Patterns" (2000) [7] |
 | Single responsibility (SRP) | Robert C. Martin | 1990s | C++ Report, collected in "Design Principles and Design Patterns" (2000) [7] |
 
-Six groups of people, with twenty-two years between the first and the last. In 1974 those three were arguing about how to cut a Fortran program into modules. In 1987 Liskov was on an OOPSLA stage talking about type theory. In 1996 Martin hit a specific problem while consulting for a client. None of them knew about the others' problems, and none was adding a brick to a shared system.
+Six groups of people, with twenty-two years between the earliest and the latest. The 1974 paper is about how to divide a program into modules, and its examples are PL/I procedures and FORTRAN subprograms. Liskov's 1987 talk is about data abstraction and inheritance hierarchies. In 1994 the Gang of Four were cataloguing design solutions that kept recurring. In 1996 Martin was writing in the C++ Report about dependency problems in object-oriented design. Each was answering the question in front of them, and none was adding bricks to a shared system.
 
-The acronym SOLID came later still. Martin wrote the five principles through the 1990s, and turning their initials into a word was Michael Feathers's doing around 2004 [5], more than a decade after the principles themselves. The "seven principles" table in Chinese textbooks adds two more on top of SOLID, and the Law of Demeter and composite reuse were never part of SOLID to begin with: one comes from Northeastern University in 1987, the other from the Gang of Four in 1994.
+The acronym SOLID came later still. Martin wrote the five principles over the course of the 1990s; spelling a word with their initials is generally credited to Michael Feathers around 2004 [5], more than a decade after the earliest of them. The list of seven found in Chinese textbooks has two more than SOLID: the Law of Demeter comes from Northeastern University in 1987 and composite reuse from the Gang of Four in 1994, and neither was ever part of SOLID.
 
-**Nobody assembled these seven. Someone later arranged them.**
+The seven were put side by side by people who came afterwards.
 
-## The cohesion and coupling levels were subjective from the start
+## The cohesion and coupling levels are a judgement scale
 
-The 1974 paper gives six kinds of cohesion: coincidental, logical, temporal, communicational, sequential, functional. Textbooks today usually list seven, because procedural cohesion was added later by Yourdon and Constantine, and Myers proposed two more besides. No version is settled.
+The 1974 paper ranks cohesion in six levels, from lowest to highest: coincidental, logical, temporal, communicational, sequential, functional [1]. Textbooks today usually list seven; the extra one, procedural cohesion, was added later by Yourdon and Constantine in their book, and Myers proposed two more of his own. The versions do not agree.
 
-Someone tried measuring it. A study in the Software Quality Journal asked 163 students to label the cohesion and coupling levels of modules in the same mid-sized Fortran program, and they disagreed at length [6]. The same code, read by different people, lands on different levels.
+Someone later measured this. A study in the Software Quality Journal asked 163 students to label the cohesion and coupling levels of the modules in one medium-sized Fortran program, and the answers diverged widely [6]. The same code, read by different people, produced different levels.
 
-That does not make the levels useless. It means **this was always a judgement scale rather than a measuring instrument**.
+The table is still useful. What the study shows is its nature: it is a scale that helps a person judge, its reading depends on the reader and on the situation the code is in, and it cannot be used as a measuring instrument.
 
 ## The open-closed principle means two different things
 
-The most quoted line of the seven is **open for extension, closed for modification**. It carries Meyer's name and the year 1988.
+The most quoted line among the seven is "open for extension, closed for modification". It is filed under Meyer, with the year 1988.
 
-What Meyer said in 1988 was this: a class can be compiled into a library and used by other classes, and in that sense it is closed; at the same time any new class can take it as a parent and derive new behaviour, and in that sense it is open. The mechanism was **implementation inheritance**: ship the class in a library, let other people extend it by subclassing. That was a pointed answer for the time. Add a field or a function to a library back then and every program depending on it had to be rebuilt.
+What Meyer said in 1988 was this: a class can be compiled into a library and used by other classes, and in that sense it is closed; any new class can also take it as a parent and derive new features, and in that sense it is open. The means of achieving this was implementation inheritance: package the class into a library, and let others extend it by inheriting. That answered a problem of its time, when adding a field or a function to a library meant changing every program that depended on it.
 
-Martin restated it in the 1990s: depend on an abstract interface, put the implementation behind it, extend by swapping in a new implementation polymorphically. Martin says he was paraphrasing Meyer, but their answers to "how do you achieve it" differ. One says inherit from a concrete class, the other says depend on an abstract interface [4].
+In the 1990s Martin restated it as depending on abstract interfaces, with implementations behind the interface and extension through polymorphic substitution. Martin presented this as a restatement of Meyer, but the two give different answers to how openness and closure are achieved: one says inherit from a concrete class, the other says depend on an abstract interface [4].
 
-I had filed the open-closed principle under "program to an interface" and assumed it was Meyer's. Reading the 1988 wording, **what gets taught today is the 1990s rewrite, still wearing the older name and date**.
+I used to read the open-closed principle as "program to an interface", and I had always filed that under Meyer. Reading the 1988 formulation showed me that **the version taught today was rewritten in the 1990s, and only the name and the year were carried over from the generation before.**
 
-**The distinction is not pedantry.** In Meyer's version the extension point is the inheritance hierarchy. In Martin's it is the interface. When each one breaks, and what the breakage looks like, are different questions. Notes five and ten take them up.
+The difference affects code. In Meyer's version the extension point is an inheritance hierarchy; in Martin's it is an interface. When each kind of extension point fails, and what the failure looks like, are separate matters, which notes five and ten take up in turn.
 
 ## The Law of Demeter is named after a project
 
-One small thing while we are here. The Law of Demeter was not proposed by a Mr Demeter.
+One smaller thing. The Law of Demeter takes its name from a project; nobody called Demeter proposed it.
 
-Ian Holland proposed it at Northeastern University in the autumn of 1987, while working on the Demeter project. The group named the rule after the project, and the project was named after the Greek goddess of agriculture, on the idea that software should grow like a crop, a little at a time [3].
+Ian Holland proposed it at Northeastern University in the autumn of 1987, while he was on the Demeter project. The team named the rule after the project, and the project was named after the Greek goddess of agriculture, the idea being to grow software in small steps the way crops are grown [3].
 
-On the page Karl Lieberherr kept at Northeastern for over twenty years, the law is one sentence long: talk only to your friends.
+On the page Lieberherr keeps on the Northeastern website, the law is one sentence: only talk to your friends.
 
-## Two principles, one piece of code, opposite answers
+## Two principles, one piece of code, opposite advice
 
-The clearest evidence that these seven are not one system is that they collide.
+The most direct evidence that the seven do not form one system is that they conflict.
 
-Interface segregation says a client should not depend on interfaces it does not use, and interfaces should be split finely. Cut that way, the three uses of a refund ledger become three interfaces:
+The interface segregation principle says a client should not depend on interfaces it does not need, so interfaces should be split finely. Cut that way, the three uses of the refund ledger become three interfaces, and the reversal flow `ReversalFlow` has all three injected:
 
 ```ts
 interface RefundLookup   { findByOrder(orderId: string): Promise<Refund[]> }
@@ -84,7 +85,7 @@ class ReversalFlow {
 }
 ```
 
-The Law of Demeter says an object should know as little as possible about others. By that measure the `ReversalFlow` above knows three types, which is two too many. Narrow it to one:
+The Law of Demeter says an object should know as little as possible about other objects. Seen that way, the `ReversalFlow` above knows three types, which is too many. Fold the three interfaces into one `RefundLedger`:
 
 ```ts
 class ReversalFlow {
@@ -92,11 +93,11 @@ class ReversalFlow {
 }
 ```
 
-Now `ReversalFlow` knows one type and Demeter is satisfied. But `RefundLedger` has to offer lookup, timeline, and reversal, which makes it a fat interface, and interface segregation is not satisfied.
+Now `ReversalFlow` knows one type and the Law of Demeter is satisfied. But `RefundLedger` has to offer lookup, timeline and reversal together, which makes it a fat interface, and interface segregation is no longer satisfied.
 
-**Neither principle was misapplied. They point in opposite directions.** One more narrow interface means one more type, and one fewer type means the interface has to widen. **There is no right answer here, only a trade-off**: one more narrow interface is only one more abstract type, whereas writing forwarding methods to know one type fewer leaves concrete code to maintain, and the former usually costs less than the latter. That trade-off is mine, though, not a result the principles computed.
+Neither principle was misapplied. They point in opposite directions. One more narrow interface means one more type, and one fewer type means the interface has to widen. **There is no right answer here, only a trade-off.** One more narrow interface is only one more abstract type, whereas writing forwarding methods to know one type fewer leaves concrete code to maintain, and the former usually costs less than the latter. That trade-off is mine; the principles themselves cannot compute it.
 
-Same code, two principles pulling either way, and nothing in the middle to settle it:
+The same code, with each principle pulling its own way:
 
 ```mermaid
 flowchart TB
@@ -106,37 +107,43 @@ flowchart TB
     C --> E["ReversalFlow knows one type<br/>fat interface, ISP unhappy"]
 ```
 
-Drawn out, it is easier to see that no option here is optimal: both routes are compliant, and the only difference is which cost you would rather pay this time.
+Both paths comply. The difference is which cost I would rather pay this time.
 
-## The pyramid
+## The pyramid does not hold; the seven are seven questions
 
-I used to think the seven built on each other, with high cohesion and low coupling underneath and design patterns on top, each layer entailing the next. Having checked the sources, that structure does not hold: six unrelated groups, each solving their own problem, twenty-two years apart, giving opposite advice about the same code.
+I used to think the seven were stacked in order, with high cohesion and low coupling underneath and design patterns on top, each layer deriving the next. After checking the sources, that structure does not stand: they come from six unrelated groups of people, each solving a problem of their own, spread over twenty-two years, and they give opposite advice about the same code. The pyramid is a story drawn afterwards to make them teachable.
 
-**The pyramid is a story drawn later, to make them teachable.**
+I now use them as seven questions. How many groups of people will come to me when this code changes is the question single responsibility asks. Which way this code will grow is the question open-closed asks. Whether the caller's assumptions still hold once this subtype stands in for its supertype is the question Liskov substitution asks.
 
-Closer to the truth: **the seven are seven questions to ask.** Who will come to me when this code changes (single responsibility)? Which way will it grow (open-closed)? If this subclass replaces its parent, do the old assertions still hold (Liskov)? **No question outranks the others**, because which one matters most depends on where the code sits.
+No question outranks another. Which one matters more depends on the situation the code is in.
 
-**An agent can implement any one of the seven faster than I can. What it cannot answer is which one to listen to this time.**
+## A principle that loses its source becomes an acceptance criterion
 
-## Applying the letter, breaking the spirit
+With the sources checked, the next thing to answer is what these years and names are good for when writing code.
 
-Having checked where they came from, the question left is what any of these dates and names do for the code you are writing today.
+Their use is that every principle arrived carrying the specific trouble it was meant to solve. The three authors of 1974 wanted to reduce the complexity of programs, so that a change in one place would not carry errors into another. Meyer in 1988 faced libraries where adding one field forced every dependent program to change. Each principle is one answer to one specific trouble, and none was derived from axioms.
 
-The value is not in the scholarship. It is that **every one of these principles arrived carrying the specific trouble it was written to solve**. In 1974 those three were up to their necks in a Fortran program that had to be cut into modules. In 1988 Meyer was working on a library where adding one field forced every dependent program to rebuild. In 1996 Martin was worn down by a client who changed requirements mid-project. Each principle answers a particular problem. None of them is a theorem derived from axioms.
+The trouble is what gets lost fastest in transmission. A principle is lifted out of a paper into a slogan, copied from the slogan into a textbook, and from the textbook into a stock phrase of code review. By then only the wording is left. "Open for extension, closed for modification" sounds unanswerable, yet when Meyer wrote it, extension meant inheriting from a class already compiled into a library.
 
-Trouble is the first thing lost in transmission. A principle gets lifted out of a paper into a slogan, out of the slogan into a textbook, out of the textbook into the vocabulary of code review. By then only the wording survives, and the trouble has long since left the room. "Open for extension, closed for modification" sounds unimpeachable. When Meyer wrote it, the extension he had in mind was subclassing a class already compiled into a library.
+A slogan that has lost its setting becomes an acceptance criterion, and an acceptance criterion can be satisfied by piling up structure. So every seam gets an interface first, every class is split until one method remains, and the review passes point by point. The extra layer of indirection stops none of the changes the code will meet; the only thing it stops is the review comment "this does not seem to follow the principle".
 
-A slogan that has lost its setting turns into an acceptance criterion, and **an acceptance criterion can be satisfied by piling up structure**. So every seam gets an interface in front of it, every class is split down to a single method, and the review passes on every line. The extra indirection stops none of the changes the code will meet. What it stops is the remark that this does not look like the principle.
+**Code written that way makes two mistakes at once: it does not gain the changeability the principle was meant to protect, and it is heavier than it would have been without the principle.**
 
-**Code written that way is wrong twice over: it misses the modifiability the principle existed to protect, and it is heavier than code that ignored the principle entirely.** Against the principle, and bulkier for it.
+## Why tracing sources matters more in the age of AI
 
-So the question to ask of a principle is **"which way will this code grow, and who will come asking for the change"**. Both answers live in the business, not in the principle.
+Put the sections above together and the opening question can be answered.
 
-The nine notes after this one all work the same way: put the principle back in the setting that produced it, see what it was defending against, then bring it back to today's code and ask whether that defence is still worth maintaining. **When the two do not line up, change how you apply it. Do not change the situation to fit.**
+An agent can implement any one of the seven faster than I can. Ask it to split something by interface segregation and it will split; ask it to follow the Law of Demeter and it will narrow. Both instructions produce compliant code, and the `ReversalFlow` example shows that compliant code can grow in opposite directions.
+
+What it cannot answer is which one to follow this time. The answer lies in the business: which way this code will grow next, and who will come asking. Neither fits into a general principle, so someone who knows the system has to judge.
+
+Learning by tracing sources trains that judgement. Knowing what a principle was guarding against is what lets me see whether the code in front of me has the same trouble; if it does not, the principle can be left out this time. The faster implementation becomes, the cheaper it is to pile up needless structure by following slogans, and the more this judgement is worth practising.
+
+The nine notes after this one all work the same way: put the principle back where it was born, see what it was guarding against, then bring it back to today's setting and ask whether that defence is still worth maintaining.
 
 ## The example this series uses
 
-The code in the nine notes after this one all grows from the same place: a refund and reconciliation subsystem. I picked it because **its constraints are hard**. In a soft domain, Liskov substitution can only be taught as a grammar exercise.
+The code in the nine notes after this one all grows from the same place: a refund and reconciliation subsystem. I picked it because its constraints are hard, with concrete invariants that can be broken, so a principle such as Liskov substitution does not turn into a grammar exercise.
 
 Four invariants, which will keep coming back:
 
@@ -149,7 +156,7 @@ Refunds run through four channels (back to the original card, wallet balance, of
 
 ## The series
 
-- Opening · Seven Design Principles Are Not a Pyramid
+- Opening · Tracing Programming Ideas Back to Their Sources in the Age of AI
 - Cohesion · [The test is "must change together", not "looks related"](/notes/what-belongs-in-one-module/)
 - Coupling · [It measures mutual knowledge, not import counts](/notes/three-invisible-couplings/)
 - Single responsibility · [A responsibility is not a task, it is someone who will ask](/notes/single-responsibility-is-an-actor/)
@@ -164,13 +171,12 @@ One note per principle, published as they are written.
 
 ## What this opening note concludes
 
-- The seven principles are not one system. Six groups of people, twenty-two years, unrelated problems. Nobody assembled them; someone later arranged them. The pyramid is a story drawn afterwards, to make them teachable.
-- They are seven questions, and no question outranks the others. Which one to ask depends on which way the code will grow and who will come asking.
-- The cohesion and coupling levels are a judgement scale, not a measuring instrument. 163 people read the same code and land on different levels. That is not the students' failure, it is what a scale that depends on context looks like.
-- Two principles can point in opposite directions on the same code, with neither one misapplied. Interface segregation and Demeter do exactly that to the `ReversalFlow` above.
+- The seven principles do not form one system. Six groups of people, twenty-two years, unrelated troubles; they were put side by side by people who came afterwards.
+- I use them as seven questions, and no question outranks another. Which one to ask depends on which way the code will grow and who will come asking.
+- The cohesion and coupling levels are a judgement scale. That 163 people can label the same code with different levels shows the reading depends on context.
+- Two principles can give opposite advice about the same code, with neither one misapplied. Interface segregation and the Law of Demeter do that to `ReversalFlow`.
 - Every principle was born in a specific setting, and the setting gets lost in transmission. A slogan that has lost its setting becomes an acceptance criterion, and an acceptance criterion can be satisfied by piling up structure.
-- Following the letter of a principle costs you code that breaks its spirit and weighs more. The extra indirection blocks no real change and adds a dependency.
-- An agent can implement any one of the seven faster than I can. What it cannot answer is which one to listen to this time. That judgement cannot be outsourced, and it is what this series is for.
+- An agent can implement any principle faster than I can. What it cannot answer is which one to follow this time, and tracing sources is how I train that judgement.
 
 ## References
 
