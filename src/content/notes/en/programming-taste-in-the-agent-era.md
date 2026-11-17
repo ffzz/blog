@@ -129,12 +129,12 @@ Around these invariants sit four refund channels (original card, wallet balance,
 ### Series Outline
 
 - Opening · Rereading Classic Design Principles in the Age of AI *(this note)*
-- Cohesion · [The test is "must change together", not "looks related"](/notes/what-belongs-in-one-module/)
-- Coupling · [It measures mutual knowledge, not import counts](/notes/three-invisible-couplings/)
-- Single Responsibility · [A responsibility is not a task, it is someone who will ask](/notes/single-responsibility-is-an-actor/)
-- Open-Closed · [Which changes should the design accommodate?](/notes/open-closed-only-the-guessed-axis/)
-- Liskov Substitution · [A subtype must seamlessly stand in for its supertype](/notes/liskov-what-the-signature-does-not-check/)
-- Dependency Inversion · [What inverts is who owns the interface](/notes/dependency-inversion-who-owns-the-interface/)
+- Cohesion · [The Standard Is What Must Change Together](/notes/what-belongs-in-one-module/)
+- Coupling · [Measuring How Much Two Modules Know About Each Other](/notes/three-invisible-couplings/)
+- Single Responsibility · [One Responsibility Maps to One Group of Stakeholders](/notes/single-responsibility-is-an-actor/)
+- Open-Closed · [First Identify Which Way the Code Will Grow](/notes/open-closed-only-the-guessed-axis/)
+- Liskov Substitution · [A Subtype Must Seamlessly Stand In for Its Supertype](/notes/liskov-what-the-signature-does-not-check/)
+- Dependency Inversion · [What Inverts Is Who Owns the Interface](/notes/dependency-inversion-who-owns-the-interface/)
 - Interface Segregation · An interface is a slice taken from the client's point of view
 - Law of Demeter · The middleman's dilemma
 - Composite Reuse · Inheritance publishes your invariants

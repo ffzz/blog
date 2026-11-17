@@ -1,209 +1,274 @@
 ---
-title: 'Coupling: It Measures Mutual Knowledge, Not Import Counts'
-description: "Coupling measures how much two modules have to know about each other, not how many imports there are. Replace a direct call with an event bus and two imports disappear, but the dependency has not gone anywhere — it has moved out of the compiler's sight. This note walks from control coupling in a parameter to the three connections that live outside imports — event buses, shared state, middle layers — and ends with checkable rules for dependency direction and cycles."
+title: 'Coupling: Measuring How Much Two Modules Know About Each Other'
+description: "How do you tell how tightly two modules are bound together? Counting import statements at the top of a file often gives the exact wrong answer: replacing direct calls with an untyped event bus or shared cache deletes imports while multiplying the hidden runtime assumptions both sides have to share. Using our refund subsystem, this note unpacks control coupling, three forms of invisible coupling, and practical rules for dependency direction."
 pubDate: 2026-08-31T11:00:00
-updatedDate: 2026-09-13
+updatedDate: 2026-11-18
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'architecture', 'typescript']
 ---
 
-> The third of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era/).
+> Note 3 of 10 in the *Programming Thinking* series. The premise for the series is set out in the [opening essay](/notes/programming-taste-in-the-agent-era/).
 >
-> AI can write more of our code every month, which makes the judgement we have built up worth more, not less. This series is me taking these ageing principles back off the shelf, checking where each one came from, where it holds, and where it breaks. Reviewing the old to understand the new.
+> The cheaper it gets to generate code, the more valuable engineering judgment becomes. This series is my attempt to dust off classic software design principles, trace each one back to its original paper, and figure out where it still holds up—and where it breaks.
 
-Coupling measures how much two modules have to know about each other. The more they know, the tighter they are tied, and the more likely a change in one pulls at the other. That definition is worth pinning down first, because it sees through a common proxy.
+In [Note 2](/notes/what-belongs-in-one-module/), we looked inside a single module at **cohesion**: code belongs together when it must change together.
 
-I used to keep a cheap rule in my head: the more a module imports, the more coupled it is. Swap a direct call for an event and two imports disappear, the constructor gets shorter, and the result looks a lot like decoupling.
+Once each module's internals are sorted out, the focus shifts to the seams *between* modules—**coupling**.
 
-Set that change against the coupling scale (its origin comes below) and the verdict flips. The direct call sat in the loosest band. After the switch, both ends start depending on the event name, the payload shape, the order of execution, and the failure semantics, and a few of those have left the type system entirely.
+In plain English, **coupling measures how much two modules have to know about each other's secrets in order to work together.**
 
-The previous note asked whether the elements inside a module belong together. This one asks about the space between modules: once import counts stop being reliable, where else can you see how tightly two modules are tied?
+Think of how two people hand off work in everyday life:
 
-## Coupling hidden in a parameter
+- **Loose coupling** is dropping a sealed box at a shipping counter: you hand over the package and the destination address, take your tracking receipt, and walk away. Whether the courier loads it onto a van or a cargo bike, or which sorting hub it visits first, is none of your business—and if they change their truck route tomorrow, they don't have to call you.
+- **Tight coupling** is two cooks sharing a single wok in a cramped kitchen: you have to watch the exact second the other person pours oil, adjusts the flame, or reaches for the salt. If they change one habit, your spatulas collide.
 
-Start with the kind you can see: a parameter that tells the other side which internal branch to take.
+When reviewing code, developers often reach for a convenient proxy for coupling: **counting `import` lines at the top of a file**. Delete two `import`s by routing calls through an event bus or a shared in-memory cache, and it feels like you've "decoupled" the code.
+
+In reality, many "decoupling" refactorings simply take an explicit connection that the compiler could verify and bury it inside an implicit runtime contract that humans have to keep in their heads.
+
+Let's walk from the coupling you can see right in a function signature to the three invisible couplings that hide outside `import` statements.
+
+---
+
+## Coupling in the Function Signature: Backseat-Driving Another Module
+
+Consider a pattern that shows up in almost every codebase:
 
 ```ts
+// Refund submission entry point with a boolean flag
 async function submitRefund(req: RefundRequest, dryRun: boolean): Promise<RefundResult>
 
-// at the call site
-await submitRefund(req, true)
+// Caller site
+const res = await submitRefund(req, true)
 ```
 
-**That `true` leaks two facts**: `submitRefund` has more than one path inside it, and `dryRun` skips some of the steps. A reader has to know that internal arrangement before they can say what this call does. One parameter is carrying the refund data and an instruction about execution at the same time.
+That innocent-looking `true` at the call site reveals something important: **the caller knows how `submitRefund` is wired on the inside.** It knows `submitRefund` has a calculation phase followed by a side-effecting gateway and ledger phase, and that passing `true` tells the function to skip the second half.
 
-The return value adds a second problem. When `dryRun` is true, nothing was submitted, so what belongs in `RefundResult.status`, and does the amount mean an estimate or a result? **One type carries two meanings**, and the caller has to read the boolean a second time to work out which one it is.
+Worse, the return type `RefundResult` now has to serve two contradictory masters. When `dryRun` is `true`, no refund was actually submitted—so what does `RefundResult.status` mean? What goes into `settledAt`? Callers have to mentally decode the return value based on the boolean flag they passed in.
 
-Split the two paths and the function name and the return type each say what they mean:
+Passing a flag parameter that tells another module which internal branch to take is called **control coupling**.
+
+The fix is to split the two intentions into two explicit operations, each with its own honest return type:
 
 ```ts
+// Dry-run calculation: takes only what calculation needs, returns a preview
 async function previewRefund(req: RefundRequest): Promise<RefundPreview>
 
+// Real submission: executes the refund and records the ledger entry
 async function submitRefund(req: RefundRequest): Promise<RefundResult>
 ```
 
-The definition from the opening lands here: **`dryRun` stands out because the caller is forced to know how `submitRefund` is arranged inside.**
+Now callers state *what* they want (`previewRefund` vs. `submitRefund`) instead of backseat-driving *how* the callee executes its internal branches.
 
-One distinction is worth drawing, between a control parameter and plain configuration. `formatAmount(m, { showCurrency: true })` also takes a boolean, but it describes what the output should look like instead of asking the caller to pick a business process. The two sides still share the meaning of the argument, which is ordinary data coupling. **`dryRun` exposes the callee's control flow on top of that, which is what drops it into control coupling.**
+> **A quick distinction**: Not every boolean parameter is control coupling. Calling `formatAmount(money, { showCurrencySymbol: true })` passes a boolean too, but it describes the desired shape of the output data—it doesn't steer the callee through two completely different business workflows. **A parameter only crosses into control coupling when it forces the caller to know about the callee's internal control flow.**
 
-## Where the six levels come from
+---
 
-The term control coupling comes out of "Structured Design" by Stevens, Myers, and Constantine, published in the IBM Systems Journal in 1974 [1], the same work that produced the cohesion levels in the previous note. The coupling scale in common use runs tightest to loosest:
+## Tracing Back to 1974: The Six-Rung Ladder of Coupling
 
-| Level | Name | What connects the two modules |
-|---|---|---|
-| 1 | Content | One module reads or writes the other's internals |
-| 2 | Common | They share a piece of global data |
-| 3 | External | Both depend on a format or protocol outside either of them |
-| 4 | Control | One passes a flag that decides the other's branch |
-| 5 | Stamp | A whole structure is passed, and a few fields are used |
-| 6 | Data | Only the data the other side needs is passed |
+Like cohesion, **control coupling** comes from Constantine, Stevens, and Myers's 1974 paper *"Structured Design"* [1].
 
-The `dryRun` example lands at level 4. Split into two operations, each request carries only what it needs, and the connection moves toward level 6.
+In the original paper, the authors explained that the strength of coupling between two modules depends on three things:
 
-The six-level table is a later arrangement. I checked it against the 1974 paper, which has no six-level list: it says the strength of coupling depends on three factors, namely how complicated the interface is, whether a connection refers to a module or to something inside it, and whether data or control is passed. By what is passed, data is the loosest, control comes next, and the tightest kind is called hybrid, meaning one module modifies another module's code; that kind has dropped out of today's textbooks. The paper treats common environments separately, and the names external and stamp do not appear in it. The six-level table is still useful. What is worth keeping is the ordering: how much two modules have to know about each other, or about some third party, to work together at all.
+1. **How complicated the interface is** (more parameters and nested structures mean tighter coupling);
+2. **Where the connection points** (at the module's public entry point vs. reaching directly into its private internals);
+3. **What flows across the connection** (pure data is loosest; control flags are tighter; mutating the other module's internals is tightest).
 
-## In production code, coupling lives outside the imports
+Later textbooks organized those criteria into a six-level spectrum from tightest (worst) to loosest (best) [1]:
 
-The couplings above sit in function signatures where the compiler and the IDE can both see them. The harder parts of production code show up at runtime, in shared state, or behind a layer that looks neutral. **When imports drop away, those connections do not go with them.**
+| Level | Name | What Connects the Two Modules? | Refund System Example |
+|---|---|---|---|
+| **1 (Tightest / Worst)** | **Content** | Module A reaches directly into Module B's private state or implementation | Support console mutating private connection-pool fields inside `WalletChannel` |
+| **2** | **Common** | Multiple modules read and write the **same global mutable state** | Reconciliation jobs and risk checks both mutating a shared global `refundCache` map |
+| **3** | **External** | Both sides share an external wire format, device protocol, or global event-name convention | Publisher and subscriber coupled via an untyped `'refund.settled'` event string, payload shape, and firing order |
+| **4** | **Control** | Module A passes a flag/mode parameter that tells Module B which internal branch to run | `submitRefund(req, dryRun: true)` |
+| **5** | **Stamp** | Module B only needs two fields, but Module A passes an entire 50-field domain record | `calculateFee(fullOrder: OrderEntity, fullUser: UserEntity)` |
+| **6 (Loosest / Best)** | **Data** | Modules communicate strictly by passing the minimal primitive/value parameters required | `calculateFee(amount: Money, feeRateBps: number): Money` |
 
-### An event bus moves coupling from compile time to run time
+Once you hold this table in mind, a lot of fashionable "decoupling" refactorings look very different: **many attempts to reduce `import` counts actually push code *up* the table from Level 6 (Data Coupling) to Level 3 (External Coupling) or Level 2 (Common Coupling).**
+
+---
+
+## Three Invisible Couplings That Hide Outside `import` Statements
+
+Control coupling and stamp coupling are at least visible in function signatures where TypeScript and your IDE can flag them. The couplings that cause the worst production incidents are the ones that **erase `import` lines while leaving a tight runtime dependency behind**.
+
+### Invisible Coupling 1: Replacing Direct Calls with an Untyped Event Bus
+
+Start with a straightforward direct call:
 
 ```ts
+// Version A: Explicit direct calls (Level 6 · Data Coupling)
 class RefundService {
   constructor(
     private ledger: RefundLedger,
-    private notifier: Notifier,
+    private notifier: RefundNotifier,
   ) {}
 
-  async settle(refundId: string) {
+  async settle(refundId: string): Promise<void> {
     await this.ledger.markSettled(refundId)
-    await this.notifier.refundSettled(refundId)
+    await this.notifier.sendSettledNotice(refundId)
   }
 }
 ```
 
-`RefundService` knows two types by name. Move it onto an event bus:
+Here, `RefundService` imports two collaborators, takes them in its constructor, marks the ledger settled, and sends a notification.
+
+Now suppose someone decides `RefundService` has "too many imports" and refactors it to use an event bus:
 
 ```ts
+// Version B: Untyped event bus (Drops to Level 3 · External Coupling)
 class RefundService {
   constructor(private bus: EventBus) {}
 
-  async settle(refundId: string) {
-    await this.bus.emit('refund.settled', { refundId })
+  async settle(refundId: string): Promise<void> {
+    await this.bus.emit('refund.settled', { id: refundId })
   }
 }
 ```
 
-Now it knows `EventBus` and nothing else. Two imports gone, constructor shorter. The ledger entry still has to happen, just inside a handler subscribed to `refund.settled`.
+Two `import` lines vanished, and the constructor shrank to a single parameter. It *looks* decoupled.
 
-The compiler sees the `emit` and can check the types `EventBus` exposes. If the event name is only a string, it cannot enumerate the subscribers from it, and it knows nothing about the order they run in or how their failures propagate. An IDE can find every occurrence of the string, though it cannot prove those hits are the whole business flow.
-
-Checked against the scale, the first version passed nothing but a `refundId` between `RefundService` and `RefundLedger`, which is data coupling at level 6. In the second version, publisher and subscriber both depend on the event name and the payload shape, which is external coupling at level 3. **For this one business connection, a dependency the compiler could enumerate has turned into a runtime convention that has to be tracked some other way.**
-
-The move everybody calls decoupling walked three levels in the wrong direction:
+But look at what happened on the 1974 scale:
 
 ```mermaid
 flowchart LR
-   A["Direct call<br/>passes only refundId<br/>level 6 · data"] -->|"to an event bus"| B["Event bus<br/>shares name · payload · order<br/>level 3 · external"]
+    A["Version A: Direct Method Call<br/>Passes only refundId; order & errors enforced by compiler and call stack<br/>(Level 6 · Data Coupling)"] -->|"Replace imports with string EventBus"| B["Version B: Global Event Bus<br/>Both sides secretly share event string, payload keys, execution order & failure semantics<br/>(Degrades to Level 3 · External Coupling)"]
 ```
 
-Event buses still have their place: across processes, across teams, or where the subscriber genuinely should not be known to the publisher. **There is a blunt way to test how strong the business dependency is.** Temporarily remove the subscriber and see whether the main flow still holds up. Lose the analytics or audit subscriber and you are down one data source, which is usually fine to handle asynchronously. Lose the ledger and the books are wrong, so that link needs stronger delivery and failure guarantees. This test only ranks business dependency. Deployment boundaries, throughput, and availability across processes are separate trade-offs.
+- In **Version A**, if `markSettled` changes its parameter type, TypeScript fails the build immediately, and "Jump to References" lists every caller. Moreover, the requirement that *"the ledger must be updated before the user is notified"* is guaranteed by the two `await` lines.
+- In **Version B**, if a developer renames `{ id: refundId }` to `{ refundId }` in `emit()`, the compiler stays completely silent while the ledger consumer crashes at runtime. Worse, if the notification handler runs before the ledger handler finishes, the customer receives a *"Your refund is complete!"* text message, opens the app, and sees their refund still stuck in `Pending`.
 
-### Shared mutable state: no import needed to affect each other
+**Deleting two `import` lines didn't remove the business dependency—it just moved the contract out of the type system and into unverified runtime assumptions.**
+
+How do you know when an event bus *is* the right tool? Use a simple test: **temporarily delete the subscriber and ask whether the publisher's operation still counts as succeeded.**
+
+- If deleting the analytics or marketing-points subscriber leaves the refund transaction valid, an asynchronous event is a great fit.
+- If deleting the ledger subscriber means the refund settlement itself is broken, the two steps are part of the same transaction—keep the call explicit.
+
+### Invisible Coupling 2: Communicating Through Shared Mutable State
+
+A second way modules couple without importing one another is **shared mutable state (Level 2 · Common Coupling)**:
 
 ```ts
-// shared-cache.ts
-export const refundCache = new Map<string, Refund>()
+// shared-cache.ts — A globally exported mutable Map
+export const activeRefundCache = new Map<string, RefundRecord>()
 ```
 
-The reconciliation job writes to it, risk reads from it. Both modules may well import `shared-cache.ts` without either referencing the other. A text search lists everyone who touches this `Map` and says nothing about which reads have to happen after which writes.
+Suppose `RiskGuard` and `ReconciliationJob` never import each other, but both import `activeRefundCache`.
 
-Say risk reads a refund as `Submitted` and starts to clear it. Before the clearance finishes, the reconciliation job flips the same refund to `Failed`. The `Map` returned the right value at the moment of the read; **the trouble is that reading the state and acting on it are two separate moments**. Risk carries on with a decision that has already expired.
+Here is how they break each other in production:
 
-This kind of connection is common coupling at level 2, one notch looser than reading and writing the other module's internals directly. What makes it hard to find is equally specific: **tools can locate the shared object, but not who owns the writes, what order things must happen in, or which sequences need to be atomic.**
+1. `RiskGuard` reads order `ord_100` from `activeRefundCache`, sees `status === 'Pending'`, and starts an async velocity check.
+2. Ten milliseconds later, `ReconciliationJob` runs in the background and mutates the exact same object reference in place: `record.status = 'Settled'`, clearing its temporary risk metadata field.
+3. `RiskGuard`'s async check resumes, reads the mutated field off the shared reference, and crashes—or worse, approves a duplicate refund.
 
-What risk needs is the ability to query. Give it a read-only interface, with the implementation living outside the shared state. The dependency becomes findable again, and risk never gets a write handle. Who gets to define that interface is the subject of notes 7 and 8.
+Global text search can tell you which files reference `activeRefundCache`, **but no static tool can tell you which module expects to read before another writes, or which fields are assumed to stay immutable across an `await` boundary.**
 
-## Why a middle layer is not decoupling
+To eliminate common coupling, either pass immutable value snapshots or hide the state behind narrow, role-specific interfaces (as we'll see in [Note 7](/notes/dependency-inversion-who-owns-the-interface/) and Note 8).
 
-Consider a UI-layer example. Several forms calling several data-layer methods directly gives you a mesh. Put a controller in the middle and the graph becomes a star. The shape is clearer, but if the controller fills up with switches that branch by caller, the same amount of knowledge is now concentrated in one place.
+### Invisible Coupling 3: The "Middleman" Controller That Only Relays Details
 
-Change a data-layer method and the controller changes. A form grows one more case and the controller gains a branch. `Form1` and `Form3`, which had never heard of each other, now take turns editing the same file. **The amount of code you have to open and verify has not gone down. The dependency moved.**
+Every developer has heard the aphorism: *"All problems in computer science can be solved by another level of indirection."*
 
-Both shapes side by side:
+When three UI views (`Form1`, `Form2`, `Form3`) call three data services (`DataA`, `DataB`, `DataC`), the dependency graph looks like a tangled mesh. Put a `RefundCenterController` in the middle, and the diagram turns into a tidy star:
 
 ```mermaid
 flowchart TB
-   subgraph MESH["Before · mesh"]
-     direction LR
-     F1["Form1"] --> D1["DataA"]
-     F1 --> D2["DataB"]
-     F2["Form2"] --> D1
-     F2 --> D3["DataC"]
-     F3["Form3"] --> D2
-     F3 --> D3
-   end
-   subgraph STAR["After · star"]
-     direction LR
-     G1["Form1"] --> C["Controller"]
-     G2["Form2"] --> C
-     G3["Form3"] --> C
-     C --> E1["DataA"]
-     C --> E2["DataB"]
-     C --> E3["DataC"]
-   end
+    subgraph Mesh["Before: Direct Mesh"]
+        direction LR
+        F1["Support Modal Form1"] --> D1["DataA"]
+        F1 --> D2["DataB"]
+        F2["Finance Report Form2"] --> D1
+        F2 --> D3["DataC"]
+        F3["Merchant View Form3"] --> D2
+        F3 --> D3
+    end
+
+    subgraph Star["After: Star Topology with a Pass-Through Middleman"]
+        direction LR
+        G1["Support Modal Form1"] --> C["RefundCenterController<br/>(Stuffed with caller-specific switch branches)"]
+        G2["Finance Report Form2"] --> C
+        G3["Merchant View Form3"] --> C
+        C --> E1["DataA"]
+        C --> E2["DataB"]
+        C --> E3["DataC"]
+    end
 ```
 
-The star does have fewer lines. The price is that the controller becomes the only junction: every new case in any form, and every change to any data-layer method, lands in the same file.
+The lines on the whiteboard look cleaner. But if `RefundCenterController` is just a giant `switch (callerType)` that forwards every quirk of `DataA`, `DataB`, and `DataC` straight through to `Form1`, `Form2`, and `Form3`, **you haven't reduced coupling—you've just concentrated all of it into a single bottleneck file.**
 
-To tell whether the layer is a real boundary, try changing the implementation behind it. If callers are unaffected and the interface still describes the same thing in stable business words, the layer absorbed the change. **If every change means adding another caller branch to the switch, the layer is a clearing house for details.** That test comes back in note 7, on dependency inversion.
+Now, whenever `Form1` needs a new field or `DataC` changes a query parameter, every developer on the team has to edit `RefundCenterController` at the same time.
 
-## Direction: toward the stable side, and no cycles
+**An intermediate layer only reduces coupling if it absorbs change**—meaning you can swap or modify the implementation behind it without touching the callers in front of it. If every change on one side forces a matching edit on the other side, the middleman is just extra ceremony.
 
-Once the connections are visible, they need a direction. I keep three rules here. They cover a narrow range, but each one can be checked directly.
+---
 
-Start with cycles. A depends on B, B depends on C, C depends on A, and the three modules now behave like one module when it comes to change: **touch one and all three need verifying again**. Cycles are one of the few structural problems a tool can find for you. Both `madge` and `dependency-cruiser` do it.
+## Three Practical Rules for Keeping Coupling Under Control
 
-Then direction. **Dependencies should point toward the more stable side**, where stable means depended on by many and depending on few, and therefore expensive to change. `Money` can be depended on by all four channels; it should not know about any specific channel. Wire it the other way and adding a channel means editing `Money`, where two of the four invariants listed in the [opening essay](/notes/programming-taste-in-the-agent-era/) also live.
+Since counting `import` lines doesn't work, here are three concrete rules that do:
 
-Last, visibility. The connections in this note can be reordered by how much a tool helps you when the convention changes:
+### 1. Pass Only the Data the Callee Needs (Stamp Coupling → Data Coupling)
 
-| Connection | What happens when the convention changes |
-|---|---|
-| Constructor parameter | The compiler errors, and the error sites are close to a list of every caller |
-| Typed event contract | Name and payload mismatches error out, though subscriber order and failure propagation still need checking at runtime |
-| Global mutable object | Search finds the users, but who writes, in what order, and relative to which reads still has to be reconstructed by hand |
-| Event name as a string | The string can be found, and it is hard to prove the hits cover the full meaning |
+If a fee-calculation function only needs a `Money` amount and a basis-point rate, don't pass the entire 50-field `Order` entity:
 
-The later rows all have uses. **What they share is the cost of moving part of "who depends on whom" out of the compiler** and into tests, docs, runtime checks, or someone's memory. Each of those supporting mechanisms left unbuilt is one more thing a maintainer has to remember.
+```ts
+// Tighter (Level 5 · Stamp Coupling): Callee is coupled to the Order schema, and tests must mock a full Order
+function calculateRefundFee(order: Order, channel: ChannelConfig): Money
 
-These three rules govern the shape, direction, and visibility of a dependency. **They cannot tell you whether the dependency should exist.** That goes back to the previous note: will these two modules change together because of the same change?
+// Looser (Level 6 · Data Coupling): Self-contained, trivial to test, immune to Order schema changes
+function calculateRefundFee(amount: Money, feeRateBps: number): Money
+```
 
-## Counting imports as a coupling metric, wrong twice
+Passing narrow values keeps modules ignorant of schemas they don't care about and makes unit tests trivial to write.
 
-I used to treat "add an intermediate layer" as the standard answer to coupling. Writing up the controller example and checking it by blast radius changed that: mesh to star only reshaped the graph. The center still held the same branches, and not one file fewer had to be open at the same time.
+### 2. Keep Dependencies Acyclic and Pointing Toward Stability
 
-I also treated direct-call-to-event as a coupling reduction, on the evidence of fewer imports. Checked line by line against the scale, `RefundService` and `RefundLedger` had been passing only the data the other side needed. After the switch both ends share a string, a payload, and a runtime convention. The change may still be worth making at some deployment boundaries, but "fewer imports, therefore lower coupling" does not hold.
+- **No dependency cycles**: If Module A depends on B, B depends on C, and C depends back on A, the three modules are effectively welded into one—changing any one of them forces you to re-verify all three. Tools like `dependency-cruiser` or `madge` can block circular imports automatically in CI.
+- **Point toward stability**: Core domain primitives like `Money` (which enforces Invariant 4: currencies cannot be mixed) are depended on by everyone and depend on nothing. Workflow modules should import `Money`; `Money` must never import a specific refund channel.
 
-**Both mistakes came from the same convenient proxy.** Import counts measure symbols in a source file. The coupling table asks how much knowledge it takes to understand and change a connection. Put an event bus, shared state, or a middle layer in front of them and the two give different answers.
+### 3. Prefer Compiler-Visible Coupling Over Hidden Runtime Coupling
 
-Those two mistakes sent me back to where the table came from. The 1974 paper set out to answer whether a change in one place carries errors into another, and it measures the complexity of an interface by how much information is needed to state or understand the connection. That was never the same question as how many import lines there are. Compressed down to "lower coupling is better", the first half disappeared and only the proxy was left. **That is what going back to the source buys you: a slogan turned back into the trouble it was written for, and a trouble is something you can check on the spot.**
+Rank your module connections by **how much help your tools give you when a contract changes**:
 
-These days, when I look at a dependency, I start by assuming its convention changes. Can the compiler list everything that breaks? Whatever has to be filled in by search, docs, and memory is the part of that connection the imports never showed.
+| Connection Mechanism | What Catches a Broken Contract? | Maintenance Risk |
+|---|---|---|
+| **Explicit function arguments / typed interfaces** | **TypeScript compiler** flags every broken caller immediately at edit time | Lowest (blast radius is 100% visible) |
+| **Typed event bus** | Compiler checks event names & payload shapes, but **cannot verify subscriber ordering or failure propagation** | Moderate (good for side effects; dangerous for core state transitions) |
+| **Untyped string events** | Compiler is blind; relies on **grep + integration tests** | High (easy to miss consumers during refactoring) |
+| **Shared global mutable state** | Even grep cannot reveal **read/write ordering or async race conditions** | Highest (causes Heisenbugs in production) |
 
-## What this note concludes
+In the age of coding agents, this hierarchy matters more than ever: an agent can follow compiler errors across twenty files and fix every broken call site in seconds, but if a contract is hidden inside a shared `Map` or an untyped event string, the agent will miss the downstream breakage just like a human would.
 
-- **Coupling measures how much two modules know about each other, not how many imports there are.** Import counts measure symbols in a source file; the scale asks how much knowledge it takes to understand and change a connection.
-- **A parameter like `dryRun` lands in control coupling**, because it exposes the callee's control flow on top of the data. `formatAmount(m, { showCurrency: true })` describes what the output should look like, which is ordinary data coupling.
-- **Swapping in an event bus moves you down the scale.** Passing only a `refundId` was data coupling; sharing an event name, a payload shape, and an execution order is external coupling. It can be worth doing across processes or teams, but it is not decoupling.
-- **Shared mutable state is common coupling at level 2, one notch looser than reading the other module's internals.** Search lists the users. It cannot list who owns the writes, what order things must happen in, or which sequences need to be atomic.
-- **A middle layer does not decouple on its own.** Mesh to star only reshapes the graph. The knowledge that used to be spread around collects in the controller, and not one fewer file has to be open at the same time.
-- **Dependencies should point toward the more stable side, and must not cycle.** Three modules in a cycle behave like one module when it comes to change, and cycles are one of the few structural problems a tool can find for you.
-- **"Lower coupling is better" backfires as an acceptance criterion.** It rewards moving dependencies out of sight rather than making the system better. Whether a dependency should exist at all is a business question: remove the subscriber for a moment and see whether the main flow still holds. Going back to the 1974 source is what turns the slogan back into that question.
+---
 
-The next note is on single responsibility, back on the cohesion side.
+## Summary: Three Questions to Audit Module Coupling
+
+Next time you wire two modules together—or review a "decoupling" PR—ask three questions:
+
+1. **Does calling this function require knowing how its internal `if/else` branches are structured?** If a caller is passing `dryRun` or `mode` flags, split the function into separate, intention-revealing operations.
+2. **Did this refactoring actually reduce what the two modules need to agree on, or did it just hide an `import` behind a runtime convention?** If the business flow requires step B to succeed for step A to be valid, keep the call explicit.
+3. **If the contract between these two modules changes tomorrow, will the compiler list every affected file?** Keep as much of your coupling as possible inside the type system's field of view.
+
+Across Notes 2 and 3, we saw that good module boundaries group code that changes together (cohesion) and minimize what separate modules have to know about one another (coupling). That leads naturally to the next question: **where do those changes actually come from in the first place?**
+
+That brings us to Note 4: **the Single Responsibility Principle**—and why a "responsibility" is not a task, but a group of people who will come asking for changes.
+
+---
+
+## Series Outline
+
+- Opening · [Rereading Classic Design Principles in the Age of AI](/notes/programming-taste-in-the-agent-era/)
+- Cohesion · [The Standard Is What Must Change Together](/notes/what-belongs-in-one-module/)
+- Coupling · Measuring How Much Two Modules Know About Each Other *(this note)*
+- Single Responsibility · [One Responsibility Maps to One Group of Stakeholders](/notes/single-responsibility-is-an-actor/)
+- Open-Closed · [First Identify Which Way the Code Will Grow](/notes/open-closed-only-the-guessed-axis/)
+- Liskov Substitution · [A Subtype Must Seamlessly Stand In for Its Supertype](/notes/liskov-what-the-signature-does-not-check/)
+- Dependency Inversion · [What Inverts Is Who Owns the Interface](/notes/dependency-inversion-who-owns-the-interface/)
+- Interface Segregation · An interface is a slice taken from the client's point of view
+- Law of Demeter · The middleman's dilemma
+- Composite Reuse · Inheritance publishes your invariants
 
 ## References
 
-1. [W. P. Stevens, G. J. Myers, L. Constantine, "Structured Design", IBM Systems Journal 13(2), 1974, 115–139](https://dl.acm.org/doi/10.1147/sj.132.0115)
+1. [W. P. Stevens, G. J. Myers, L. L. Constantine, "Structured Design", *IBM Systems Journal* 13(2), 1974, 115–139](https://dl.acm.org/doi/10.1147/sj.132.0115) — Identifies the three factors governing coupling strength (interface complexity, entry-point vs. internal target, data vs. control flow) and establishes the coupling spectrum.

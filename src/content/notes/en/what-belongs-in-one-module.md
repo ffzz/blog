@@ -1,201 +1,331 @@
 ---
-title: 'Cohesion: The Test Is "Must Change Together", Not "Looks Related"'
-description: "Cohesion measures what earns the elements inside a module the right to live together. The test is not \"looks related\" — handlers that branch by refund channel have near-identical names and still land on the second rung of the 1974 scale. This note walks a refund system from the utility class nobody defends to the logical cohesion that gets past review, then asks when splitting lowers cohesion, and how Parnas drew boundaries before the code existed."
+title: 'Cohesion: The Standard Is What Must Change Together'
+description: "What code actually belongs in the same file? Grouping functions together just because their names look similar or they all 'do refunds' produces low-grade logical cohesion, while splintering business invariants into tiny files destroys functional cohesion. Using real code from our refund subsystem, this note walks through the six levels of cohesion and three common traps."
 pubDate: 2026-08-31T10:00:00
-updatedDate: 2026-09-13
+updatedDate: 2026-11-18
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'architecture', 'typescript']
 ---
 
-> The second of ten notes in the Programming Thinking series. The case the series is built on is in the [opening essay](/notes/programming-taste-in-the-agent-era/).
+> Note 2 of 10 in the *Programming Thinking* series. The premise for the series is set out in the [opening essay](/notes/programming-taste-in-the-agent-era/).
 >
-> AI can write more of our code every month, which makes the judgement we have built up worth more, not less. This series is me taking these ageing principles back off the shelf, checking where each one came from, where it holds, and where it breaks. Reviewing the old to understand the new.
+> The cheaper it gets to generate code, the more valuable engineering judgment becomes. This series is my attempt to dust off classic software design principles, trace each one back to its original paper, and figure out where it still holds up—and where it breaks.
 
-What code belongs in the same module? This note is about cohesion. Its test: elements belong together because they must change together, not because they look related. The test deserves a hard look because the cost of getting it wrong is concrete — unrelated things crammed into one place drag each other into every change, and anyone who wants one of them inherits the dependencies of the rest. Start with the kind of code nobody defends.
+Every day we write code, we make the same quiet decision dozens of times: do these functions and types belong in the same file, or should they live in separate modules?
 
-## A utility class nobody defends
+Textbooks have a name for that property—**cohesion**—and a slogan everyone can recite from memory: *"Aim for high cohesion and low coupling."*
+
+Yet the slogan rarely helps when you're staring at a real pull request. Suppose four methods handle four different refund channels, all named `handleXxx` with identical parameter types—does putting them in one class count as high cohesion? Or suppose you split a 20-line function into two 10-line helpers in separate files—did cohesion go up or down?
+
+If you judge cohesion by *"do the names look related?"* or *"are the files small?"*, you will get both questions wrong.
+
+In plain English, **cohesion measures how strongly the pieces inside a module belong together—the real reason they share the same roof.**
+
+Think of a module like a container in your house:
+
+- **Low cohesion** is the kitchen junk drawer: nail clippers, AA batteries, takeout menus, and cough drops tossed together simply because nobody knew where else to put them.
+- **High cohesion** is a surgeon's suture kit: needle holder, suture thread, forceps, and tissue scissors. None of the tools look alike, **but take one away and you cannot finish closing the wound—and if the surgical protocol changes, the kit changes as a unit.**
+
+The single reliable test for cohesion is straightforward: **elements belong in the same module when they must change together.**
+
+Let's walk through our refund subsystem from the most obvious violations to the subtle traps that fool experienced engineers and coding agents alike.
+
+---
+
+## The Obvious Anti-Pattern: The "Junk Drawer" Utility Class
+
+Here is a class you can find in almost every production repository:
 
 ```ts
-class RefundUtils {
-  static formatCurrency(amount: number, currency: string): string { /* formats for display */ }
+// refund-utils.ts
+export class RefundUtils {
+  // 1. Formats integer cents into a display string for the support UI
+  static formatCurrency(amountCents: number, currency: string): string {
+    return `${currency} ${(amountCents / 100).toFixed(2)}`
+  }
 
-  static parseWebhookSignature(payload: string, secret: string): boolean { /* verifies the payment channel callback */ }
+  // 2. Verifies HMAC webhook signatures from payment gateways
+  static verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
+    // Calls crypto library to compute HMAC...
+    return true
+  }
 
-  static logAuditEvent(event: string, actor: string): void { /* writes the audit log */ }
+  // 3. Writes compliance audit logs to the database
+  static writeAuditLog(refundId: string, operatorId: string, action: string): Promise<void> {
+    // Inserts into audit table...
+    return Promise.resolve()
+  }
 }
 ```
 
-**The three methods have nothing to do with one another.** `formatCurrency` serves the presentation layer, `parseWebhookSignature` serves the channel adapters, and `logAuditEvent` serves compliance. They sit together for one reason: whoever wrote them could not decide where else to put them.
+These three methods have nothing to do with one another.
 
-Three unrelated jobs end up in one file. Change one and the other two are untouched, and that is precisely the problem. **Anyone who wants the currency formatter also picks up the signature check and the audit logger.**
+`formatCurrency` serves the presentation layer; `verifyWebhookSignature` belongs to payment gateway transport; `writeAuditLog` answers to compliance. The only reason they sit in the same file is that the author didn't want to think about where they belonged, so they created a catch-all bucket with `Refund` in the name.
 
-The fix is not clever. Send each method back where it belongs: `formatCurrency` to the display formatter, `parseWebhookSignature` to the adapter for that channel, `logAuditEvent` to the audit module. After that the name `RefundUtils` should go as well. It was never a description of a responsibility, only a place to put things you had not thought through.
+Stuffing unrelated helpers into one file carries a very real cost:
 
-**Cohesion measures what justifies the elements of a module living together.** The stronger and more singular that reason, the easier the module is to read and the less likely it is to be dragged into changes that have nothing to do with it.
+1. **Transitive dependency bloat**: A frontend component that only wants `formatCurrency` to render a price string ends up importing `RefundUtils`—and dragging the crypto library and database audit client along with it.
+2. **Cognitive noise**: Anyone debugging webhook signature verification has to wade through UI formatting and compliance logging code in the same file.
 
-Code like this is rarer in real projects than you might expect, because it is so easy to catch. **The violations that get past review look different.**
+The fix is obvious: move `formatCurrency` to the UI formatting module (or the `Money` value object), move `verifyWebhookSignature` into the gateway adapter, move `writeAuditLog` into the audit module, and delete `RefundUtils` entirely.
 
-## Where the six levels come from
+In the literature, this junk drawer is called **coincidental cohesion**—the lowest rung on the ladder. In practice, coincidental cohesion isn't the most dangerous trap, because it's so blatantly messy that any decent code review catches it.
 
-Cohesion and coupling come from "Structured Design", published by Stevens, Myers, and Constantine in the IBM Systems Journal in 1974 [1]. The ideas are older than the paper, which opens by saying they came out of nearly ten years of research by Constantine.
+The trap that actually fools experienced developers—and gets praised as "clean code"—looks very different.
 
-The paper gives six levels, lowest to highest:
+---
 
-| Level | Name | The reason these are together |
-|---|---|---|
-| 1 | Coincidental | No reason |
-| 2 | Logical | Same category of operation, with a parameter picking the branch |
-| 3 | Temporal | They run at the same moment |
-| 4 | Communicational | They operate on the same data |
-| 5 | Sequential | One step's output is the next step's input |
-| 6 | Functional | They join forces on one job |
+## The Hidden Trap: Fake Cohesion by Noun ("Logical Cohesion")
 
-`RefundUtils` sits at level 1. No reason at all.
-
-Laid out from the bottom up, the levels form a staircase:
-
-```mermaid
-flowchart BT
-    C1["1 · Coincidental<br/>no reason"] --> C2["2 · Logical<br/>same category, a parameter picks the branch"]
-    C2 --> C3["3 · Temporal<br/>they run at the same moment"]
-    C3 --> C4["4 · Communicational<br/>they operate on the same data"]
-    C4 --> C5["5 · Sequential<br/>one step's output is the next step's input"]
-    C5 --> C6["6 · Functional<br/>they join forces on one job"]
-```
-
-Textbooks today usually list seven. Procedural cohesion was added later by Yourdon and Constantine, and Myers proposed two more of his own, so the versions disagree with each other. The count is not what matters. The ordering is: **the table ranks how strong the reason is for these elements to be together**, from no reason at all up to elements that join forces on one job that fails if any of them leaves.
-
-## Logical cohesion: the one that clears review
+Consider this `RefundHandler` class, which dispatches refunds across four channels:
 
 ```ts
-type RefundChannel = 'card' | 'wallet' | 'transfer' | 'credit'
+type ChannelKind = 'card' | 'wallet' | 'transfer' | 'credit'
 
-class RefundHandler {
-  async handle(channel: RefundChannel, req: RefundRequest): Promise<RefundResult> {
+export class RefundHandler {
+  async handle(channel: ChannelKind, req: RefundRequest): Promise<RefundResult> {
     switch (channel) {
-      case 'card':     return this.handleCard(req)
-      case 'wallet':   return this.handleWallet(req)
-      case 'transfer': return this.handleTransfer(req)
-      case 'credit':   return this.handleCredit(req)
+      case 'card':
+        return this.handleCard(req)
+      case 'wallet':
+        return this.handleWallet(req)
+      case 'transfer':
+        return this.handleTransfer(req)
+      case 'credit':
+        return this.handleCredit(req)
     }
   }
 
-  private async handleCard(req: RefundRequest)     { /* calls the card network, result arrives by async callback */ }
+  private async handleCard(req: RefundRequest): Promise<RefundResult> {
+    // Calls card network gateway; settles asynchronously via webhook callback
+  }
 
-  private async handleWallet(req: RefundRequest)   { /* updates one balance row, returns synchronously */ }
+  private async handleWallet(req: RefundRequest): Promise<RefundResult> {
+    // Updates internal wallet balance in a local DB transaction; returns in milliseconds
+  }
 
-  private async handleTransfer(req: RefundRequest) { /* issues a payment instruction, waits for manual approval */ }
+  private async handleTransfer(req: RefundRequest): Promise<RefundResult> {
+    // Creates a manual payout ticket and waits days for finance approval
+  }
 
-  private async handleCredit(req: RefundRequest)   { /* issues a voucher, no money moves */ }
+  private async handleCredit(req: RefundRequest): Promise<RefundResult> {
+    // Issues a promotional store-credit voucher; moves zero actual money
+  }
 }
 ```
 
-Unlike `RefundUtils`, this class does not look like an accident, and nobody would casually move it. Four methods with nearly identical names, all handling refunds. It looks exactly like code that belongs together.
+At first glance, both human reviewers and coding agents love this class:
 
-On the 1974 scale it is logical cohesion, level 2: the four methods are the same category of operation, and one parameter decides which runs. The reasons are in the comments. Cards confirm through an async callback, wallets change a balance and return synchronously, bank transfers wait for a human, and credit compensation moves no money. Failure modes, latency, idempotency, retry rules: **not one of these matches across the four paths.** What they share is the word "refund" and nothing underneath it.
+- The class name is `RefundHandler`;
+- All four private methods share a neat, symmetrical `handleXxx` naming pattern;
+- Every method is clearly about "refunds."
 
-The cost appears when something changes. Risk wants a limit check before a bank transfer is approved. `handleTransfer` has to change, `handle` needs an approval context in its signature, and three branches that had nothing to do with the request get touched anyway.
+Doesn't that look like textbook high cohesion?
 
-Walking up the scale means giving each path its own module, each carrying its own timeouts, retries, and idempotency rules, with callers asking for the one that matches their channel. Each module is then at level 6, and adding a limit check touches one file. This has a cost of its own, which shows up the moment you need to add one new operation to every channel at once. The fifth note comes back to this code when it covers the open-closed principle, and by then it will be clear that every direction of the split charges you.
+**In reality, its cohesion is terrible.**
 
-**`RefundUtils` looks wrong at a glance. This class looks right at a glance.** Five levels apart, and a reader's instinct points the wrong way.
+Grouping these four methods together is like storing **table salt, granulated sugar, baking soda, and laundry detergent** in the same four-compartment spice jar because *"they are all white powders."* It looks tidy on the shelf until you try to cook dinner.
 
-## Temporal cohesion: a milder compromise
+Look at what those four methods actually do under the hood:
 
-```ts
-async function initRefundContext() {
-  await loadChannelConfig()
-  await connectLedgerDb()
-  warmUpFxRateCache()
-  registerMetrics()
-}
+- **Card refund**: Crosses the public internet to an external payment gateway, settles asynchronously over hours or days via webhooks, and requires network retry and idempotency handling.
+- **Wallet refund**: Runs a synchronous local database transaction in milliseconds.
+- **Manual bank transfer**: Enters a multi-day human approval workflow for finance staff.
+- **Credit compensation**: Calls the promotions service to issue a coupon without touching the financial ledger at all.
+
+Their **external dependencies, latency profiles, failure modes, retry rules, and reasons to change share nothing in common**. The only thing tying them together is the English word *"refund."*
+
+Watch what happens the moment a real requirement arrives:
+
+1. Risk management asks to add a mandatory supervisor approval token (`approverToken`) before manual bank transfers can be queued.
+2. Because all four channels live inside `RefundHandler`, you have to edit `RefundHandler`, widen the signature of `handle(channel, req, approverToken?)` (or pollute `RefundRequest` with a field only `transfer` cares about), and re-test the entire class.
+3. Card, wallet, and store-credit refunds didn't change a single business rule, yet they get dragged into the diff and collide with teammates editing card-gateway logic in the same file.
+
+Bundling distinct operations together under a `switch` statement simply because they fall under the same conceptual category is called **logical cohesion**.
+
+While `RefundUtils` is an obvious mess, `RefundHandler` is a **seductive mess**: its symmetrical method names trick our pattern-matching instincts into welding four completely independent evolutionary paths into a single file.
+
+---
+
+## Tracing Back to 1974: The Six-Step Ladder of Cohesion
+
+Where did terms like *coincidental* and *logical* cohesion come from?
+
+They originated in Larry Constantine, Wayne Stevens, and Glenford Myers's landmark 1974 *IBM Systems Journal* paper, *"Structured Design"* [1]. Studying why some software systems absorbed changes cleanly while others rippled bugs across unrelated modules, they ranked module cohesion on a six-step scale from weakest to strongest [1] (Yourdon and Constantine later inserted a seventh level, *procedural cohesion*, in their book, but the underlying spectrum remained the same):
+
+| Level | Name | Why the Elements Are Together | Everyday Analogy | Refund System Example |
+|---|---|---|---|---|
+| **1 (Lowest)** | **Coincidental** | Pure accident; no meaningful relationship | Kitchen junk drawer | `RefundUtils` (formatting UI strings, verifying HMACs, writing audit logs) |
+| **2** | **Logical** | Similar category/noun, selected via a `switch` or flag parameter | Salt, sugar, and detergent in one jar ("white powders") | `RefundHandler` (`switch (channel)` dispatching card, wallet, transfer, and credit) |
+| **3** | **Temporal** | Executed at the **same point in time** (e.g., startup or teardown) | Morning routine (turn off alarm, open blinds, boil water, brush teeth) | `bootstrapRefundWorker()` (load config, connect DB, warm FX cache, start metrics server) |
+| **4** | **Communicational** | Different operations that read or write the **same data structure** | Medical clinic stations all reading from one patient chart | `summarizeOrderRefunds(order)` (computes remaining refundable balance and builds a support summary from the same `Order` snapshot) |
+| **5** | **Sequential** | Assembly-line pipeline: **the output of step A is the input to step B** | Wash vegetables → chop vegetables → stir-fry | `settleCardRefund()` (parse raw gateway webhook → convert currency → append ledger entry) |
+| **6 (Highest)** | **Functional** | Every line cooperates to perform **one single, indivisible task** | Surgeon's suture kit | `WalletChannel.submit()` or `Money.add()` (every statement is essential to that one job) |
+
+Plotted as a staircase, the progression looks like this:
+
+```mermaid
+flowchart BT
+    C1["1 · Coincidental<br/>Unrelated helpers tossed into one file"] --> C2["2 · Logical<br/>Grouped by category noun, branched via switch"]
+    C2 --> C3["3 · Temporal<br/>Grouped only because they run at the same moment"]
+    C3 --> C4["4 · Communicational<br/>Grouped because they operate on the same data"]
+    C4 --> C5["5 · Sequential<br/>Pipeline where step A's output feeds step B"]
+    C5 --> C6["6 · Functional<br/>Every element cooperates toward one indivisible goal"]
 ```
 
-The only thing these four share is that they all run at startup, which puts them at level 3.
+The most important takeaway from the 1974 scale is how wide the gap is between **Level 2 (Logical)** and **Level 6 (Functional)**—even though they often look superficially similar in code.
 
-This level is gentler than level 2, and in plenty of projects keeping it is the right call. Startup order is a constraint in itself, and having it in one place makes it visible. **The question to ask is whether anyone needs to run one of them on its own.** A test that wants to warm the FX cache without connecting to a database is blocked by this function. If nobody has that need, it can stay exactly as it is.
+How do you climb from Level 2 (`RefundHandler`) to Level 6? By giving each channel its own focused module (`CardChannel`, `WalletChannel`, `TransferChannel`, `CreditChannel`), each encapsulating its own transport, retry policy, and idempotency rules—just as we saw in [Note 5 (Open-Closed Principle)](/notes/open-closed-only-the-guessed-axis/). Once split that way, adding a supervisor approval token to bank transfers touches `TransferChannel` and nothing else.
 
-## Splitting can also break cohesion
+---
+
+## Navigating the Gray Areas: Three Common Misconceptions
+
+Once you understand that cohesion is about keeping things that change together in the same place, three counterintuitive traps in real-world codebases become much easier to spot.
+
+### Misconception 1: "Smaller Functions and More Files Automatically Mean Higher Cohesion"
+
+When developers (or coding agents) take *"do one thing"* too literally, their favorite refactoring is chopping a cohesive function into tiny pieces across multiple files.
+
+Consider how our refund subsystem adds two `Money` amounts. In the [opening essay](/notes/programming-taste-in-the-agent-era/), we established Invariant 4: **amounts in different currencies can never be added directly**.
+
+Originally, that rule lived inside a single function:
 
 ```ts
-// money.ts
-export function add(a: Money, b: Money): Money {
+// money.ts — Functional Cohesion (Level 6)
+export function addMoney(a: Money, b: Money): Money {
+  if (a.currency !== b.currency) {
+    throw new CurrencyMismatchError(a.currency, b.currency)
+  }
   return { amount: a.amount + b.amount, currency: a.currency }
 }
+```
 
-// currency-guard.ts
+Now suppose an over-zealous refactoring splits "validation" and "arithmetic" into two separate modules so each function "only does one thing":
+
+```ts
+// currency-guard.ts — Only checks currency codes
 export function assertSameCurrency(a: Money, b: Money): void {
-  if (a.currency !== b.currency) throw new CurrencyMismatchError(a, b)
+  if (a.currency !== b.currency) {
+    throw new CurrencyMismatchError(a.currency, b.currency)
+  }
 }
-```
 
-Two modules, each with a clear job, and callers just have to remember to assert before they add.
-
-**These two cannot change independently.** Change the currency rule, say by allowing conversion at the quoted rate before adding, and the body of `add` has to follow. Reimplement `add` with decimal precision, and the moment of the check has to move too. Together they do one job: adding two amounts of money safely, level 6. Split apart, the top of the scale turns into two modules that are each clear and fragile in combination, and the fourth invariant from the opening essay, matching currencies, falls out of the type system and becomes an ordering a person has to remember.
-
-Written together:
-
-```ts
-export function add(a: Money, b: Money): Money {
-  if (a.currency !== b.currency) throw new CurrencyMismatchError(a, b)
+// money-math.ts — Only adds the numbers
+export function rawAddMoney(a: Money, b: Money): Money {
   return { amount: a.amount + b.amount, currency: a.currency }
 }
 ```
 
-The top of the scale is elements that join forces on one job, and taking a joint job apart moves you down. So **more files and smaller functions are not a goal that holds without conditions.** A split only counts if the things that always change together are still together once you are done.
+Each file is now three lines long. Did cohesion improve?
 
-## Draw boundaries along the decisions most likely to change
+**No—it shattered Level 6 functional cohesion into a fragile two-step ritual.**
 
-Everything so far grades code that already exists. The harder case is code that does not exist yet: a new requirement in front of you and a line to draw somewhere.
+Checking that currencies match and adding the amounts are not two separate responsibilities; they are two halves of a single invariant (*"safely add two money values"*):
 
-That question had been answered two years before Constantine's paper. In "On the Criteria To Be Used in Decomposing Systems into Modules" [2], published in CACM in 1972, Parnas argues for listing the design decisions that are hardest or most likely to change, then letting each module hide one of them.
+1. **They always change together**: If the domain ever introduces automatic exchange-rate conversion during addition, both the check and the math have to change in lockstep.
+2. **Splitting them breaks the invariant**: When combined in `addMoney`, no caller can accidentally add USD to JPY. Once split, every caller across the codebase has to remember to call `assertSameCurrency` before `rawAddMoney`. Forget once, and 100 JPY + 100 USD silently becomes 200 USD in the ledger.
 
-He also states the counter-recommendation plainly: **do not decompose along the flow of data**. Cutting along processing steps is most people's first instinct, and it is exactly what his argument is aimed against.
+**More files and smaller functions do not automatically raise cohesion.** Splitting two pieces of code that enforce the same invariant—or that always change together—lowers cohesion and creates coupling.
 
-In a refund system, the decision most likely to change is how each channel confirms that the money arrived. Cards rely on an async callback, wallets return synchronously, bank transfers depend on a human, and credit never arrives as money at all. These four change independently: the card network swaps its API, approval gains another tier, the credit rules get adjusted. Nothing connects them. The boundaries go along channels.
+### Misconception 2: Slicing New Modules Along a Flowchart Instead of Around Secrets
 
-Validation, debit, ledger entry, notification: those four steps are data flow. Cut along them and the validation logic for all four channels scatters into the validation module, the debit logic into the debit module, and changing one channel means touching four files. That is the situation Parnas's counter-recommendation describes.
+Grading existing code is one thing; drawing module boundaries on a blank whiteboard before code exists is much harder.
 
-The two cuts differ by a factor of four on the next change:
+When given a new refund specification, most developers instinctively sketch the execution flowchart—*"Step 1: Validate request → Step 2: Execute payout → Step 3: Record ledger entry → Step 4: Send notification"*—and create four folders matching those four steps:
+
+- `refund-validator/`
+- `refund-executor/`
+- `refund-ledger/`
+- `refund-notifier/`
+
+Two years before Constantine published the cohesion scale, David Parnas warned against this exact mistake in his classic 1972 paper, *"On the Criteria To Be Used in Decomposing Systems into Modules"* [2].
+
+Parnas showed that **decomposing a system along a flowchart spreads every volatile design decision across all modules**:
+
+- If you slice by processing step (`Validator` → `Executor` → `Ledger` → `Notifier`), knowledge of how manual bank transfers work leaks into all four folders: `Validator` has to check bank-transfer approval tokens, `Executor` has to create the payout ticket, `Ledger` has to record pending transfer states, and `Notifier` has to email the finance queue.
+- Every time the bank-transfer workflow changes, you have to open and coordinate edits across all four modules.
+
+Parnas's alternative—**information hiding**—states that you should first list the **design decisions most likely to change ("secrets")**, and design each module to hide one secret behind a stable interface [2]:
 
 ```mermaid
 flowchart TB
-    A["Risk wants a limit check<br/>before a bank transfer is approved"] --> B["Cut along channels<br/>one file"]
-    A --> C["Cut along data flow<br/>validate · debit · ledger · notify<br/>one touch in each"]
+    subgraph FlowchartCut["Slicing by Flowchart Steps (Secrets Leak Everywhere)"]
+        direction LR
+        F1["1. Validator Module<br/>(Card / Wallet / Transfer / Credit rules)"] --> F2["2. Executor Module<br/>(Card / Wallet / Transfer / Credit calls)"]
+        F2 --> F3["3. Ledger Module<br/>(All 4 channel states)"]
+        F3 --> F4["4. Notifier Module<br/>(All 4 channel templates)"]
+    end
+
+    subgraph ParnasCut["Parnas Slicing: By Volatile Secret (Channel)"]
+        direction LR
+        S1["CardChannel<br/>(Hides card network & webhook secret)"]
+        S2["WalletChannel<br/>(Hides balance transaction secret)"]
+        S3["TransferChannel<br/>(Hides manual approval workflow secret)"]
+        S4["CreditChannel<br/>(Hides voucher issuance secret)"]
+    end
+
+    Change["Requirement Change: Add risk approval step to manual transfers"] -. "Forces edits across all 4 step modules" .-> FlowchartCut
+    Change == "Touches only TransferChannel (1 module)" ==> ParnasCut
 ```
 
-What the diagram leaves out: cut along data flow and those four touches land in four modules that sit nowhere near each other, so the change has to be reassembled and tested as one anyway.
+Parnas's 1972 information hiding and Constantine's 1974 functional cohesion are two sides of the same coin: **Parnas tells you where to draw the boundary before you write the code; Constantine tells you how to spot when the boundary is wrong after you write it.** Both ask the same question: *what changes together?*
 
-Parnas names his own cost. Under the implementation assumptions of the time, where a module meant one or a few subroutines, this way of splitting was usually slower. That cost is much smaller now, though it has not disappeared. **Each boundary is one more call and one more data conversion.**
+### Misconception 3: Treating Temporal Cohesion as a Bug or Using the Scale as a Rigid Caliper
 
-This criterion and the one used for grading land in the same place, approached from opposite directions: one audits code that exists, the other draws lines for code that does not. Both ask the same question: **what changes together?**
+After learning the six-level scale, it is tempting to treat anything below Level 6 as a defect that must be refactored away.
 
-## The scale measures reasons, not resemblance
+Take a worker initialization routine:
 
-The [opening essay](/notes/programming-taste-in-the-agent-era/) cites a study [3] in which 163 students labelled cohesion and coupling levels for modules in the same mid-sized Fortran program and disagreed widely. That is not a failure of the students. **The scale describes the reason things are together**, and that reason depends on which system the code lives in, who maintains it, and where it is heading next.
+```ts
+// Level 3: Temporal Cohesion
+export async function bootstrapRefundWorker(): Promise<void> {
+  await loadChannelSecrets()
+  await connectLedgerDatabase()
+  await warmUpExchangeRateCache()
+  startHealthCheckServer()
+}
+```
 
-I used to think of cohesion as a continuous quantity: higher is better, no steps in between. After reading the 1974 paper I changed that to six ordered levels, and code like `RefundHandler`, whose name similarity is about as high as it gets, lands in the lower half.
+Loading secrets, connecting to Postgres, warming the FX cache, and starting a health-check server have nothing in common except that they all need to happen at startup. On the 1974 scale, that is Level 3 (**temporal cohesion**).
 
-I first judged `RefundHandler` by whether its elements looked alike and decided the cohesion was high. Judging again by whether those elements always change together reversed the verdict. One piece of code, two opposite answers. It has made me more careful about treating similar names as evidence of cohesion.
+Should you tear `bootstrapRefundWorker` apart? **No.** As long as each step is its own well-factored function (so unit tests can warm the FX cache without booting a database), keeping the startup sequence explicit in one place makes the boot order obvious. Hiding startup order behind scattered event listeners just makes boot failures harder to debug.
 
-Used as an acceptance criterion, the scale produces a counter-intuitive result: to keep the level looking respectable, people tend to split modules into smaller pieces. The `add` and `assertSameCurrency` example above shows where that leads. Take two functions that join forces on one job and separate them, and the level goes down. **Chasing the level can move you down the scale.** The criterion is not on the table. It is in the system this code lives in, and what changes together is something only that business can answer.
+As we saw in the [opening essay](/notes/programming-taste-in-the-agent-era/), when researchers asked 163 software engineering students to rate the cohesion of modules in the same Fortran program, their ratings diverged widely [3]. That isn't because the scale is broken—it's because **static source code doesn't tell you which requirements will change next**.
 
-This is also why the 1974 paper is worth going back to. The scale was built as a scorecard for one job: how to cut a program into modules. The paper gives each level a definition, an example, and the reason it sits where it does. Once it was lifted out into the slogan "higher cohesion is better", the trouble it was built for left the room, and splitting further looked right by default, right up to the point where `add` and the currency check came apart and the level fell anyway. **The spirit of a principle is the trouble it was written for. You read that trouble off the business, not off the table.**
+If a system's refund channels never change for five years while its audit and notification steps change every week, slicing by step is actually more cohesive for that team. The six levels are a diagnostic lens for thinking about change propagation, not a mechanical caliper.
 
-## What this note concludes
+---
 
-- **Cohesion measures how strong the reason is for things to be together, not how much they look alike.** `RefundHandler`'s four methods could not look more alike, and on the 1974 scale they land at level 2.
-- **The test is whether these things always change together.** Whether one change drags the others along is something you can check on the spot. Resemblance is not.
-- **The six levels are an ordered staircase, not a continuous dial where higher is better.** Level 6, joining forces on one job, is the top, and splitting moves you down: separate `add` from the currency check and each module is clear while the combination turns fragile.
-- **Splitting is not a goal that holds without conditions.** A split only counts if the things that always change together are still together once you are done.
-- **Draw boundaries along the decisions most likely to change, not along the flow of data.** Parnas wrote that counter-recommendation in 1972; cutting along processing steps is, in the note's words, most people's first instinct.
-- **The scale is a judgement scale, not an acceptance criterion.** 163 people can read the same code and land on different levels, because the answer depends on where the system is heading. Chasing the level can move you down the scale.
-- **Read the trouble off the system, not off the table.** The 1974 scale was a scorecard for cutting one Fortran program into modules. What changes together in your code is a fact about your business, and the table cannot answer for it.
+## Summary: Three Questions to Test Cohesion
 
-The next note is about coupling, in the same refund system.
+Whenever you're deciding whether code belongs in the same module or separate ones, skip the academic jargon and ask three questions:
+
+1. **Are these elements together because they *look* similar, or because they cooperate on the *same* job?** If they only share a noun like `Refund` or `Utils` and branch via a `switch`, split them apart.
+2. **When requirements shift, do these pieces have to change at the same time?** If editing function A forces a matching edit in function B to preserve a domain invariant (like currency validation and money addition), keep them in the same module—don't splinter them just to make files shorter.
+3. **What volatile secret does this module hide from the rest of the system?** Draw module boundaries around the design decisions most likely to change, not along the boxes of a step-by-step flowchart.
+
+Once each module's internals are cohesive, the next question is how those modules talk to one another: **how do you measure how tightly two modules are bound together—especially when they don't even `import` each other?**
+
+That brings us to Note 3: **Coupling**.
+
+---
+
+## Series Outline
+
+- Opening · [Rereading Classic Design Principles in the Age of AI](/notes/programming-taste-in-the-agent-era/)
+- Cohesion · The Standard Is What Must Change Together *(this note)*
+- Coupling · [Measuring How Much Two Modules Know About Each Other](/notes/three-invisible-couplings/)
+- Single Responsibility · [One Responsibility Maps to One Group of Stakeholders](/notes/single-responsibility-is-an-actor/)
+- Open-Closed · [First Identify Which Way the Code Will Grow](/notes/open-closed-only-the-guessed-axis/)
+- Liskov Substitution · [A Subtype Must Seamlessly Stand In for Its Supertype](/notes/liskov-what-the-signature-does-not-check/)
+- Dependency Inversion · [What Inverts Is Who Owns the Interface](/notes/dependency-inversion-who-owns-the-interface/)
+- Interface Segregation · An interface is a slice taken from the client's point of view
+- Law of Demeter · The middleman's dilemma
+- Composite Reuse · Inheritance publishes your invariants
 
 ## References
 
-1. [W. P. Stevens, G. J. Myers, L. L. Constantine, "Structured Design", IBM Systems Journal 13(2), 1974, 115–139](https://dl.acm.org/doi/10.1147/sj.132.0115)
-2. [D. L. Parnas, "On the Criteria To Be Used in Decomposing Systems into Modules", Communications of the ACM 15(12), 1972, 1053–1058](https://dl.acm.org/doi/10.1145/361598.361623) ([full text PDF](https://wstomv.win.tue.nl/edu/2ip30/references/criteria_for_modularization.pdf))
-3. [Difficulties using cohesion and coupling as quality indicators, Software Quality Journal](https://link.springer.com/article/10.1007/BF00590439)
+1. [W. P. Stevens, G. J. Myers, L. L. Constantine, "Structured Design", *IBM Systems Journal* 13(2), 1974, 115–139](https://dl.acm.org/doi/10.1147/sj.132.0115) — Introduces cohesion and coupling and defines the six-level cohesion spectrum from coincidental to functional.
+2. [D. L. Parnas, "On the Criteria To Be Used in Decomposing Systems into Modules", *Communications of the ACM* 15(12), 1972, 1053–1058](https://dl.acm.org/doi/10.1145/361598.361623) ([PDF](https://wstomv.win.tue.nl/edu/2ip30/references/criteria_for_modularization.pdf)) — Contrasts flowchart-based decomposition with information-hiding decomposition around volatile design decisions.
+3. [N. Fenton et al., "Difficulties using cohesion and coupling as quality indicators", *Software Quality Journal*, 1993](https://link.springer.com/article/10.1007/BF00590439) — Documents the wide divergence among 163 raters classifying cohesion and coupling on the same Fortran codebase.

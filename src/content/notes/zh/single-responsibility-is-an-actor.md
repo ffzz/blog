@@ -1,264 +1,283 @@
 ---
-title: 单一职责：职责不是一件事，是一个会来提要求的人
-description: 单一职责常被讲成「一个类只做一件事」，这句话在判断具体代码时会失效，因为「一件事」没法判定。这条原则给出的判据是：职责是一个会来提要求的人。本文沿着一次退款金额取整的改动，看四类需求怎样挤进同一个方法，以及照口号拆到极致为什么代价是双倍的。
+title: 单一职责：一个职责对应一拨会来提要求的人
+description: 单一职责原则常被背成「一个类只做一件事」，但「一件事」可大可小，在真实代码里根本没法拿来当判据。查回 Robert C. Martin 的原始定义就会发现，职责对应的是「会来提修改要求的那拨人（Actor）」。本文通过一次真实的退款舍入规则改动，讲透如何按人切分模块，以及为什么照着「只做一件事」拆到极致反而会让维护成本翻倍。
 pubDate: 2026-08-31T12:00:00
-updatedDate: 2026-09-13
+updatedDate: 2026-11-18
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'typescript']
 ---
 
 > 《编程思想》系列第 4/10 篇。这一季的立论在[序章](/zh/notes/programming-taste-in-the-agent-era/)。
 >
-> AI 能替我们写的代码越来越多，程序员自己攒下的经验和底层判断因此更值钱。这个系列是我把这些上了年纪的原则重新翻出来，一条条查它们的出处、边界和失效场景的记录。温故而知新。
+> 代码越是容易生成，人对代码好坏的判断力就越值钱。这个系列是我把那些上了年纪的设计原则重新翻出来，逐条查清它们的出处、适用边界与失效场景的笔记。
 
-单一职责原则流传最广的口号是「一个类只做一件事」。口号的问题出在「一件事」判不了：多大算一件？拆到哪步算完？判据得换成人：**职责是一个会来提要求的人**。数一数这段代码回应几拨人的要求，比争论什么叫一件事可靠得多。为什么数人管用？因为需求变化从人来，同一拨人提的要求才会一起变。先看一次真实的改动。
+在 SOLID 五大原则里，排在第一位的**单一职责原则（Single Responsibility Principle，SRP）**流传最广，口号也最响亮：“一个类（或函数）应该只做一件事。”
 
-财务提了一个改动：退款金额一律向下取整到分，不再四舍五入。
+但这句口号一碰到真实代码就会失灵——因为**没人说得清到底多大才算“一件事”**。
 
-改动落在 `computeAmount` 里那一行取整运算上，另外两行是跟着一起动的：审计日志记下来的那笔金额，客服后台拼出来的那行显示字符串。三行的值都来自 `computeAmount` 的返回值。上线当天，客服后台显示的一些退款金额比改动前少了一分钱，审计日志里对应的那笔金额也少了一分。客服和合规都没有提过任何需求，他们看到的数字却变了。
+从宏观上看，“处理退款”是一件事；往细了看，“计算可退金额”是一件事；再往细了看，“把浮点数向下取整到分”也是一件事。如果照着“只做一件事”无限拆下去，任何一个 30 行的正常函数都能被拆成十个只有 3 行的碎片类。
 
-三处代码谁都没写错，问题出在它们待的地方。下面是改动前的样子，省略了依赖的注入和字段声明：
+为什么这句口号这么难用？因为它在传抄的过程中，把原本最关键的主语给弄丢了。
+
+翻回提出者 Robert C. Martin 的原文就会看到，单一职责里的“职责（Responsibility）”，指的从来不是代码里的某一个动作，而是**站在代码背后、会来向你提修改要求的那拨人（Actor）**[1]。
+
+用一句话概括它的精髓：**一段代码只应该对一拨业务角色负责；数一数将来有几个不同的部门会来要求你改这段代码，比争论什么叫“一件事”准确十倍。**
+
+我们先从退款系统里一次真实的线上事故看起。
+
+---
+
+## 一次“只改一行代码”引发的连环误伤
+
+来看一段看着挺清爽的退款提交代码 `RefundService.submit`：
 
 ```ts
-class RefundService {
+export class RefundService {
   async submit(req: RefundRequest): Promise<RefundResult> {
-    const amount = this.computeAmount(req)
-    await this.ledger.record(req.orderId, amount)
-    await this.audit.log(req, amount)
-    await this.notify.refunded(req.userId, amount)
+    // 1. 计算本次应退金额（按比例分摊优惠并取整）
+    const amountCents = this.computeRefundAmount(req)
 
+    // 2. 写入核心资金账本
+    await this.ledger.record(req.orderId, amountCents)
+
+    // 3. 记录合规审计流水
+    await this.audit.log({ orderId: req.orderId, amountCents, operator: req.operator })
+
+    // 4. 给用户发退款通知短信
+    await this.notify.sendSms(req.userId, amountCents)
+
+    // 5. 返回给客服工作台页面展示
     return {
-      amount,
-      status: 'done',
-      display: `已退 ¥${(amount / 100).toFixed(2)}`,
+      amountCents,
+      status: 'settled',
+      displayText: `已退还 ¥${(amountCents / 100).toFixed(2)}`,
     }
   }
 }
 ```
 
-**单一职责要回答的是：这段代码里住着几拨会来提要求的人？** 财务要改的是一行，另外两行归合规和客服管；三处挤在同一个方法里，一次改动就会从财务那间办公室走到另外两间去。
+这段代码总共不到 20 行，从上到下顺畅易读。
 
-把人数当判据，好处是它不依赖你读懂代码在做什么。代价是它也没法从代码里读出来：同一段代码，谁在维护它、业务往哪边长，判断就不同。
+某天，**财务部门**提了一个小需求：“优惠券分摊遇到除不尽的尾差时，实退金额计算规则从四舍五入改为一律向下取整到分。”
 
-## 一个方法里住着四拨人
+开发同学一看，这太简单了！打开 `RefundService`，找到 `computeRefundAmount` 里面的 `Math.round`，改成 `Math.floor`，跑通单测，当天下午就上线了。
 
-把这个方法的每一行按「谁会来要求改它」拆开看：
+结果第二天一早，**合规部门**和**客服团队**同时找上门来了：
 
-| 这行在做的事 | 谁会来提要求 | 什么时候来提 |
+- **合规团队**发现：监管报送要求审计日志里记录的是“按原合同公式算出的理论应退金额”，结果昨天财务改了实退取整规则后，写进 `audit.log` 里的金额全部少了一分钱，触发了监管对账告警；
+- **客服团队**也抱怨：客服后台弹窗原本展示的 `displayText` 被客服用来核对用户申诉原金额，数字一变，客服话术全对不上了。
+
+明明只有财务提了需求，合规和客服连一个字都没让你改，为什么他们的业务却在上线当天被炸了？
+
+因为在这个短短 20 行的 `submit` 方法里，**同时住着四拨互不通气、诉求完全不同的人**。
+
+---
+
+## 数一数这段代码里住着几拨人
+
+我们把上面那个方法里的每一行拆开，看看将来谁会敲开你的工位要求改它：
+
+| 代码片段 | 背后的业务角色（Actor） | 他们什么时候会来提需求？ |
 |---|---|---|
-| `computeAmount` | 财务 | 舍入规则、优惠分摊、币种换算变了 |
-| `audit.log` | 合规 | 留存字段变了，或者监管要求加一条 |
-| `notify.refunded` | 运营 | 文案、推送渠道、触达时机调整 |
-| `display` 那一行 | 客服 | 后台表格换了列，或者要加个字段 |
+| `computeRefundAmount(req)` | **财务部门（Finance）** | 调整尾差取整规则、跨期税率计算、优惠券分摊公式 |
+| `audit.log(...)` | **法务与合规（Compliance）** | 监管要求新增留存字段、调整脱敏规则或审计金额口径 |
+| `notify.sendSms(...)` | **用户运营（Operations）** | 更换短信文案模板、改发 App 推送、调整免打扰时段 |
+| `displayText: ...` | **客服团队（Support）** | 客服工作台改版、要求同时展示原币种与折算币种符号 |
 
-表里分的是人，不是代码。四行代码的写法都很普通，差别只在于它们各自回应谁的问题。这张表也不负责告诉你该拆成几个文件，那要看改动实际从哪来。
+看这张表就明白了：财务、合规、运营、客服这四个部门，平时各自按自己的排期提需求，从来不会提前商量好。
 
-这四拨人互不通气，也不会约好同一天提要求。财务调整舍入规则的那天，合规没有变需求，客服也没有。三行代码跟着一起动，是因为它们共用 `computeAmount` 的返回值，不是因为那两个部门提了什么。
+当这四拨人的规则挤在同一个方法、甚至共用同一个中间变量 `amountCents` 时，就等于让四个部门的人共用同一间办公室的同一个电闸——财务进屋想把自己的台灯调暗一点，咔嚓一拉闸，隔壁合规室的电脑直接断电重启了。
 
-Martin 用过一个比喻：把车送进修车厂修电动车窗，取车时窗户好了，车却打不着火。他后面还接了一句，那句才是比喻的落点：客户和经理发现坏掉的正是自己没要求改的地方，就是这个感受。
+Martin 在解释单一职责时打过一个非常传神的比方：**这就好比你把车送进修车厂修电动车窗，第二天去取车时，车窗修好了，发动机却打不着火了**[1]。车主之所以暴跳如雷，正是因为坏掉的地方是他压根没要求你碰的地方。
 
-## Martin 把这句话落到人身上，是在 2014 年
+---
 
-这条原则的一个常见表述是「一个模块应该有且只有一个修改的理由」。Martin 在 2014 年那篇博文里的原话是 `each software module should have one and only one reason to change`[1]。他用的是 module，不是 class；中文里流传更广的「一个类只做一件事」，是这句话在传抄中口语化出来的说法。
+## 查回 2014 年的补充说明：为什么说“这条原则是关于人的”？
 
-「理由」这个词太空，落不到具体的代码上。修 bug 算不算一个理由？重构算不算？这两个问题都是读者提的，Martin 在 2014 年 5 月 8 日专门写了一篇来回答[1]。答案只有一句：
+单一职责原则最常见的学术定义是：*“一个模块应该有且仅有一个引起它变化的原因（A module should have one, and only one, reason to change）。”*
 
-> This principle is about people.
+但“变化的原因”依然太抽象——修 Bug 算不算一个原因？性能优化重构算不算一个原因？
 
-> 这条原则是关于人的。
+为了彻底终结这种咬文嚼字的争论，Martin 在 2014 年专门写了一篇《The Single Responsibility Principle》博文[1]，用一句话把窗户纸捅破了：
 
-他的论证方式很具体：先问这个方法的规则归谁负责。例子是一个 `Employee` 类，方法名沿用原文的 Java 写法：
+> **This principle is about people.**
+> （这条原则是关于人的。）
+
+他在文章里给出了一个教科书级的反例——一个看起来再自然不过的 `Employee`（员工）类：
 
 ```java
 public class Employee {
-  public Money calculatePay();
-  public void save();
-  public String reportHours();
+  public Money calculatePay();   // 算薪水
+  public String reportHours();   // 出工时报表
+  public void save();            // 存进数据库
 }
 ```
 
-`calculatePay` 的算法归 CFO 定，`reportHours` 返回的报表格式归 COO 定，`save` 怎么写进企业库归 CTO 定。他用来判定归属的办法更直接：这个方法的规则要是被写错、后果足够严重，哪个高管会被解雇。发薪算法错了 CFO 走人，审计用的工时报表错了 COO 走人，库被写坏了 CTO 走人。他在脚注里自己承认这种「解雇」是夸张手法，C 级高管通常不会因为一次小错误离职。
+表面上看，这三个方法全都是围绕“员工（Employee）”展开的，放在同一个类里似乎天经地义。但如果你问一句“这三个方法写错了，哪位高管会挨板子？”：
 
-于是这个类的问题就清楚了：CTO 要求改 `save` 的写法时，`calculatePay` 有可能被顺手改坏。CFO 不会关心 `save` 里面写了什么，他只会得出一个结论——以后别再动那个类了。
+- `calculatePay()` 的发薪扣税算法归 **CFO（首席财务官）** 团队定；
+- `reportHours()` 的工时统计格式归 **COO（首席运营官）** 团队定；
+- `save()` 的表结构与存储引擎归 **CTO（首席技术官）** 团队定。
 
-那篇文章里还有一句更好用的表述，Martin 自己标为 "Another wording"：
+如果 `calculatePay` 和 `reportHours` 共用了同一个私有辅助函数 `regularHours()`，当 COO 团队为了运营报表需求让程序员微调了一下 `regularHours()` 的算法时，CFO 团队负责的发薪系统就会在毫不知情的情况下算错全公司的工资，造成数百万美元的事故[1]。
 
-> Gather together the things that change for the same reasons. Separate those things that change for different reasons.
+因此，在 बाद来的《架构整洁之道（Clean Architecture）》里，Martin 直接把单一职责原则的定义改写成了毫无歧义的最终版[2]：
 
-> 把因为同一个理由而变的东西放在一起，把因为不同理由而变的东西分开。
+> **A module should be responsible to one, and only one, actor.**
+> （一个模块应该只对唯一一拨业务角色/利益相关方负责。）
 
-他在后面顺手列了几条推论：SQL 不该写进 JSP，算结果的模块不该生成 HTML，业务规则不该认识数据库表结构。三条推论的共同点是，一次需求变化不该惊动另一拨人的代码。
+顺着这条线往回看，你会发现它和我们在[第 2 篇（内聚）](/zh/notes/what-belongs-in-one-module/)提到的 1972 年 Parnas 论文一脉相承[3]：
 
-### 这条原则在 Martin 那里是从 Parnas 接过来的
+- **内聚**问的是：哪些代码总是一起变？
+- **单一职责**给出了背后的原因：**因为它们服务于同一拨人，而同一拨人的需求才会一起变！**
 
-那篇博文不是从 Employee 开始的，前面还有一半篇幅在讲 Parnas 1972 年的《On the Criteria To Be Used in Decomposing Systems into Modules》[3]。Martin 引了 Parnas 的结论：模块划分不该照着流程图来，该从「哪些设计决策可能变化」出发，让每个模块把这类决策藏起来。他接着写，SRP 看起来和 Parnas 的表述是一致的。
+---
 
-这句评语值得单独记一下。它说明「按人切开」是 Martin 在 2014 年给一个更老的判断补上的操作办法，思路上可以追到 Parnas：Parnas 说的是变化的决策要藏起来，Martin 说那些决策的来路是人。第 2 篇讲内聚时用的也是这一篇，两篇查到了同一个源头。
+## 按“人”切开之后，代码长什么样？
 
-## 同一件事，内聚和耦合那两篇也说过
-
-Martin 在文里直接写了：想一下就会发现，这只是内聚和耦合的另一种说法。
-
-前两篇做的事和这里是同一件。[第 2 篇](/zh/notes/what-belongs-in-one-module/)判「这些元素会不会一起改」，落点是 1974 年那份内聚等级表[6]；[第 3 篇](/zh/notes/three-invisible-couplings/)判「一条连接改动时波及多远」。这一篇问的是同一个问题的另一面：会来提这个要求的人是谁。理由来自人，人按自己的节奏提要求，所以按人切开就顺带得到了内聚和耦合。
-
-这也解释了为什么这条原则没法靠数代码来判断。一个四百行的类可能只服务于一拨人，一个二十行的类可能同时被三拨人惦记。这个对比找不到可引的出处，是我从前面几段例子里归纳的；它不是一个测得出来的数字，只说长度和职责之间没有对应关系。
-
-## 名字可能是借来的
-
-Martin 是在 1990 年代末把 Constantine 的耦合与内聚整合成一条原则的，顺势给这条原则起了现在的名字。就在讲这件事的那一段里，他插了一句括号，提到了 Bertrand Meyer[2]：
-
-> I have this vague feeling that I stole the name of this principle from Bertrand Meyer, but I have not been able to confirm that.
-
-> 我有种模糊的感觉，这个名字是我从 Bertrand Meyer 那里顺来的，但我一直没能确认。
-
-这句话的语气是「模糊的感觉」和「没能确认」，不是一句声明。这条原则的思路有明确的来路，名字的来路连提出者本人都说不清。
-
-这跟序章里查到的情况是一致的：七条原则出自六拨互不相干的人，被摆在一起是后人整理的结果。
-
-SOLID 这个缩写的来历也一样模糊。它一般归于 Michael Feathers，时间大约在 2004 年，比原则本身晚了十几年[4]。这一条目前能找到的都是二手来源互相印证，没有他本人或 Martin 的一手确认，序章按「一般认为」处理，这里沿用。另外要分开的是两个出处：2014 那篇博文里没有提 SOLID 缩写，也没有提 Feathers，缩写那段来历只有上面这条二手记载。
-
-## 按人切开之后
-
-还是那套退款服务。拆完之后，每个文件只回答一拨人的问题，下面只保留函数签名：
+回到我们开头的 `RefundService`。既然里面住着四拨人，我们就按这四拨人的边界，把各自专属的计算和格式规则拆回他们自己的领地：
 
 ```ts
-// finance/refund-amount.ts
-export function computeRefundAmount(order: Order, items: RefundItem[]): Money
+// 1. 归财务管：finance/refund-settlement.ts
+export function computeSettlementAmount(order: Order, items: RefundItem[]): Money
 
-// compliance/refund-audit.ts
-export async function recordAuditTrail(entry: AuditEntry): Promise<void>
+// 2. 归合规管：compliance/refund-audit.ts
+export function buildAuditEntry(req: RefundRequest, settlementAmount: Money): AuditRecord
 
-// notification/refund-notifier.ts
-export async function notifyRefundIssued(user: User, amount: Money): Promise<void>
+// 3. 归运营管：operations/refund-notification.ts
+export function buildCustomerNotice(user: User, settlementAmount: Money): NotificationPayload
 
-// support/refund-view.ts
-export function renderRefundSummary(refund: Refund): RefundSummary
+// 4. 归客服管：support/refund-presenter.ts
+export function formatSupportSummary(record: RefundRecord): SupportViewDTO
 ```
 
-`submit` 自己留在编排的位置（下面写成函数 `submitRefund`，请求的字段也按拆分后的需要做了示意性调整），不再持有任何一拨人的规则，只负责按顺序调用。它的返回类型里也没有 `display` 那一行了，客服要的字符串由 `renderRefundSummary` 决定：
+把四拨人各自的规则请出去之后，原来的 `submitRefund` 只留下一层薄薄的**用例编排（Orchestration）**：
 
 ```ts
-async function submitRefund(req: RefundRequest): Promise<RefundResult> {
-  const amount = computeRefundAmount(req.order, req.items)
+export async function submitRefund(req: RefundRequest): Promise<RefundReceipt> {
+  const settlementAmount = computeSettlementAmount(req.order, req.items)
+  const receipt = await ledger.record(req.orderId, settlementAmount)
 
-  await ledger.record(req.orderId, amount)
-  await recordAuditTrail({ orderId: req.orderId, amount, actor: req.operator })
-  await notifyRefundIssued(req.user, amount)
+  await auditRepo.save(buildAuditEntry(req, settlementAmount))
+  await notifier.send(buildCustomerNotice(req.user, settlementAmount))
 
-  return { amount, status: 'done' }
+  return receipt
 }
 ```
 
-切法是从一个方法扇出到四个按人划分的文件，方向上是单向的：
+用图来看这次拆分前后的依赖结构：
 
 ```mermaid
 flowchart TB
-    A["submit()<br/>一个方法，四拨人"] --> B["财务<br/>refund-amount"]
-    A --> C["合规<br/>refund-audit"]
-    A --> D["运营<br/>refund-notifier"]
-    A --> E["客服<br/>refund-view"]
+    subgraph Before["拆分前：四拨人的规则搅在同一个方法里"]
+        M["RefundService.submit()<br/>财务取整 + 合规字段 + 运营文案 + 客服展示字符串<br/>共用同一个中间变量，改一处炸三处"]
+    end
+
+    subgraph After["拆分后：每个模块只对一拨人负责"]
+        O["submitRefund 编排入口<br/>（只负责先后调用顺序）"]
+        O --> F["finance/refund-settlement.ts<br/>（只对财务负责）"]
+        O --> C["compliance/refund-audit.ts<br/>（只对合规负责）"]
+        O --> N["operations/refund-notification.ts<br/>（只对运营负责）"]
+        S["support/refund-presenter.ts<br/>（只对客服后台负责，脱离提交主链路）"]
+    end
 ```
 
-这张图画的是调用方向，不是依赖强度：四个文件之间没有连线，说明它们不需要知道对方存在。它也不说明这次拆分划得对不对。如果其中两个文件总是一起改，那就是划错了，这要看实际改动记录才知道。
+现在，财务再怎么改 `computeSettlementAmount` 里的取整算法，合规的 `buildAuditEntry` 都拿原始请求 `req` 算自己的理论监管金额；客服后台的展示格式更是直接搬到了查询侧的 `formatSupportSummary` 里，连提交流程的门都不用进。
 
-现在财务改舍入规则，动的是 `computeRefundAmount` 一个文件。合规要加留存字段，动的是 `recordAuditTrail`。客服后台长什么样由 `renderRefundSummary` 决定，它甚至不在提交流程里。
+---
 
-### 拆完之后，编排层还剩下什么
+## 走进模糊地带：三个最容易犯错的边界陷阱
 
-`submitRefund` 里仍然留着三行的顺序：记账、写审计、发通知。这个先后是一个业务决定，不是随手排的。合规通常要求记账落定之后再写审计，否则会留下一条指向不存在记录的日志；运营的推送如果排在记账前面，用户有可能先收到通知、再发现失败。
+理解了“职责 = 会来提要求的人”，我们就能轻松解开日常开发里最让人纠结的三个模糊地带。
 
-这个顺序归谁定？归提出这条约束的人：审计排在记账之后是合规的要求，通知排在记账之后是运营的要求。它不属于财务，也不属于客服，仍然住在编排层里。所以按人切开之后，剩下的那部分代码也有主人，只是主人不止一拨。判断一次拆分划得对不对，也可以顺着这一点看：编排层里如果出现一行只有某个部门才说得清为什么要写的代码，那一行多半放错了地方。
+### 误区一：把“只做一件事”当教条，把同一拨人的逻辑拆得七零八落
 
-顺带说一句，编排层并没有越拆越薄。它从原来那个什么都干的方法里接管了「谁先谁后」这件事；这部分内容本来就存在，只是以前和另外四类规则混在一起，看不出来。
+这是 Coding Agent 和教条主义者最常犯的错。
 
-## 「只做一件事」这个说法错在哪
-
-流传更广的版本是「一个类只做一件事」。这句话听着清楚，落到代码上先要回答一个问题：什么叫一件事？
-
-照它拆到极致，会得到下面三个类。这里的代码是示意，只保留成员名字：
+当你让 Agent “按单一职责原则重构财务金额计算模块”时，它往往会照着字面意思把原本属于财务一拨人的连贯逻辑，硬生生拆成三个碎片类：
 
 ```ts
-class RefundAmountFetcher   { /* 取原始金额 */ }
-class RefundAmountRounder   { /* 取整 */ }
-class RefundAmountValidator { /* 校验不超上限 */ }
+// 过度拆分的碎片：三个类其实只服务于「财务」同一拨人
+class RefundBaseFetcher   { /* 第 1 步：读取原单实付金额 */ }
+class RefundProrater      { /* 第 2 步：按商品比例分摊优惠 */ }
+class RefundCentRounder   { /* 第 3 步：处理分位尾差取整 */ }
 ```
 
-三个类，每个一个方法，看上去比原来干净得多。但会来提要求的人只有一个，就是财务。他改一次舍入规则，改动本身落在 `RefundAmountRounder`，但要确认取整之后校验没被漏掉，得顺着这条链读三个文件：
+每个类确实都只剩一个方法、5 行代码，看着“只做了一件事”。
+
+但仔细想一想：**将来谁会要求改这三个类？全都是财务那同一拨人！**
+
+当财务修改分摊与尾差规则时，这三个类根本不可能独立变化——分摊算出来的尾数怎么进位，直接决定了取整怎么兜底。把它们拆进三个文件，并没有隔离任何不同部门的变更风险，反而逼着维护者在三个文件之间来回横跳才能看懂一条完整的财务公式。
 
 ```mermaid
-flowchart TB
-    R["财务：改一次舍入规则"] --> F["RefundAmountFetcher"]
-    F --> O["RefundAmountRounder"]
-    O --> V["RefundAmountValidator"]
+flowchart LR
+    Actor["唯一的需求方：财务团队"] --> C1["RefundBaseFetcher"]
+    C1 --> C2["RefundProrater"]
+    C2 --> C3["RefundCentRounder"]
 ```
 
-图上只有一条链，「改一处」在这张图里看起来仍然是一条线。变化在于这条线跨了三个文件：改的人得先确认自己站在哪一环，再确认下游那两环会不会跟着变。
+记住这个判据：**如果几个函数背后站着的是同一拨人、服务的是同一条业务规则，把它们合在一个内聚的模块里，才是真正的单一职责。**
 
-这正是[第 2 篇](/zh/notes/what-belongs-in-one-module/)那节「拆分也会破坏内聚」说过的情况：把总是一起变的东西拆散，内聚的档位反而往下掉。判据不是数方法，是数人。
+### 误区二：拆完之后，中间那个“编排函数”归谁管？
 
-## 硬套这句口号的代价是双倍的
+有人会问：既然把财务、合规、运营的规则都拆出去了，那剩下的那个 `submitRefund` 编排函数（先记账、再写审计、最后发通知），它又对谁负责？
 
-把两个版本摆在一起，代价就清楚了。
+答案是：**编排层对“业务流程的整体先后契约”负责。**
 
-拆之前，财务改一次舍入规则，是改一个方法里的一行。拆之后，改动仍然只落在取整那个类里，但要确认校验没有被绕过去，得读三个文件和两处原来不存在的调用。文件数从一变成三，跟他相关的人还是一个。
+“必须等账本落库成功之后，才能写审计流水和发用户短信”——这不是某一个部门内部的局部细节，而是跨部门协同的全局时序不变量。
 
-**照「只做一件事」拆到极致，代价是双倍的：一次改动本来就只碰一处，拆完没有换来任何好处，还多了两处间接调用。**
+怎么判断一行代码该留在编排层，还是该赶进子模块？
 
-这跟序章那条立论是同一个形状。序章说，原则诞生时都有具体场景，传抄中场景会丢；丢了场景的口号会变成验收标准，而验收标准可以靠堆结构通过。这里就是它长什么样：验收标准是「一个类只做一件事」，最省力的通过方式是继续拆，拆到每个类都不能再拆。结构上无可挑剔，可修改性没有变好，理解成本还涨了。场景没有错，错在脱离场景去用口号。
+**看这行代码是不是只有某一个特定部门才听得懂的“黑话”。**
 
-### 什么样的拆分不算硬套
+- 如果编排函数里出现了 `Math.floor(amount * 0.98)`，这是财务黑话，赶去财务模块；
+- 如果编排函数里出现了 `已退还 ¥${...}`，这是客服界面黑话，赶去展示层；
+- 如果编排函数里只剩下清晰的步骤调用与事务边界控制，那它就待在了最合适的位置。
 
-这么说不是说拆就是错的。同一段取整逻辑，如果在另一套代码里值得拆开，通常能看到一个具体的理由：几部分的依赖方向不同，失败处理的策略不同，或者调用它们的节奏差得远。
+### 误区三：怎么界定“一拨人”？（小团队一人身兼多职怎么办？）
 
-举一个能对上号的例子。校验那一步如果要去接口拿限额，它就多了一条网络依赖，测试得先造桩；取整是纯函数，测试不需要任何准备。这两件事的验证成本差得远，把它们分开之后，改取整规则的人不必跑一遍需要网络的测试。理由落在验证范围上，是具体的。
+在創業公司或小团队里，产品经理往往只有一个人，既管财务对账、又管客服后台、还兼着运营。这时候是不是整个系统就只有“一个人”，所有代码都能写成一坨了？
 
-「一个类只做一件事」给的是一个可以照着做的动作，却判断不了这两段代码该不该分开。分不清的时候可以先问一句：拆开之后，谁会因此少看一个文件？答不上来的那次拆分，可以先放着。
+当然不是。Martin 在定义 Actor 时特意补充过：这里的“人”，指的是**一种明确的业务职能角色（Business Function / Role）**[1]。
 
-## 什么时候算两个人
+哪怕现实中是同一个产品经理坐在工位上给你提需求，当他上午说“帮我把客服后台的金额颜色改成红色”时，他戴的是**客服角色**的帽子；当他下午说“税务局要求对账单按不含税金额计算”时，他戴的是**财务角色**的帽子。这两顶帽子代表的变化原因是完全正交的——客服界面改版绝不会引起税务公式变化。
 
-判据落到具体的人身上，还有一个绕不开的问题：两拨人算一拨还是两拨。
+判断两个需求算“同一拨人”还是“两拨人”，最实用的测试办法是问：**当 A 规则发生变化的那一天，B 规则需要同一天跟着一起改吗？**
 
-Martin 原文里给了方向。他写的是一个人，或者更准确地说，`a single tightly coupled group of people representing a single narrowly defined business function`，一个紧密协作、对应单一业务职能的人群。这条判据管的是「变化的请求从哪来」，与组织结构图上分几个部门无关。
+- 如果它们总是绑在一起同生共死，就算一拨；
+- 如果它们各改各的、节奏完全独立，就算坐在同一张办公桌后面，在代码里也必须当成两拨人隔开。
 
-落到财务身上还有一层分叉。会计关心这笔退款记在哪个科目，税务关心发票和申报口径。这两件事今天可能在同一次改动里一起变，也可能下季度只有税务口径调整。原文那句话要再往下走一步，才能用在具体的两拨人身上。我自己的问法是：如果其中一边调整，另一边会不会在同一天跟着改？会，算一拨；不会，算两拨。
+---
 
-这个问法是我加的，得说清它和原文的关系：原文给的是判据的方向，我加的是把方向落到一次具体改动上的操作办法。它会错，也只能靠判断。
+## 小结：用单一职责审代码的三个问题
 
-会计和税务的分岔不取决于有几个人。即使 Martin 举的 CFO 和 COO 由同一个人兼任，会计口径和运营报表也不会因为坐在同一张桌子后面就变成一回事。
+下次当你纠结一个类或函数是不是“管得太宽”、或者怀疑某次拆分是不是“过度设计”时，问自己三个问题：
 
-### 还可能冒出第五拨人
+1. **这段代码背后站着几拨不同诉求的人（业务角色）？** 如果财务改算钱公式、合规改日志字段、客服改展示文案都要打开同一个函数，立刻按角色把它们拆开。
+2. **我准备拆开的这几个小函数，背后是不是其实只有同一拨人？** 如果它们服务的是同一个角色、共同维护同一条计算规则，留在同一个模块里，别为了凑“3 行小函数”而硬拆。
+3. **编排层里有没有混进某个部门专属的细节黑话？** 让编排层只管步骤先后与成败边界，把具体怎么算、怎么拼字符串关进各自角色的模块里。
 
-前面那套退款服务里只数出四拨人，这是这个例子的边界，不是通例。同一个方法再往边上走一步，还会多出一拨：渠道侧的对接人。银行换了接口，要求退款请求里带上一个渠道流水号，这个要求既不是财务提的，也不是合规、运营、客服提的。
+把不同角色的改动隔开之后，我们紧接着就会遇到一个更现实的挑战：**业务永远在长出新需求——今天加一个礼品卡退款渠道，明天加一个全渠道冲正操作。我们怎么设计模块，才能在新需求到来时尽量少翻旧账？为什么没有任何一套设计能对所有新需求都做到“免修改扩展”？**
 
-按同样的判据过一遍：渠道接口变了那天，另外四拨人会不会跟着改？不会，他们各自身边那部分代码不需要动。所以它算独立的一拨，`submit` 里调用渠道适配器的那一行（上面的示例里没有画出来）也就有了主人。
+这就是下一篇**开闭原则**要回答的核心问题。
 
-这一点值得单独提，是因为「四拨」这个数字太容易被当成结论记下来。换个系统，数出来可能是三拨，也可能是六拨。`Employee` 那个例子里只有 CFO、COO、CTO 三个人，是因为他挑的那三个方法刚好对应三个职能。人数要现场数，它不是一个可以提前记住的规则。
+---
 
-### 判错一次会怎样
+## 系列目录
 
-判错有两种方向，它们的代价并不对称。
-
-把两拨人当成一拨，后果是继续共用一个文件：改动仍然会互相惊动，但至少还在一个地方，看得见。把一拨人当成两拨，会多出一次拆分和一层调用，而多出来的那部分没有对应任何真实需求，它只是为了让一个念错的判据成立。
-
-代价差在这里，所以信号不清楚的时候，不拆的那一边更划算。这和第 2 篇[「拆分也会破坏内聚」](/zh/notes/what-belongs-in-one-module/)是同一个方向的提醒，只是那里的判据是元素会不会一起改，这里换成了人。
-
-这个判断会错，也只能靠判断。序章引过一项研究：163 名学生给同一个中等规模 Fortran 程序里的模块标注内聚和耦合等级，结果分歧很大[5]。单一职责的判定属于同一类东西，它是判断量表，不是测量仪器。
-
-## 我改了什么判断
-
-我以前用「这个类是不是只做一件事」来审代码，审出来的结论经常自己都不信：一个服务类里十几个方法，说它只做一件事明显勉强，说它违反原则又觉得哪里不对。
-
-换成「会来提要求的有几拨人」之后，判断才落得下来。上面那个 `RefundService` 里四拨人，拆成四个文件；`RefundAmountFetcher` 那一组有三个类，但只有财务一拨人，合起来反而更合理。
-
-同一类代码，换一个问法，结论就从判不下来变成了能判。第 2 篇换问法时也是这样，那里问的是「会不会一起改」。
-
-下一篇讲开闭原则。同样是新需求，加一个礼品卡渠道很轻松，加一个所有渠道都要提供的冲正操作却要动遍每个实现。为什么同一份设计会对一种变化敞开、对另一种变化关门，这是下一篇要查的边界。
+- 序 · [在 AI 时代重读编程原则](/zh/notes/programming-taste-in-the-agent-era/)
+- 内聚 · [判断标准是修改代码时要一起改](/zh/notes/what-belongs-in-one-module/)
+- 耦合 · [衡量的是两个模块互相了解多少](/zh/notes/three-invisible-couplings/)
+- 单一职责 · 一个职责对应一拨会来提要求的人（本文）
+- 开闭 · [先判断代码会往哪个方向变](/zh/notes/open-closed-only-the-guessed-axis/)
+- 里氏替换 · [子类必须能无缝顶替父类](/zh/notes/liskov-what-the-signature-does-not-check/)
+- 依赖倒置 · [倒置的是接口的归属](/zh/notes/dependency-inversion-who-owns-the-interface/)
+- 接口隔离 · 接口是客户端视角的切片
+- 迪米特 · 得墨忒耳与中间人的两难
+- 合成复用 · 继承会把不变量公开出去
 
 ## 参考资料
 
-1. [Robert C. Martin, "The Single Responsibility Principle", Clean Coder Blog, 2014-05-08](https://blog.cleancoder.com/uncle-bob/2014/05/08/SingleReponsibilityPrinciple.html) —— 链接里的 slug 拼写是 `SingleReponsibility`。文中 `each software module should have one and only one reason to change`、`This principle is about people.`、`Gather together the things that change for the same reasons...`、`a single tightly coupled group of people representing a single narrowly defined business function`、Employee 与 CFO/COO/CTO 的例子、修车厂比喻及其落点、脚注 1 关于夸张的说明，以及关于 Bertrand Meyer 的括号自述，本次都逐句核对过原文。SOLID 缩写不在这一篇里。
-2. [Bertrand Meyer, *Object-Oriented Software Construction*, Prentice Hall, 1988](https://dl.acm.org/doi/book/10.5555/534431) —— 保留原书出处。这是 Martin 那段自述里提到的名字来源；本次未直接核对原书，也没有证据表明这个名称在 Meyer 的书里出现过。
-3. [D. L. Parnas, "On the Criteria To Be Used in Decomposing Systems into Modules", CACM 15(12), 1972, 1053–1058](https://dl.acm.org/doi/10.1145/361598.361623) —— Martin 那篇博文开篇讨论的就是这一篇，并说 SRP 与 Parnas 的表述一致。[第 2 篇](/zh/notes/what-belongs-in-one-module/)用的是同一份依据。
-4. [SOLID — 缩写的来历](https://en.wikipedia.org/wiki/SOLID) —— 缩写归于 Michael Feathers、时间约 2004 年，可追溯到 Martin 2018 年《Clean Architecture》第 58 页。目前能找到的都是二手来源互相印证，没有一手确认，按「一般认为」处理。
-5. [Difficulties using cohesion and coupling as quality indicators, *Software Quality Journal*](https://link.springer.com/article/10.1007/BF00590439) —— 163 名学生标注内聚与耦合等级、结果分歧很大的那项研究。序章参考资料第 6 条与[第 2 篇](/zh/notes/what-belongs-in-one-module/)用的是同一条；本次未读到论文全文，沿用的是那两处的记载。
-6. [W. P. Stevens, G. J. Myers, L. L. Constantine, "Structured Design", IBM Systems Journal 13(2), 1974, 115–139](https://dl.acm.org/doi/10.1147/sj.132.0115) —— 内聚与耦合概念的出处。Martin 在 2014 那篇里说明他是在 1990 年代末把这两组概念整合成原则的；第 2 篇的六档等级表出自同一篇。
+1. [Robert C. Martin, "The Single Responsibility Principle", *The Clean Code Blog*, 2014-05-08](https://blog.cleancoder.com/uncle-bob/2014/05/08/SingleReponsibilityPrinciple.html) —— 明确指出“This principle is about people”，并用 `Employee` 类与 CFO/COO/CTO 三个高管角色的例子阐述职责与人的对应关系。
+2. [Robert C. Martin, *Clean Architecture: A Craftsman's Guide to Software Structure and Design*, Prentice Hall, 2017](https://dl.acm.org/doi/book/10.5555/3175742) —— 第 7 章将 SRP 的定义正式重述为“A module should be responsible to one, and only one, actor”。
+3. [D. L. Parnas, "On the Criteria To Be Used in Decomposing Systems into Modules", *Communications of the ACM* 15(12), 1972, 1053–1058](https://dl.acm.org/doi/10.1145/361598.361623) —— 信息隐藏原则的原始出处，Martin 在 2014 年博文中明确将 SRP 追溯至此文。

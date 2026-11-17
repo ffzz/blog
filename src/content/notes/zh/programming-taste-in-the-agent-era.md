@@ -129,10 +129,10 @@ flowchart TB
 ### 系列目录
 
 - 序 · 在 AI 时代重读编程原则（本文）
-- 内聚 · [判据是「必须一起改」，不是「看起来相关」](/zh/notes/what-belongs-in-one-module/)
-- 耦合 · [量的是互相了解多少，不是 import 有几行](/zh/notes/three-invisible-couplings/)
-- 单一职责 · [职责不是一件事，是一个会来提要求的人](/zh/notes/single-responsibility-is-an-actor/)
-- 开闭 · [先判断代码会往哪里变](/zh/notes/open-closed-only-the-guessed-axis/)
+- 内聚 · [判断标准是修改代码时要一起改](/zh/notes/what-belongs-in-one-module/)
+- 耦合 · [衡量的是两个模块互相了解多少](/zh/notes/three-invisible-couplings/)
+- 单一职责 · [一个职责对应一拨会来提要求的人](/zh/notes/single-responsibility-is-an-actor/)
+- 开闭 · [先判断代码会往哪个方向变](/zh/notes/open-closed-only-the-guessed-axis/)
 - 里氏替换 · [子类必须能无缝顶替父类](/zh/notes/liskov-what-the-signature-does-not-check/)
 - 依赖倒置 · [倒置的是接口的归属](/zh/notes/dependency-inversion-who-owns-the-interface/)
 - 接口隔离 · 接口是客户端视角的切片

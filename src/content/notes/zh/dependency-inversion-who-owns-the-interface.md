@@ -23,7 +23,7 @@ tags: ['programming-thinking', 'design-principles', 'software-engineering', 'arc
 
 ---
 
-## 第一步：最经典的起点——为什么不能在业务里直接调底层？
+## 最经典的起点：为什么不能在业务里直接调底层？
 
 假设我们要写退款子系统里的冲正流程 `ReversalFlow`。当财务发现一笔原路退回银行卡的退款算错了金额，需要发起冲正把多退的钱追回来，最顺手的写法是在 `ReversalFlow` 里直接引入银行卡支付网关（比如 Stripe 的客户端）：
 
@@ -61,7 +61,7 @@ class ReversalFlow {
 
 ---
 
-## 第二步：最普遍的误区——“照猫画虎”的假倒置
+## 最普遍的误区：“照猫画虎”的假倒置
 
 很多开发者（包括现在的 Coding Agent）在被要求“按依赖倒置原则重构上面这段代码”时，做法非常标准：
 
@@ -110,7 +110,7 @@ class ReversalFlow {
 
 ---
 
-## 第三步：查回 1996 年的出处——到底什么被“倒置”了？
+## 查回 1996 年的出处：到底什么被“倒置”了？
 
 要弄明白真正的依赖倒置长什么样，得翻回 Robert C. Martin 1996 年在《C++ Report》上发表的那篇《The Dependency Inversion Principle》[1]。
 
@@ -170,7 +170,7 @@ flowchart TB
 
 ---
 
-## 第四步：在退款系统里写出真正的依赖倒置
+## 在退款系统里写出真正的依赖倒置
 
 现在我们可以回答[第 6 篇](/zh/notes/liskov-what-the-signature-does-not-check/)留下的问题了：`ReversibleChannel` 接口应该由高层冲正业务来定义，并且直接放在业务核心层（比如 `domain/refund/`）里。
 
@@ -256,7 +256,7 @@ export class StripeCardChannel implements ReversibleChannel {
 
 ---
 
-## 第五步：走进模糊地带——三个最容易踩坑的边界问题
+## 走进模糊地带：三个最容易踩坑的边界问题
 
 把基本功练扎实之后，真正让人在代码评审里吵起来的，往往是下面三个模糊地带。
 
@@ -355,10 +355,10 @@ flowchart LR
 ## 系列目录
 
 - 序 · [在 AI 时代重读编程原则](/zh/notes/programming-taste-in-the-agent-era/)
-- 内聚 · [判据是「必须一起改」，不是「看起来相关」](/zh/notes/what-belongs-in-one-module/)
-- 耦合 · [量的是互相了解多少，不是 import 有几行](/zh/notes/three-invisible-couplings/)
-- 单一职责 · [职责不是一件事，是一个会来提要求的人](/zh/notes/single-responsibility-is-an-actor/)
-- 开闭 · [先判断代码会往哪里变](/zh/notes/open-closed-only-the-guessed-axis/)
+- 内聚 · [判断标准是修改代码时要一起改](/zh/notes/what-belongs-in-one-module/)
+- 耦合 · [衡量的是两个模块互相了解多少](/zh/notes/three-invisible-couplings/)
+- 单一职责 · [一个职责对应一拨会来提要求的人](/zh/notes/single-responsibility-is-an-actor/)
+- 开闭 · [先判断代码会往哪个方向变](/zh/notes/open-closed-only-the-guessed-axis/)
 - 里氏替换 · [子类必须能无缝顶替父类](/zh/notes/liskov-what-the-signature-does-not-check/)
 - 依赖倒置 · 倒置的是接口的归属（本文）
 - 接口隔离 · 接口是客户端视角的切片

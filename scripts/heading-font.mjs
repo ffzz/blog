@@ -157,11 +157,11 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * 连续三次部署都是首跑 504、重跑即过。把重试收进脚本，本地和 CI 都受益。
  * 只重试 5xx 与网络错误；4xx 是请求本身的问题，重试没有意义。
  */
-async function fetchWithRetry(url, label, retries = 4) {
+async function fetchWithRetry(url, label, retries = 4, userAgent = UA) {
   let lastError;
   for (let attempt = 1; attempt <= retries; attempt += 1) {
     try {
-      const res = await fetch(url, { headers: { 'User-Agent': UA } });
+      const res = await fetch(url, { headers: { 'User-Agent': userAgent } });
       if (res.ok) return res;
       lastError = new Error(`${label} 请求失败：HTTP ${res.status} ${res.statusText}`);
       if (res.status < 500) throw lastError;
@@ -205,11 +205,14 @@ async function generate(chars) {
     return;
   }
 
-  const url =
-    `https://fonts.googleapis.com/css2?family=${FAMILY}:wght@${WEIGHT}` +
-    `&text=${encodeURIComponent(chars.join(''))}`;
+  // Google Fonts 的 text= 参数超过 800 字时会退回 101 个分片 unicode-range CSS。
+  // 800 字以内走 woff2 text= 子集源；超过 800 字时省去 text= 并用非分片 UA 拉完整 ttf 源，再由本地 subset-font 裁成 woff2。
+  const useFullSource = chars.length > 790;
+  const url = useFullSource
+    ? `https://fonts.googleapis.com/css2?family=${FAMILY}:wght@${WEIGHT}`
+    : `https://fonts.googleapis.com/css2?family=${FAMILY}:wght@${WEIGHT}&text=${encodeURIComponent(chars.join(''))}`;
 
-  const css = await fetchWithRetry(url, 'Google Fonts CSS');
+  const css = await fetchWithRetry(url, 'Google Fonts CSS', 4, useFullSource ? 'curl/8.0' : UA);
   const cssText = await css.text();
   const fontUrl = cssText.match(/url\((https:\/\/fonts\.gstatic\.com[^)]+)\)/)?.[1];
   if (!fontUrl) throw new Error(`未能从返回的 CSS 中解析出 woff2 地址：\n${cssText.slice(0, 400)}`);

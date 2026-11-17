@@ -23,7 +23,7 @@ Let's build that up step by step, starting from the simplest code we've all writ
 
 ---
 
-## Step 1: The Classic Starting Point—Why Not Call the Low-Level Module Directly?
+## The Classic Starting Point: Why Not Call the Low-Level Module Directly?
 
 Suppose we are implementing the reversal workflow (`ReversalFlow`) in our refund subsystem. When finance spots an over-refunded card transaction and initiates a reversal to pull the funds back, the most direct code imports the payment gateway client (say, Stripe) right inside `ReversalFlow`:
 
@@ -61,7 +61,7 @@ To fix both problems, almost every developer takes the same next step: extract a
 
 ---
 
-## Step 2: The Common Trap—"Carbon-Copy" Fake Inversion
+## The Common Trap: "Carbon-Copy" Fake Inversion
 
 Ask a developer (or a coding agent) to "apply Dependency Inversion" to the code above, and you will almost always get this refactoring:
 
@@ -110,7 +110,7 @@ To accommodate the wallet channel, you have to change `IPaymentGateway`—and th
 
 ---
 
-## Step 3: Tracing Back to 1996—What Actually Gets "Inverted"?
+## Tracing Back to 1996: What Actually Gets "Inverted"?
 
 To see what real inversion looks like, we have to go back to Robert C. Martin's May 1996 *C++ Report* article, *"The Dependency Inversion Principle"* [1].
 
@@ -168,7 +168,7 @@ Look closely at Diagram 3:
 
 ---
 
-## Step 4: Writing True Dependency Inversion in the Refund Subsystem
+## Writing True Dependency Inversion in the Refund Subsystem
 
 Now we can answer the question from [Note 6](/notes/liskov-what-the-signature-does-not-check/): `ReversibleChannel` belongs inside the domain package (`domain/refund/`), and its signature must be written purely in the vocabulary of the refund domain.
 
@@ -254,7 +254,7 @@ Here is a quick litmus test I use during code reviews: **imagine tomorrow we rip
 
 ---
 
-## Step 5: Navigating the Gray Areas—Three Places Engineers Get Tripped Up
+## Navigating the Gray Areas: Three Places Engineers Get Tripped Up
 
 Once the basic mechanics make sense, the real debates in code review almost always happen in three gray areas.
 
@@ -351,12 +351,12 @@ That brings us to Note 8: **the Interface Segregation Principle**.
 ## Series Outline
 
 - Opening · [Rereading Classic Design Principles in the Age of AI](/notes/programming-taste-in-the-agent-era/)
-- Cohesion · [The test is "must change together", not "looks related"](/notes/what-belongs-in-one-module/)
-- Coupling · [It measures mutual knowledge, not import counts](/notes/three-invisible-couplings/)
-- Single Responsibility · [A responsibility is not a task, it is someone who will ask](/notes/single-responsibility-is-an-actor/)
-- Open-Closed · [Which changes should the design accommodate?](/notes/open-closed-only-the-guessed-axis/)
-- Liskov Substitution · [A subtype must seamlessly stand in for its supertype](/notes/liskov-what-the-signature-does-not-check/)
-- Dependency Inversion · What inverts is who owns the interface *(this note)*
+- Cohesion · [The Standard Is What Must Change Together](/notes/what-belongs-in-one-module/)
+- Coupling · [Measuring How Much Two Modules Know About Each Other](/notes/three-invisible-couplings/)
+- Single Responsibility · [One Responsibility Maps to One Group of Stakeholders](/notes/single-responsibility-is-an-actor/)
+- Open-Closed · [First Identify Which Way the Code Will Grow](/notes/open-closed-only-the-guessed-axis/)
+- Liskov Substitution · [A Subtype Must Seamlessly Stand In for Its Supertype](/notes/liskov-what-the-signature-does-not-check/)
+- Dependency Inversion · What Inverts Is Who Owns the Interface *(this note)*
 - Interface Segregation · An interface is a slice taken from the client's point of view
 - Law of Demeter · The middleman's dilemma
 - Composite Reuse · Inheritance publishes your invariants
