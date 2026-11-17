@@ -17,7 +17,7 @@ This opening note sets out where each of the seven came from. Having checked, I 
 
 The usual drawing looks like this: high cohesion and low coupling at the bottom, the seven principles in the middle, design patterns above them, object-oriented development on top. Each layer holds up the next, and the whole thing reads like a system someone derived.
 
-Checked one at a time, here is where they actually come from:
+Checked one at a time, here is where they come from:
 
 | Concept | Who | Year | Source |
 |---|---|---|---|
@@ -26,13 +26,13 @@ Checked one at a time, here is where they actually come from:
 | Law of Demeter (LoD) | Ian Holland | 1987 | Northeastern University, the Demeter project [3] |
 | Open-closed (OCP) | Bertrand Meyer | 1988 | "Object-Oriented Software Construction" [4] |
 | Composite reuse (CRP) | the Gang of Four | 1994 | "Design Patterns" |
-| Dependency inversion (DIP) | Robert C. Martin | 1996 | C++ Report |
-| Interface segregation (ISP) | Robert C. Martin | 1996 | C++ Report |
-| Single responsibility (SRP) | Robert C. Martin | 1990s | C++ Report, collected in "Design Principles and Design Patterns" (2000) [5] |
+| Dependency inversion (DIP) | Robert C. Martin | 1996 | C++ Report, collected in "Design Principles and Design Patterns" (2000) [7] |
+| Interface segregation (ISP) | Robert C. Martin | 1996 | C++ Report, collected in "Design Principles and Design Patterns" (2000) [7] |
+| Single responsibility (SRP) | Robert C. Martin | 1990s | C++ Report, collected in "Design Principles and Design Patterns" (2000) [7] |
 
 Six groups of people, with twenty-two years between the first and the last. In 1974 those three were arguing about how to cut a Fortran program into modules. In 1987 Liskov was on an OOPSLA stage talking about type theory. In 1996 Martin hit a specific problem while consulting for a client. None of them knew about the others' problems, and none was adding a brick to a shared system.
 
-The acronym SOLID came later still. Martin wrote the five principles through the 1990s, and turning their initials into a word was Michael Feathers's doing around 2004, more than a decade after the principles themselves. The "seven principles" table in Chinese textbooks adds two more on top of SOLID, and the Law of Demeter and composite reuse were never part of SOLID to begin with: one comes from Northeastern University in 1987, the other from the Gang of Four in 1994.
+The acronym SOLID came later still. Martin wrote the five principles through the 1990s, and turning their initials into a word was Michael Feathers's doing around 2004 [5], more than a decade after the principles themselves. The "seven principles" table in Chinese textbooks adds two more on top of SOLID, and the Law of Demeter and composite reuse were never part of SOLID to begin with: one comes from Northeastern University in 1987, the other from the Gang of Four in 1994.
 
 **Nobody assembled these seven. Someone later arranged them.**
 
@@ -94,7 +94,7 @@ class ReversalFlow {
 
 Now `ReversalFlow` knows one type and Demeter is satisfied. But `RefundLedger` has to offer lookup, timeline, and reversal, which makes it a fat interface, and interface segregation is not satisfied.
 
-**Neither principle was misapplied. They point in opposite directions.** One more narrow interface means one more type, and one fewer type means the interface has to widen. **There is no right answer here, only a trade-off**: an interface is an abstract type while a forwarding method is concrete code, and the former usually costs less than the latter. That trade-off is mine, though, not a result the principles computed.
+**Neither principle was misapplied. They point in opposite directions.** One more narrow interface means one more type, and one fewer type means the interface has to widen. **There is no right answer here, only a trade-off**: one more narrow interface is only one more abstract type, whereas writing forwarding methods to know one type fewer leaves concrete code to maintain, and the former usually costs less than the latter. That trade-off is mine, though, not a result the principles computed.
 
 Same code, two principles pulling either way, and nothing in the middle to settle it:
 
@@ -106,7 +106,7 @@ flowchart TB
     C --> E["ReversalFlow knows one type<br/>fat interface, ISP unhappy"]
 ```
 
-Drawn out, it is easier to see that no option here is optimal: all three routes are compliant, and the only difference is which cost you would rather pay this time.
+Drawn out, it is easier to see that no option here is optimal: both routes are compliant, and the only difference is which cost you would rather pay this time.
 
 ## The pyramid
 
@@ -126,11 +126,11 @@ The value is not in the scholarship. It is that **every one of these principles 
 
 Trouble is the first thing lost in transmission. A principle gets lifted out of a paper into a slogan, out of the slogan into a textbook, out of the textbook into the vocabulary of code review. By then only the wording survives, and the trouble has long since left the room. "Open for extension, closed for modification" sounds unimpeachable. When Meyer wrote it, the extension he had in mind was subclassing a class already compiled into a library.
 
-A slogan that has lost its setting turns into an acceptance criterion, and **an acceptance criterion can be satisfied by piling up structure**. So every seam gets an interface in front of it, every class is split down to a single method, and the review passes on every line. The extra indirection stops nothing that will actually happen. What it stops is the remark that this does not look like the principle.
+A slogan that has lost its setting turns into an acceptance criterion, and **an acceptance criterion can be satisfied by piling up structure**. So every seam gets an interface in front of it, every class is split down to a single method, and the review passes on every line. The extra indirection stops none of the changes the code will meet. What it stops is the remark that this does not look like the principle.
 
 **Code written that way is wrong twice over: it misses the modifiability the principle existed to protect, and it is heavier than code that ignored the principle entirely.** Against the principle, and bulkier for it.
 
-So the question is never "does this follow the principle". It is **"which way will this code grow, and who will come asking for the change"**. Both answers live in the business, not in the principle.
+So the question to ask of a principle is **"which way will this code grow, and who will come asking for the change"**. Both answers live in the business, not in the principle.
 
 The nine notes after this one all work the same way: put the principle back in the setting that produced it, see what it was defending against, then bring it back to today's code and ask whether that defence is still worth maintaining. **When the two do not line up, change how you apply it. Do not change the situation to fit.**
 
@@ -140,21 +140,21 @@ The code in the nine notes after this one all grows from the same place: a refun
 
 Four invariants, which will keep coming back:
 
-1. Total refunds never exceed what the original order actually paid
+1. Total refunds never exceed what the original order paid
 2. Idempotent: resubmitting the same refund does not move money twice
 3. States move one way. A settled refund cannot be rolled back, only offset by a new reverse entry
 4. One currency. Amounts in different currencies cannot be added
 
-Refunds run through four channels (back to the original card, wallet balance, bank transfer, credit compensation) and four kinds of client (support console, finance reconciliation, risk interception, read-only merchant view). The structure carries two extension axes that work against each other: adding a channel, and adding an operation. Note five uses it to show why the open-closed principle can only be open along one of them.
+Refunds run through four channels (back to the original card, wallet balance, offline transfer, credit compensation) and four kinds of client (support console, finance reconciliation, risk interception, read-only merchant view). The structure carries two extension axes that work against each other: adding a channel, and adding an operation. Note five uses it to show why the open-closed principle can only be open along one of them.
 
 ## The series
 
 - Opening · Seven Design Principles Are Not a Pyramid
 - Cohesion · [The test is "must change together", not "looks related"](/notes/what-belongs-in-one-module/)
-- Coupling · [Three You Cannot See, and a Dependency That Moved House](/notes/three-invisible-couplings/)
-- Single responsibility · A responsibility is not a task, it is a person who will come asking
-- Open-closed · [Open for Extension, Closed for Modification](/notes/open-closed-only-the-guessed-axis/)
-- Liskov substitution · A matching signature does not mean it can be swapped in
+- Coupling · [It measures mutual knowledge, not import counts](/notes/three-invisible-couplings/)
+- Single responsibility · [A responsibility is not a task, it is someone who will ask](/notes/single-responsibility-is-an-actor/)
+- Open-closed · [Which changes should the design accommodate?](/notes/open-closed-only-the-guessed-axis/)
+- Liskov substitution · [A subtype must seamlessly stand in for its supertype](/notes/liskov-what-the-signature-does-not-check/)
 - Dependency inversion · What inverts is who owns the interface
 - Interface segregation · An interface is a slice taken from the client's point of view
 - Law of Demeter · The middleman's dilemma
@@ -164,13 +164,13 @@ One note per principle, published as they are written.
 
 ## What this opening note concludes
 
-- **The seven principles are not one system.** Six groups of people, twenty-two years, unrelated problems. Nobody assembled them; someone later arranged them. The pyramid is a story drawn afterwards, to make them teachable.
-- **They are seven questions, and no question outranks the others.** Which one to ask depends on which way the code will grow and who will come asking.
-- **The cohesion and coupling levels are a judgement scale, not a measuring instrument.** 163 people read the same code and land on different levels. That is not the students' failure, it is what a scale that depends on context looks like.
-- **Two principles can point in opposite directions on the same code, with neither one misapplied.** Interface segregation and Demeter do exactly that to the `ReversalFlow` above.
-- **Every principle was born in a specific setting, and the setting gets lost in transmission.** A slogan that has lost its setting becomes an acceptance criterion, and an acceptance criterion can be satisfied by piling up structure.
-- **Following the letter of a principle costs you code that breaks its spirit and weighs more.** The extra indirection blocks no real change and adds a dependency.
-- **An agent can implement any one of the seven faster than I can. What it cannot answer is which one to listen to this time.** That judgement cannot be outsourced, and it is what this series is for.
+- The seven principles are not one system. Six groups of people, twenty-two years, unrelated problems. Nobody assembled them; someone later arranged them. The pyramid is a story drawn afterwards, to make them teachable.
+- They are seven questions, and no question outranks the others. Which one to ask depends on which way the code will grow and who will come asking.
+- The cohesion and coupling levels are a judgement scale, not a measuring instrument. 163 people read the same code and land on different levels. That is not the students' failure, it is what a scale that depends on context looks like.
+- Two principles can point in opposite directions on the same code, with neither one misapplied. Interface segregation and Demeter do exactly that to the `ReversalFlow` above.
+- Every principle was born in a specific setting, and the setting gets lost in transmission. A slogan that has lost its setting becomes an acceptance criterion, and an acceptance criterion can be satisfied by piling up structure.
+- Following the letter of a principle costs you code that breaks its spirit and weighs more. The extra indirection blocks no real change and adds a dependency.
+- An agent can implement any one of the seven faster than I can. What it cannot answer is which one to listen to this time. That judgement cannot be outsourced, and it is what this series is for.
 
 ## References
 
@@ -180,5 +180,6 @@ One note per principle, published as they are written.
 4. [Open–closed principle — a comparison of the two formulations](https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle)
 5. [SOLID — the origin of the acronym](https://en.wikipedia.org/wiki/SOLID)
 6. [Difficulties using cohesion and coupling as quality indicators, Software Quality Journal](https://link.springer.com/article/10.1007/BF00590439)
+7. [Robert C. Martin, "Design Principles and Design Patterns", Object Mentor, 2000. The written-up sections for SRP, DIP and ISP are all collected in this compilation; the original C++ Report issues have no stable online link](https://www.fil.univ-lille.fr/~routier/enseignement/licence/coo/cours/Principles_and_Patterns.pdf)
 
 On reference 5: the SOLID acronym is attributed to Michael Feathers, but every source I could find is second-hand citing other second-hand sources, with no confirmation from Feathers or Martin himself. Treat it as the common view rather than an established fact.

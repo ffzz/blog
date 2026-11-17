@@ -1,14 +1,16 @@
 ---
 title: 'The Open-Closed Principle: Which Changes Should the Design Accommodate?'
-description: 'Adding a refund channel leaves existing implementations alone, while adding a reversal operation reaches across them. Comparing interfaces and union types shows what the open-closed principle can protect, and when an abstraction earns its place.'
-pubDate: 2026-09-01
-updatedDate: 2026-09-09
+description: "The open-closed principle is usually stated as \"open for extension, closed for modification\" — but it only holds along the axis of change the design chose. This note contrasts two changes in a refund system — adding a channel is easy, adding an operation touches every implementation — compares interfaces with union types, and covers what the principle protects, what the compiler can flag, and when an abstraction earns its place."
+pubDate: 2026-08-31T13:00:00
+updatedDate: 2026-09-13
 tags: ['programming-thinking', 'design-principles', 'typescript']
 ---
 
 > The fifth of ten notes in the Programming Thinking series. The case behind the series is in the [opening essay](/notes/programming-taste-in-the-agent-era/).
 >
 > As AI writes more of our code, the experience and judgement programmers have built up become more valuable. In this series, I revisit these ageing principles, trace their sources, and examine where they hold and where they break. Returning to the old ideas helps me make sense of the new ones.
+
+The open-closed principle is usually stated as "open for extension, closed for modification": when a capability is added, existing code should not have to change. Half of the sentence tends to get lost — **it only holds for the kind of change the design chose to protect**. In the same refund codebase, adding a channel is easy, while giving channels a new operation touches every implementation; the difference lies in the direction of change. So before applying the principle, decide first: where will this code grow?
 
 In [note 2](/notes/what-belongs-in-one-module/), I discussed a refund-handling module called `RefundHandler`. Its logic was later divided into four modules for bank cards, wallets, offline transfers, and credit compensation. Each module was responsible for its channel's timeout, retry, and idempotency policies.
 
@@ -295,11 +297,11 @@ The next note covers Liskov substitution. `CreditChannel.reverse` has a signatur
 
 ## References
 
-1. [Bertrand Meyer, *Object-Oriented Software Construction*, Prentice Hall, 1988](https://dl.acm.org/doi/book/10.5555/534431). Retained as the original source; the book was not checked directly for this revision. The historical definition follows the earlier notes, and Martin's original article also cites the book.
+1. [Bertrand Meyer, *Object-Oriented Software Construction*, Prentice Hall, 1988](https://dl.acm.org/doi/book/10.5555/534431). Cited as the original source; the book was not checked directly. Martin's 1996 article also cites the book.
 2. [Robert C. Martin, “The Open-Closed Principle”, 1996, original PDF mirror](https://www.cs.utexas.edu/~downing/papers/OCP-1996.pdf). The University of Texas teaching site preserves the full text; pages 3–5 contain the abstraction and polymorphism examples.
-3. The same article, page 6, “Strategic Closure”. The original PDF was checked for this revision, replacing the earlier draft's reliance on secondary transcriptions.
+3. The same article, page 6, “Strategic Closure”. The original PDF was checked directly.
 4. [Philip Wadler, “The Expression Problem”, 1998-11-12](https://homepages.inf.ed.ac.uk/wadler/papers/expression/expression.txt). The opening of the email presents both the rows-and-columns analogy and the aim of supporting extension in both directions.
-5. [Robert C. Martin, *Agile Software Development, Principles, Patterns, and Practices*](https://www.pearson.com/en-us/subject-catalog/p/agile-software-development-principles-patterns-and-practices/P200000009301). The passage still relies on the [Fanciful Magic transcription](http://blabux.blogspot.com/2003/11/fool-me-once.html) retained from the earlier draft. The book was not checked directly for this revision, and the passage is not treated as a fixed occurrence-count rule.
+5. [Robert C. Martin, *Agile Software Development, Principles, Patterns, and Practices*](https://www.pearson.com/en-us/subject-catalog/p/agile-software-development-principles-patterns-and-practices/P200000009301). The passage relies on the [Fanciful Magic transcription](http://blabux.blogspot.com/2003/11/fool-me-once.html); the book was not checked directly, and the passage is not treated as a fixed occurrence-count rule.
 6. [D. L. Parnas, “On the Criteria To Be Used in Decomposing Systems into Modules”, CACM 15(12), 1972](https://dl.acm.org/doi/10.1145/361598.361623). The module decomposition criterion used in note 2.
 7. [TypeScript Handbook — Union Exhaustiveness checking](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#union-exhaustiveness-checking). Covers checks using an explicit return type with `strictNullChecks`, and checks using `never`.
 8. [Robert C. Martin, “An Open and Closed Case”, 2013-03-08](https://blog.cleancoder.com/uncle-bob/2013/03/08/AnOpenAndClosedCase.html). Martin's clarification of his earlier wording about the principle.

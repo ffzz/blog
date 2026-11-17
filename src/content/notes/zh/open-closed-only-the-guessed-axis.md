@@ -1,14 +1,16 @@
 ---
 title: 开闭原则：先判断代码会往哪里变
-description: 同一套退款模块，加渠道很轻松，加冲正操作却要改动多个实现。沿着这两种变化，比较接口与联合类型的取舍，理解开闭原则保护的范围，以及什么时候值得增加抽象。
+description: 开闭原则的标准表述是「对扩展开放，对修改封闭」，但它只对设计时选中的那条变化轴成立。本文用退款系统对比两种变化——加渠道轻松、加操作要动遍实现——比较接口与联合类型两种组织方式，讲清开闭原则保护的范围、编译器能指出的遗漏，以及什么时候值得增加抽象。
 pubDate: 2026-08-31T13:00:00
-updatedDate: 2026-09-09
+updatedDate: 2026-09-13
 tags: ['programming-thinking', 'design-principles', 'typescript']
 ---
 
 > 《编程思想》系列第 5/10 篇。这一季的立论在[序章](/zh/notes/programming-taste-in-the-agent-era/)。
 >
 > AI 能替我们写的代码越来越多，程序员自己攒下的经验和底层判断因此更值钱。这个系列是我把这些上了年纪的原则重新翻出来，一条条查它们的出处、边界和失效场景的记录。温故而知新。
+
+开闭原则的标准表述是「对扩展开放，对修改封闭」：新增能力时，尽量不修改既有代码。这句话常被漏掉一半——**它只对设计时选中的那类变化成立**。同一套退款代码，增加一个渠道很轻松，给渠道增加一种操作却要动遍每个实现；差别不在代码写得好不好，在变化的方向。所以用这条原则之前要先判断：这段代码会往哪里变。
 
 [第 2 篇](/zh/notes/what-belongs-in-one-module/)讨论过一个退款处理模块 `RefundHandler`。这段退款逻辑后来按渠道拆成了四个模块，分别处理银行卡、钱包、线下转账和积分补偿。每个模块负责相应渠道的超时、重试和幂等策略。
 
@@ -231,7 +233,7 @@ refund/
 
 `submit` 和 `reverse` 保留各自的请求与结果类型。`composition.ts` 汇总它们各自的注册项，不需要把所有操作塞进一个接收任意参数的通用接口。渠道和回执之间的对应关系仍需由类型与入口校验共同保护，不能因为改用注册表就省去这些约束。
 
-注册项需要区分三种情况：已经支持并关联处理器、业务上明确不支持、尚未配置。前两种是完整的能力决定，第三种是需要修复的遗漏。如果产品要求某个渠道支持冲正，就必须实现该能力，或明确与产品调整范围；给它配置「不支持」本身不能算完成需求。运行时展示的能力列表可以来自注册表，但验收还要对照独立确认的产品需求，防止配置漏掉了一项应当支持的能力。
+注册项需要区分三种情况：已经支持并关联处理器、业务上明确不支持、尚未配置。前两种是完整的能力决定，第三种是需要修复的遗漏。如果产品要求某个渠道支持冲正，就必须实现该能力，或与产品明确调整范围；给它配置「不支持」本身不能算完成需求。运行时展示的能力列表可以来自注册表，但验收还要对照独立确认的产品需求，防止配置漏掉了一项应当支持的能力。
 
 在这个结构下，两类新增需求的工作范围如下：
 
@@ -295,11 +297,11 @@ flowchart TD
 
 ## 参考资料
 
-1. [Bertrand Meyer, *Object-Oriented Software Construction*, Prentice Hall, 1988](https://dl.acm.org/doi/book/10.5555/534431) —— 保留原书出处；本次未直接核对原书。历史定义沿用前文记录，Martin 的原文也引用了该书。
+1. [Bertrand Meyer, *Object-Oriented Software Construction*, Prentice Hall, 1988](https://dl.acm.org/doi/book/10.5555/534431) —— 作为原始出处列出，未直接核对原书；Martin 1996 年的原文也引用了该书。
 2. [Robert C. Martin, “The Open-Closed Principle”, 1996，原文 PDF 镜像](https://www.cs.utexas.edu/~downing/papers/OCP-1996.pdf) —— University of Texas 教学站保存的完整文本；抽象与多态示例见第 3–5 页。
-3. 同上，第 6 页 “Strategic Closure”。本次已核对 PDF 原文，替换旧稿中的二手转述依据。
+3. 同上，第 6 页 “Strategic Closure”。已直接核对 PDF 原文。
 4. [Philip Wadler, “The Expression Problem”, 1998-11-12](https://homepages.inf.ed.ac.uk/wadler/papers/expression/expression.txt) —— 邮件开头同时交代了行列类比和希望支持两个方向扩展的目标。
-5. [Robert C. Martin, *Agile Software Development, Principles, Patterns, and Practices*](https://www.pearson.com/en-us/subject-catalog/p/agile-software-development-principles-patterns-and-practices/P200000009301) —— 该段措辞仍依据旧稿保存的 [Fanciful Magic 转述](http://blabux.blogspot.com/2003/11/fool-me-once.html)，本次未直接核对原书；不将其解释成固定次数规则。
+5. [Robert C. Martin, *Agile Software Development, Principles, Patterns, and Practices*](https://www.pearson.com/en-us/subject-catalog/p/agile-software-development-principles-patterns-and-practices/P200000009301) —— 该段措辞依据 [Fanciful Magic 的转述](http://blabux.blogspot.com/2003/11/fool-me-once.html)，未直接核对原书；不将其解释成固定次数规则。
 6. [D. L. Parnas, “On the Criteria To Be Used in Decomposing Systems into Modules”, CACM 15(12), 1972](https://dl.acm.org/doi/10.1145/361598.361623) —— 第 2 篇使用过的模块划分依据。
 7. [TypeScript Handbook — Union Exhaustiveness checking](https://www.typescriptlang.org/docs/handbook/unions-and-intersections.html#union-exhaustiveness-checking) —— 显式返回类型与 `strictNullChecks`、`never` 两种检查方式。
 8. [Robert C. Martin, “An Open and Closed Case”, 2013-03-08](https://blog.cleancoder.com/uncle-bob/2013/03/08/AnOpenAndClosedCase.html) —— 作者对早年开闭原则措辞的澄清。

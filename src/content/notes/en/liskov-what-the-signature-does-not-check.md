@@ -1,8 +1,8 @@
 ---
-title: 'Liskov Substitution: A Matching Signature Does Not Mean It Can Be Swapped In'
-description: 'Refund channels can share method signatures while behaving differently for their callers. Reversals, settlement receipts and state history show how four contract checks work, and what types, capability interfaces and contract tests can protect.'
-pubDate: 2026-09-02
-updatedDate: 2026-09-11
+title: 'Liskov Substitution: A Subtype Must Seamlessly Stand In for Its Supertype'
+description: 'An introduction to the Liskov substitution principle for programmers new to it: see with rectangles and squares what "passes the type check, breaks the behaviour" means, why the principle underpins polymorphism, how it grew from the 1987 paper into SOLID, and where the grey areas live — can a square inherit from a rectangle, is throwing an exception a violation, and how much the compiler can check.'
+pubDate: 2026-09-02T14:00:00
+updatedDate: 2026-09-13
 tags: ['programming-thinking', 'design-principles', 'typescript']
 ---
 
@@ -10,11 +10,98 @@ tags: ['programming-thinking', 'design-principles', 'typescript']
 >
 > As AI writes more of our code, the experience and judgement programmers have built up become more valuable. This series is my record of taking these ageing principles back off the shelf and checking their origins, boundaries and failure cases, to see what they can still teach us.
 
-[Note 5](/notes/open-closed-only-the-guessed-axis/) examined a refund system split into separate modules for bank cards, wallets, offline transfers and credit compensation. Credit compensation grants benefits without directly transferring money. Reversing a refund needs to undo the original operation's effect while retaining a traceable record of the reversal.
+This note covers Liskov substitution: a subtype must seamlessly stand in for its supertype. Wherever a supertype is accepted, substituting a subtype must preserve the behaviour the caller is entitled to expect. Why does that deserve a note of its own? Because the compiler only checks method signatures, while what callers depend on is the behaviour behind them — and that gap is where the incidents happen.
 
-That article considered a flawed design: adding `reverse` to the shared `RefundChannel` interface, requiring every channel to implement it even when the channel cannot support reversals. This note returns to that design to examine why it can satisfy the types while failing to meet a caller's expectations.
+## Code that passes the type check and is still wrong
 
-In the third week after refund reversals went live, someone in finance tried to reverse a credit-compensation refund in the back office. The page waited for two seconds, then displayed `UnsupportedOperationError`. The caller used the code below. Assume the channel is registered; the relevant step is the call to `reverse` on the final line.
+Start with an example that involves no business logic. `Rectangle` has a width and a height that can be set separately:
+
+```ts
+class Rectangle {
+  protected width = 0
+  protected height = 0
+
+  setWidth(w: number): void {
+    this.width = w
+  }
+
+  setHeight(h: number): void {
+    this.height = h
+  }
+
+  area(): number {
+    return this.width * this.height
+  }
+}
+```
+
+A square is a kind of rectangle whose four sides must stay equal. Having it extend `Rectangle` and keep the sides in sync looks perfectly natural:
+
+```ts
+class Square extends Rectangle {
+  setWidth(w: number): void {
+    this.width = w
+    this.height = w
+  }
+
+  setHeight(h: number): void {
+    this.width = h
+    this.height = h
+  }
+}
+```
+
+Then write a function that uses it. The parameter type is `Rectangle`; it sets the width to 10, the height to 4, and reads the area:
+
+```ts
+function stretch(rect: Rectangle): number {
+  rect.setWidth(10)
+  rect.setHeight(4)
+  return rect.area()
+}
+
+stretch(new Rectangle()) // 40
+stretch(new Square()) // 16
+```
+
+Pass a `Rectangle` and you get 40; pass a `Square` and you get 16 — the second call changes the width along with the height. This code passes the strictest type checking: `Square` really is a subclass of `Rectangle`, and the signatures of `setWidth` and `setHeight` match exactly. But the caller's reasoning — set the width, then the height, and the area is width times height — no longer holds once the subclass is swapped in.
+
+**The Liskov Substitution Principle (LSP) says exactly this: wherever a supertype is accepted, substituting a subtype must preserve the behaviour the caller is entitled to expect.** "Seamlessly standing in" sets a higher bar than matching method signatures: every reasonable assumption the caller makes from the supertype must still hold after the subclass takes its place.
+
+Put more precisely: whether a subtype relationship exists between two types is settled by testing it against the callers' programs — substituting objects of the subtype for objects of the supertype must not change the program's behaviour — and an inheritance line on a class diagram counts for nothing. The earliest statement of this idea that this note cites is in a 1987 lecture by Barbara Liskov; "Origins and development" below returns to the source.
+
+## Polymorphism rests on the supertype's promises
+
+Why does this principle need to exist? Because it guards the load-bearing wall of polymorphism in object-oriented code.
+
+Polymorphism means the caller writes only the supertype, and whichever subclass arrives at runtime supplies the implementation. `stretch` takes a `Rectangle`; if tomorrow someone writes a `RoundedRectangle` and passes it in, the function does not change a line. That is the core convenience inheritance gives callers, and it holds only because **everything the caller knows about subclasses comes from promises made by the supertype.**
+
+The promises come in two layers. The first is signatures: what the methods are called, what parameters they take, what they return. The compiler checks this layer line by line. The second is behaviour: how the object's state changes after the call, what patterns the return values follow, when exceptions are thrown. "Width and height can be set independently", which `stretch` relies on, belongs to the second layer. Together the two layers form what this note calls the contract. LSP governs the second layer — **whether the judgements a caller makes from the original contract still hold after another implementation takes its place.**
+
+Signature compatibility is checkable by the compiler; behavioural compatibility is not. Once a subclass can quietly break behavioural promises, polymorphism degrades: callers stop trusting the parameter type and start special-casing each implementation.
+
+```ts
+function stretchCarefully(rect: Rectangle): number {
+  if (rect instanceof Square) {
+    // A square cannot set width and height separately; handle it by one side
+    rect.setWidth(4)
+    return rect.area()
+  }
+  rect.setWidth(10)
+  rect.setHeight(4)
+  return rect.area()
+}
+```
+
+Every subclass that behaves out of line can add another branch, and the original intent — width 10, height 4 — has become inexpressible for squares. Callers go back to editing their own code for each implementation, the outcome the open-closed principle of [note 5](/notes/open-closed-only-the-guessed-axis/) exists to avoid: meant to be open for extension, but every new implementation forces another edit to the caller.
+
+### The same failure in a real system
+
+Rectangles and squares are a teaching example; the wrong value is all that breaks. When this principle is missing from a real system, the bill lands directly on the accounts.
+
+The series carries one running case (its full backstory is in [note 5](/notes/open-closed-only-the-guessed-axis/); this note does not depend on the details): a refund system processes refunds per channel — bank card, wallet, offline transfer and credit compensation each implement the same `RefundChannel` interface. A refund reversal undoes a refund that has already happened: it must undo the original operation's effect and leave a traceable reverse record.
+
+The trouble began when someone added a `reverse` method to the interface every channel shares. In the third week after launch, finance tried to reverse a credit-compensation refund in the back office; the page waited two seconds and displayed `UnsupportedOperationError`. The caller's code:
 
 ```ts
 async function reverseRefund(r: Refund, reason: string): Promise<ChannelReceipt> {
@@ -23,135 +110,109 @@ async function reverseRefund(r: Refund, reason: string): Promise<ChannelReceipt>
 }
 ```
 
-The interface declares `reverse` with a return type of `Promise<ChannelReceipt>`, so this call passes type checking. The unit tests covered cards and wallets without exercising credit compensation, and the review missed the gap between the shared interface and the channels' capabilities. These checks missed the problem for different reasons; treating all three as signature checks would obscure those differences.
+This code passed type checking — `reverse` was declared on the interface, and the return type matched. The unit tests covered cards and wallets without exercising credit compensation, and the review missed the gap between the shared interface and the channels' capabilities. Credit compensation grants benefits without moving money; its implementation has no notion of reversal, so all it can do is throw.
 
-**Liskov substitution asks whether a caller's reasoning under the original contract still holds when another implementation takes its place.** A method's presence and compatible parameters establish that the call is allowed by the types. Its behaviour after the call needs a contract check as well.
+The judgement the caller made from the interface — a channel implementing `RefundChannel` can reverse refunds — stopped holding the moment this implementation was swapped in. It is the engineering edition of the square problem: the signature fits, the behaviour does not, and this time it is a money flow that goes wrong, with the return value intact.
 
-## Preserving the caller's expectations when an implementation changes
+## Origins and development: from a 1987 keynote to SOLID
 
-Barbara Liskov presented the substitution property in her 1987 OOPSLA keynote, “Data Abstraction and Hierarchy”. I downloaded and read the original. Section 3.3 discusses substitution from the perspective of programs that use a type; the relevant passage is on printed page 25.[1]
+The original formulation comes from Barbara Liskov. She delivered the keynote "Data Abstraction and Hierarchy" at OOPSLA 1987, and the substitution property was one of its claims. I downloaded the original and read it: the property sits in section 3.3, printed page 25.[1]
 
-Using the paper's notation, for every object o1 of type S, there must be an object o2 of supertype T such that all programs defined in terms of T retain the corresponding behaviour when o1 replaces o2. Under that condition, S can be a subtype of T. The direction of substitution is an S object taking the place of a T object.
+Restated in the original's notation: if for every object o1 of type S there is an object o2 of supertype T such that every program defined in terms of T keeps its behaviour when o1 replaces o2, then S is a subtype of T. Note the direction of substitution — objects of the subtype S replace objects of the supertype T, while what gets tested is the caller's program written against T.
 
-Applying this to a design starts with identifying the promises a caller can rely on from T. Implementations can use different data structures, external services and internal algorithms, provided those differences preserve the behaviour the contract allows callers to depend on.
+In the same section Liskov distinguished behavioural subtyping from the subclass relation a language provides. Inheritance (`extends`) is one way to realise a subtype, but writing `extends` does not make a class behaviourally substitutable; interfaces and polymorphism need the same check. Her own examples are sets versus lists and stacks versus queues: sets drop duplicates, lists keep them; stacks are last-in-first-out, queues first-in-first-out. A caller relying on those rules cannot swap them just because the add and remove methods share a name.[1]
 
-In the same section, Liskov distinguishes behavioural subtyping from the subclass relationships a language provides. Inheritance can implement subtyping, though writing `extends` does not establish behavioural substitutability. Polymorphism through interfaces needs the same check.[1]
+The 1987 formulation gave the direction of judgement, but "keeps its behaviour" was still a single sentence with nothing to check item by item. In 1994 Liskov and Jeannette Wing published "A Behavioral Notion of Subtyping", formalising it as behavioural subtyping: a set of rules you can check one by one.[2] The approach echoes the design by contract Meyer had laid out in *Object-Oriented Software Construction* — treating a method call as making a contract: the caller promises to meet the precondition, the implementation promises to deliver the postcondition.[5]
 
-Her examples include sets, lists, stacks and queues. Sets usually discard duplicates, whereas lists can retain them; stacks remove elements in last-in-first-out order, and queues in first-in-first-out order. When callers depend on those rules, matching names for add and remove operations cannot make the types interchangeable.
+In engineering terms, behavioural compatibility is usually broken into four constraints:
 
-Martin's 1996 article also discusses substitution through the public behaviour clients rely on, including requirements for preconditions and postconditions.[4] Reducing Liskov substitution to matching method signatures loses that part of the original discussion.
-
-## Describing behaviour through four kinds of contract
-
-The substitution property gives us a way to judge compatibility. Checking actual code requires turning behavioural compatibility into specific constraints. Meyer's design by contract and Liskov and Jeannette Wing's formal work on behavioural subtyping provide a basis for doing so.[2][3][5]
-
-The following four categories summarise those constraints in engineering terms. They overlap: one defect may violate both a method's postcondition and an object's invariant.
-
-| Clause | Requirement | Source |
+| Clause | In plain terms | Source |
 |---|---|---|
-| Preconditions | A replacement must accept inputs allowed by the original contract without adding extra requirements | Method rules in design by contract and behavioural subtyping |
-| Postconditions | For calls meeting the original preconditions, a replacement must deliver the promised results | Method rules in design by contract and behavioural subtyping |
-| Invariants | A replacement must preserve the supertype's constraints on observable state | Design by contract; Liskov and Wing's formal work |
-| History constraint | Added operations must preserve the supertype's promised historical properties without introducing forbidden state changes | Liskov and Wing's work on behavioural subtyping, including the 1994 paper and preceding reports |
+| Precondition | Inputs the parent accepts, the subtype may not reject with extra hurdles | Method rules from design by contract and behavioural subtyping |
+| Postcondition | Results the parent promises, the subtype may not water down | Method rules from design by contract and behavioural subtyping |
+| Invariant | Constraints the parent places on observable state, the subtype must preserve | Design by contract; Liskov and Wing's formalisation |
+| History constraint | Methods added by the subtype must not make state changes the parent forbids | Liskov and Wing's work on behavioural subtyping |
 
-The history constraint needs the context of aliasing. Two variables can refer to the same object: one uses its supertype interface, while the other can access methods the implementation adds. State changes made through the second variable may be visible through the first. Shared references of this kind are common in JavaScript and TypeScript.[2][3]
+The four interlock; one defect can break a postcondition and an invariant at once. Run the square through them: `setWidth` on the parent promises "changes only the width" (a postcondition), `Square`'s implementation changes the height too, and the invariant of independent width and height falls with it. The most abstract is the history constraint — it only becomes clear together with aliasing, which the fourth grey area unpacks.
 
-For example, an interface might promise an append-only event history. If an implementation adds a method that deletes past events, code using only the original interface can also observe those events disappearing. The question is whether the promise still holds; state changes permitted by the original contract remain valid.
+In 1996 Robert C. Martin wrote the property up as "The Liskov Substitution Principle" in the *C++ Report*; it later became the L of SOLID. Martin's formulation also starts from the client: subtypes must be substitutable for their base types without altering the correctness of the program — and rectangles and squares figure among his examples. The opening code of this note is adapted from his scenario.[4]
 
-## How the four constraints apply to refunds
+Which exposes a widespread misreading: treating LSP as "the subclass's method signatures must match the parent's". Signature compatibility is something the compiler already checks; taking it as the whole of LSP declares the principle redundant. From 1987 to 1996 the principle was always about behaviour: whether the caller's reasonable expectations survive the substitution.
 
-The following fragments illustrate possible contract violations, with unrelated imports and members omitted. In these examples, `Money` represents renminbi amounts in integer fen: `10000` means 100 yuan, and 50 yuan is `5000`. Business validation is still needed to check that an amount is valid.
+## Four grey areas
 
-### Does the settlement status agree with its timestamp?
+At this point the skeleton is complete: what it is, why it exists, four constraints. But judging real code is never made hard by those sentences; it is made hard at the boundaries between them. The four questions below have each come up repeatedly in real code reviews.
 
-Consider the receipt returned after a refund is submitted. This interface allows two fields to vary independently without expressing their relationship:
+### Can a square inherit from a rectangle?
+
+After the opening example, the reflex answer is "no". Martin's answer is finer: whether a model is valid depends on how clients use it.[4]
+
+If callers only read — after construction they call nothing but `area()` and `getWidth()` — a square is a perfectly good rectangle: a rectangle with four equal sides is a rectangle, and "area equals width times height" holds for it too. The problem is mutability: `setWidth` and `setHeight` imply the promise that "the two sides vary independently", and a square cannot keep it. What violates LSP is the design "implementing a square on a mutable rectangle interface"; the classification "a square is a rectangle" is innocent.
+
+The corroborating move is removing mutability. An immutable square inheriting from an immutable rectangle is unobjectionable:
 
 ```ts
-type Money = number
+class ImmutableRectangle {
+  constructor(readonly width: number, readonly height: number) {}
 
-interface ChannelReceipt {
-  id: string
-  status: 'settled' | 'pending'
-  settledAt: Date | null
-  amount: Money
+  area(): number {
+    return this.width * this.height
+  }
 }
-```
 
-The receipt contract in this example requires a settlement timestamp for settled receipts and `null` for pending receipts. An offline transfer still awaits manual approval after its payment instruction is created. Returning the following object at that point reports settlement too early:
-
-```ts
-async submit(req: RefundRequest): Promise<ChannelReceipt> {
-  const instruction = await this.createInstruction(req)
-  return { id: instruction.id, status: 'settled', settledAt: null, amount: req.amount }
-}
-```
-
-The `status` says the refund has settled, yet `settledAt` has no value. Each field satisfies its type on its own; together they violate the receipt contract. A caller relying on that contract might write:
-
-```ts
-const receipt = await channel.submit(req)
-if (receipt.status === 'settled') await ledger.settle(refund.id, receipt.settledAt!)
-```
-
-That `!` is mine, added because the original type allows `settledAt` to be `null`. The non-null assertion removes the type warning at this point without supplying a date or rejecting a null value at runtime. The ledger function can therefore still receive `null`.
-
-What happens next depends on the ledger implementation: validation might fail, or it might incorrectly record a settlement. This fragment alone cannot establish that an over-refund will occur. It does establish that the channel has failed to deliver its promised receipt, leaving the caller's reasoning from the settlement status without a reliable basis.
-
-### Does the implementation add an input requirement outside the contract?
-
-Suppose the submission contract accepts every positive amount that passes the other validation rules. Offline transfers require manual approval, with smaller amounts intended to use a separate flow. The implementation instead adds its own minimum of 100 yuan:
-
-```ts
-async submit(req: RefundRequest): Promise<ChannelReceipt> {
-  if (req.amount < 10000) throw new BelowApprovalThresholdError(req.amount)
-  // Remaining submission logic omitted
-}
-```
-
-A 50-yuan request meeting the original contract is rejected here because the implementation has narrowed the accepted range. If that minimum were already part of the interface's preconditions, rejecting the request could comply with the contract.
-
-An ordinary `number` type does not express this business threshold. Checking method names and parameter types cannot reveal the caller and implementation's different understandings of a valid amount.
-
-### Does the channel preserve the order's refund limit?
-
-The refund system also needs to keep total refunds within the amount originally paid for the order. Each new submission must fit within the remaining refundable amount available when it is submitted. Concurrent requests need a consistent, shared mechanism for checking and reserving that allowance.
-
-A gift card implementation leaves a gap if it skips the system's order-level limit check on the assumption that the gateway will reject invalid transactions. Even when a gateway enforces its own account rules, there is no basis for assuming it knows how much of this order has already been refunded through other channels.
-
-This constraint needs a reliable, unified check in the shared flow or channel implementation. If that check is missing, callers cannot assume the same refund limit will hold when they substitute the gift card implementation. This is a constraint on business state across requests, which receipt field types alone cannot prove.
-
-### Do added methods violate the history contract?
-
-This example also requires refund stage records to be append-only. A reversal adds a new reverse record while preserving the original settlement record. Card callbacks can arrive out of order, so the implementation acquired a recovery method that removes the last stage. Only the added method is shown here; the existing members are omitted:
-
-```ts
-class CardChannel implements RefundChannel {
-  // This method is absent from the interface
-  rollbackLastStage(refund: Refund): void {
-    refund.stages.pop()
+class ImmutableSquare extends ImmutableRectangle {
+  constructor(side: number) {
+    super(side, side)
   }
 }
 ```
 
-Assume the channel retains a reference to this `refund`, and `stagesOf` reads the history from the same record. Two variables referring to the same channel object can then produce this sequence:
+After construction no method can change state, the promise of independent width and height does not exist, and there is nothing to violate. The same "is-a" classification is harmless in an immutable world and a breach of contract in a mutable one. **The criterion is always the behavioural promise the caller depends on, not conceptual taxonomy.** That is LSP's most counter-intuitive aspect: it appears to be about type relationships but is about the caller's dependencies.
+
+### Is throwing an exception a violation? It depends on what the contract promised
+
+Credit compensation's `reverse` throwing `UnsupportedOperationError` is a pattern that exists all over real code, and the most famous example lives in the JDK: calling `add` on the read-only list returned by `Collections.unmodifiableList` throws `UnsupportedOperationException`. It is the real-world violation most often brought out in LSP discussions.[8]
+
+Whether throwing counts as a violation has no answer outside the contract:
+
+- If `RefundChannel.reverse`'s contract says "every implementation can perform reversals", credit compensation throwing is a breach.
+- If the contract states "implementations may decline to support this operation; callers must handle the exception", throwing is compliance — "might not be supported" was part of the caller's reasonable expectations all along.
+
+What hurts is the interface hiding a capability gap inside one signature: the types give callers no way to tell which implementation throws and which does not. That information gap is only closed in "Putting checkable contracts into code".
+
+One fix deserves particular suspicion. A common review suggestion goes: since the error surprises the caller, return the receipt unchanged — credit compensation moves no money anyway:
 
 ```ts
-const card = new CardChannel(/* … */)
-const asChannel: RefundChannel = card   // One object, two type views
-
-card.rollbackLastStage(refund)
-asChannel.stagesOf(refund.id)           // Reads the history with its last stage removed
+class CreditChannel implements RefundChannel {
+  async reverse(receipt: ChannelReceipt): Promise<ChannelReceipt> {
+    return receipt
+  }
+}
 ```
 
-The `card` variable exposes the added method, while `asChannel` exposes only the shared interface. Both operate on the same object and associated state, so code reading through the shared interface also sees fewer stages after the deletion.
+This code revokes no benefit and creates no reverse record; it simply returns normally. The caller reads the normal return as a successful reversal, and the failure moves from a visible two-second error on the page to an invisible data error in the accounts. Throwing at least reported honestly: "I cannot do this." **Faking success violates LSP more seriously than admitting failure**, because the caller's reliance on "returns normally" runs deeper than the reliance on "may throw".
 
-That violates the append-only promise. The test is whether observable history still meets the contract; an added method changing state does not automatically make it invalid. Similarly, adding a coordinate-changing method to an immutable point would break its immutability promise. A type that permits coordinate changes has a different contract to check.[2][3]
+The two risk paths are charted below. Each requires a matching caller behaviour or missing validation before it can occur; `return receipt` alone does not entail any of it:
 
-## What the compiler can check
+```mermaid
+flowchart TB
+    A["Review mistakes 'no error thrown'<br/>for contract compliance"] --> B["reverse changed to<br/>return receipt"]
+    B --> C["Caller treats a normal return<br/>as a successful reversal"]
+    C --> D["If refundable quota is restored<br/>the original benefit remains"]
+    C --> E["Without deduplication<br/>repeated requests add success records"]
+    D --> F["A later refund may<br/>over-compensate the order"]
+    E --> G["May break the idempotency<br/>convention for repeated calls"]
+```
 
-Some of these business constraints can be represented in types; others need runtime validation, tests or other verification methods. The defects in the fragments above do not make the compiler powerless.
+In the first path the caller restores the refundable quota while the user still holds the original benefit; a later refund can then over-compensate the order. The second path additionally requires reversal records not to be deduplicated per request before repeated calls add multiple success records. Quota and idempotency checks should have blocked both risks all along.
 
-I had assumed enabling `strict` would be enough to reject a narrowed parameter range. Comparing method syntax with function property syntax exposed a distinction that needs separate attention. The examples below were checked with TypeScript 7.0.2 and `strict: true`. All receipt fields are included so the result isolates parameter compatibility.
+The fix has to deliver the actual semantics of a reversal. A contract that explicitly allows "not supported" may legitimately decline some operations; a contract promising that every qualifying request will be reversed cannot be honoured by an implementation that always declines. Returning the receipt unchanged is no substitute for a real success.
+
+### The compiler checks some of it; the rest you guard yourself
+
+Of the four constraints some are compiler-checkable and some never will be. Knowing where the line is keeps you from overestimating the tool or wasting it.
+
+I had assumed that enabling `strict` was enough to catch "a subclass adding hurdles to its inputs". Comparing method syntax with function-property syntax revealed a distinction worth knowing on its own. Verified with TypeScript 7.0.2, `strict: true`; the receipt fields are filled in so the compile result reflects only parameter compatibility.
 
 ```ts
 interface RefundRequest {
@@ -178,7 +239,7 @@ class TransferChannel implements RefundChannel {
 }
 ```
 
-`TransferRefundRequest` requires a `bankAccount` field in addition to the shared request's amount. A request containing only an amount cannot meet that requirement, yet this method implementation passes the check. Changing the interface member to a function property causes the same parameter narrowing to be rejected:
+`TransferRefundRequest` demands a `bankAccount` field beyond the shared request, which an amount-only request cannot satisfy — yet this method implementation still passes. Turn the interface member into a function property and the same parameter narrowing is rejected:
 
 ```ts
 interface RefundChannelFn {
@@ -195,50 +256,94 @@ const transfer: RefundChannelFn = {
     }
   },
 }
-// TS2322: Parameter types are incompatible
+// TS2322: parameter types incompatible
 ```
 
-The TypeScript release notes describe method and constructor declarations as exceptions to strict function parameter checking and explain the connection to compatibility for generic containers.[6] This limits that particular static check; it does not mean every parameter error is accepted.
+TypeScript's release notes describe the difference as an exemption for method and constructor declarations under strict function parameter checking, and explain its relation to generic-container compatibility.[6] It bounds what this static check can do; it does not mean every parameter error is waved through.
 
-A general-purpose checker also cannot decide behavioural compatibility in full. Asking one to determine whether an arbitrary method always terminates, for example, encounters undecidability.[7] Specific field relationships, some input constraints and selected operation sequences can still be protected through types or automated checks. Claims about a tool need to identify the part it establishes and the parts it leaves uncovered.
+Broader behavioural compatibility cannot be handed to a general checker wholesale. Asking a general tool to decide whether an arbitrary method always terminates runs into undecidability.[7] But specific field relationships, particular input constraints and chosen operation sequences can all be secured through types or automated checks. When discussing a tool's powers, state which part it proved and which part remains uncovered.
 
-## Why returning an unchanged receipt can be more dangerous
+### An unwritten contract is still a contract
 
-Returning to the failed credit-compensation reversal, the proposed fix in review was to return the receipt unchanged. Throwing `UnsupportedOperationError` failed to meet the caller's expectations, and credit compensation did not directly move money.
+In the examples so far the contract was at least visible: an interface signature, a thrown exception. In real systems many contracts never become any signature at all; they live only in callers' assumptions. They are the hardest to check and the easiest to break in a new implementation.
+
+**Relationships between fields do not enter the type.** The contract for a refund receipt says: a settled receipt must carry a settlement time; a pending receipt carries `null`. The interface lets the two fields vary freely:
 
 ```ts
-class CreditChannel implements RefundChannel {
-  async reverse(receipt: ChannelReceipt): Promise<ChannelReceipt> {
-    return receipt
-  }
+type Money = number
+
+interface ChannelReceipt {
+  id: string
+  status: 'settled' | 'pending'
+  settledAt: Date | null
+  amount: Money
 }
 ```
 
-This code revokes no benefits and creates no reverse record. It makes the method return normally. If the caller treats that return as a successful reversal and updates the allowance or ledger accordingly, a visible failure may become a less noticeable data error.
+An offline transfer creates a payment instruction that still awaits manual approval; if it returns `status: 'settled'` with `settledAt: null`, each field is legal on its own and the combination is already a breach. Downstream caller code might read:
 
-The diagram retains two possible failure paths. Each depends on particular caller behaviour or missing validation; `return receipt` alone does not establish every outcome shown.
-
-```mermaid
-flowchart TB
-    A["Review mistakes no exception<br/>for contract compliance"] --> B["reverse changes to<br/>return receipt"]
-    B --> C["Caller treats normal return<br/>as reversal success"]
-    C --> D["If refund allowance is restored<br/>original benefits remain"]
-    C --> E["Without deduplication<br/>retries add success records"]
-    D --> F["A later refund may cause<br/>excess compensation"]
-    E --> G["May violate the promise<br/>of idempotent retries"]
+```ts
+const receipt = await channel.submit(req)
+if (receipt.status === 'settled') await ledger.settle(refund.id, receipt.settledAt!)
 ```
 
-In the first path, the caller restores the refund allowance while the customer retains the original benefits. A later refund could then provide more compensation than the order permits. The second path also requires reversal records to lack deduplication for the same request before repeated calls can add multiple successful records. Allowance and idempotency checks should prevent these risks.
+The `!` is a non-null assertion: it silences that one type warning but adds no date at runtime, so the ledger function can still receive `null` and either fail validation or record a settlement that never happened. What can be established is that the channel did not honour the receipt guarantee, and the caller's reasoning from the settlement status has lost its footing.
 
-A fix therefore needs to deliver the actual semantics of reversal. A contract that explicitly permits an unsupported result can legitimately reject some operations. A contract promising reversal for all qualifying requests is broken by an implementation that rejects every request. Returning the unchanged receipt cannot stand in for actual success either.
+**Input hurdles do not enter the type.** Suppose the submission contract accepts every positively-validated amount. Offline transfers need manual approval and low amounts were meant to take another flow; the implementation instead adds a 100-yuan minimum (`Money` is integer cents; `10000` is 100 yuan):
 
-In his discussion of rectangles and squares, Martin assesses a model's validity through how its clients use it.[4] The refund caller needs a trustworthy reversal result. If it needs a special patch to keep working with one implementation of the same type, the stability sought through the open-closed principle also suffers.
+```ts
+async submit(req: RefundRequest): Promise<ChannelReceipt> {
+  if (req.amount < 10000) throw new BelowApprovalThresholdError(req.amount)
+  // remaining submission logic omitted
+}
+```
 
-## Putting checkable contracts into the implementation
+A 50-yuan request that fits the original contract is rejected here. A plain `number` type describes no business threshold; checking method names and parameter types reveals nothing about the caller's and the implementation's differing notions of a legitimate amount.
+
+**Cross-request constraints do not live in the object.** The system must also keep cumulative refunds within what the customer paid for the order. A gift-card channel (added later in the series) that skips this system's quota check and trusts "the gateway will block illegal transactions" leaves a gap: the gateway validates its own account rules and does not know how much this order has already been refunded through other channels. Such constraints exist across requests and channels; the receipt field types prove nothing about them.
+
+**Added methods can break history conventions.** The case also stipulates that refund stage records are append-only; a reversal is expressed as a new reverse record. Bank-card callbacks can arrive out of order, so the implementation adds a remedial method that drops the last stage:
+
+```ts
+class CardChannel implements RefundChannel {
+  // not on the interface
+  rollbackLastStage(refund: Refund): void {
+    refund.stages.pop()
+  }
+}
+
+const card = new CardChannel(/* … */)
+const asChannel: RefundChannel = card // one object, two type views
+
+card.rollbackLastStage(refund)
+asChannel.stagesOf(refund.id) // a read method on the public interface (not shown above); sees the history after the deletion
+```
+
+`card` can call the extra method the implementation provides; `asChannel` can only use the public interface — yet both operate on the same object and the same associated state. After the deletion, code using only the public interface also sees fewer stages. That is the history constraint in the presence of aliasing (two variables referencing the same object), and such shared references are everywhere in JavaScript and TypeScript.[2][3]
+
+The criterion is whether the observable history still conforms to the contract; it cannot be reduced to "any state change in an added method is a violation" — changes the original contract allows remain allowed.
+
+## Inheritance today: favour composition, and inject the pieces
+
+Programmers new to the field will likely arrive here with a question: if inheritance causes this much trouble, does today's code still use it?
+
+The instinct is not far off. "Composition over inheritance" is no fashion either: the 1994 *Design Patterns* book put it among its opening design principles — favour object composition over class inheritance.[9] And inheritance has faults beyond breaking LSP:
+
+- The fragile base class: a subclass's correctness is not in its own hands: the day the parent changes `setWidth`'s internals, every subclass suffers, and the blast site can sit far from the change.
+- Inheritance is white-box reuse: overriding a method correctly usually means reading the parent's implementation first — the square broke its contract precisely because it had to know what changing one side affects. A parent's internals should not be required reading for its subclasses.
+- Inheritance is fixed at compile time: an object's class is decided at birth; composition can swap a part at runtime, which is exactly what the capability-interface registry below does.
+
+Look around today's codebases: front-end frameworks assemble components by composition, back-end frameworks hand you services from outside, tests replace dependencies by composition. This note's fixes follow the same route — callers depend on the `RefundChannel` abstraction while concrete channels arrive from a registry. Handing dependencies in from outside instead of calling `new` inside the function is known as dependency injection; note seven's dependency inversion takes the idea all the way.
+
+Inheritance has not been sentenced to death, though. Genuine is-a relationships with stable contracts still suit it: custom `Error` subclasses and shared test-fixture base classes are legitimate uses. More importantly, LSP never governed `extends` alone — implementing an interface, or TypeScript's structural typing (assignable as long as the shape fits), must honour the same principle. The criterion stays the sentence it has always been: after your implementation is swapped in, do the judgements callers made from the contract still hold?
+
+## Putting checkable contracts into code
+
+With the grey areas walked, the direction is clear: what can go into types goes into types; what cannot is written down as an explicit contract and watched by automated checks.
 
 ### Express receipt state relationships in types
 
-The earlier `ChannelReceipt` can become a discriminated union, giving settled and pending receipts their appropriate fields:
+Turn `ChannelReceipt` into a discriminated union so settled and pending receipts each carry the right fields:
 
 ```ts
 type ChannelReceipt =
@@ -246,13 +351,11 @@ type ChannelReceipt =
   | { status: 'pending'; id: string; amount: Money }
 ```
 
-Under strict type checking, constructing a settled receipt with a `null` timestamp against this definition produces an error. After checking `status === 'settled'`, the caller also gets a `settledAt` of type `Date` without needing a non-null assertion.
-
-This revises the earlier receipt structure. Callers reading pending receipts need to branch on status before accessing fields. External inputs still need runtime validation: `any`, unsafe type assertions and unchecked external data can bypass static guarantees.
+Under strict mode, constructing a "settled receipt with a `null` settlement time" fails to compile. After narrowing on `status === 'settled'`, the `settledAt` the caller holds is a `Date` by construction — no non-null assertion. External input still needs runtime validation: `any`, unsafe assertions or unvalidated external data all bypass static guarantees.
 
 ### Express reversal support through capability interfaces
 
-For this example, I would keep the shared interface limited to submission and give reversible channels a separate capability interface. The registry below contains only channels that implement reversal:
+Keep the public interface requiring only submission; channels that support reversal implement a separate capability interface, and the registry lists only implementations that truly support it:
 
 ```ts
 interface RefundChannel {
@@ -270,38 +373,34 @@ const reversible = new Map<ChannelKind, ReversibleChannel>([
 ])
 ```
 
-The reversal entry point can centralise the capability lookup so each caller does not need its own check. A dynamic lookup can still find no implementation, so these type declarations do not remove runtime checking. An operation explicitly unsupported by the business also needs to be distinguished from a supported operation missing its configuration.
-
-This follows note 5's approach: establish which capabilities a channel should provide, then connect the implementations. A capability interface constrains members and types; reversal behaviour still needs implementation and verification. If the product requires credit compensation to support reversal, that requires the business capability to revoke benefits, or an explicit change to the requirements. Removing the channel from the registry alone does not fulfil that requirement.
+"Which channels support reversal" moves out of exceptions and into types; callers no longer guess which implementation throws. A dynamic lookup can still come up empty, so runtime checks remain necessary, and "deliberately unsupported" must stay distinguishable from "supposed to support but not configured". This matches the approach in [note 5](/notes/open-closed-only-the-guessed-axis/): settle which capabilities a channel should have, then connect the implementations.
 
 ### Run the same contract checks against different implementations
 
-Rules that types cannot currently express need to be documented beside the interface and enforced through implementation checks and tests. Reasonable dependencies in existing callers may already form an implicit contract. Writing it down helps maintainers check against a shared understanding.
+Rules types cannot express are written beside the interface and enforced through implementation checks and tests. Every channel runs the same contract-check requirements with inputs and environments suited to its capabilities: whether requests meeting the common amount conditions are rejected anyway; whether successful receipts match the state convention; whether quota checks stop over-refunding; whether repeating the same reversal satisfies the idempotency convention; whether extra methods delete history the contract promised to keep.
 
-Each channel should follow the same contract-checking requirements, with inputs and environments suited to its capabilities. Checks can cover whether qualifying amounts face extra rejection rules, successful receipts meet their state contract, allowance checks prevent over-refunds, repeated reversal requests meet the idempotency promise, and added methods delete history the contract promises to retain.
+The checks must include the credit-compensation and offline-transfer paths the original tests missed. Channels that explicitly decline reversal have their refusal verified; channels that promise it have the actual revocation and reverse record verified. Passing means the covered scenarios behaved as expected — not that every input and operation sequence satisfies LSP.
 
-These checks need to include the previously missed credit-compensation and offline-transfer paths. Channels explicitly lacking reversal support need their rejection behaviour checked; channels promising support need checks of the actual undoing of effects and the reverse records. Passing establishes the expected behaviour for covered scenarios. It cannot prove Liskov substitution for every input and operation sequence.
+## Four questions I ask when reviewing whether an implementation can be substituted
 
-## Checking whether an implementation can be substituted
+When reviewing a new channel implementation I first find the contract the callers depend on, then work through four questions. Where the contract is not yet explicit, the existing callers and the business requirements have to be sorted out first — "not written down" must not be read as "no promises made".
 
-When reviewing a new channel implementation, I would locate the contract its callers rely on before working through the questions below. If that contract is unclear, existing callers and business requirements need to be examined first. An unwritten promise can still be a promise.
+- Which inputs does the original contract accept? Does the implementation additionally demand amount thresholds, fields or call orders?
+- Once preconditions are met, what results may the caller rely on? Does the implementation honour the settlement status, time and amount conventions?
+- Which state constraints must hold for the object or the business system? Could other channels or concurrent requests bypass them?
+- Which operations does the implementation add? Do any produce observable state changes the original contract forbids?
 
-- Which inputs does the original contract accept? Does the implementation add an amount threshold, required field or call order?
-- Once the preconditions are met, which results can callers rely on? Does the implementation deliver the promised settlement status, timestamp and amount?
-- Which state constraints must the object or business system maintain? Can other channels or concurrent requests bypass them?
-- Which operations does the implementation add? Can they produce observable state changes forbidden by the original contract?
-
-The diagram's three decisions concern type compatibility, the identified state and method contracts, and the history constraint:
+The three decisions in the diagram attend in turn to type compatibility, the documented state and method contracts, and the history constraint:
 
 ```mermaid
 flowchart TD
-    A["Candidate implementation"] --> B{"Types compatible?"}
-    B -- No --> C["Fix incompatible<br/>types"]
-    B -- Yes --> D{"Preconditions, postconditions<br/>and invariants preserved?"}
-    D -- No --> E["Contract violation:<br/>fix implementation<br/>or capability boundary"]
-    D -- Yes --> F{"Added methods cause<br/>forbidden state changes?"}
-    F -- Yes --> G["History constraint<br/>violated"]
-    F -- No --> H["Passes this review's<br/>verified contract checks"]
+    A["Preparing to substitute an implementation"] --> B{"Type compatibility check passes?"}
+    B -- No --> C["Fix the type incompatibility first"]
+    B -- Yes --> D{"Documented preconditions, postconditions<br/>and invariants still hold?"}
+    D -- No --> E["Locate the contract violation;<br/>fix the implementation or capability boundary"]
+    D -- Yes --> F{"Do added methods produce state changes<br/>the original contract forbids?"}
+    F -- Yes --> G["History constraint violated"]
+    F -- No --> H["Passes this round of documented<br/>and verified contract checks"]
 ```
 
 This diagram organises a review; it is not an algorithm that proves every behaviour automatically. Each passing result needs a corresponding contract and verification evidence. Unverified behaviour remains a limitation.
@@ -310,7 +409,7 @@ This diagram organises a review; it is not an algorithm that proves every behavi
 
 I used to treat Liskov substitution as an inheritance rule, checking whether a subclass changed a base class method's meaning without leaving an explicit contract beside the interface. After reading the original, I start with the reasoning callers make from the type and then check whether another implementation can preserve it.
 
-For this refund system, that means putting receipt state relationships into types, separating reversal capability from ordinary submission, and running shared contract checks against the implementations. Unsupported business operations need an explicit expression of that limit; operations promised but left incomplete need an implementation fix. Making a method stop reporting errors cannot answer either question on its own.
+Applied to this note's examples: squares and rectangles taught me to ask first what behaviour the caller depends on rather than staring at class diagrams; the refund system means putting receipt state relationships into types, separating reversal capability from ordinary submission, and running shared contract checks against the implementations. Unsupported business operations need an explicit expression of that limit; operations promised but left incomplete need an implementation fix. Making a method stop reporting errors cannot answer either question on its own.
 
 The next note discusses dependency inversion. One question remains here: who should define `ReversibleChannel` so it accurately describes the caller's required capability without turning one channel's current implementation details into constraints every caller must accept?
 
@@ -323,3 +422,5 @@ The next note discusses dependency inversion. One question remains here: who sho
 5. [Bertrand Meyer, *Object-Oriented Software Construction*, Prentice Hall, 1988](https://dl.acm.org/doi/book/10.5555/534431). A historical source for design by contract. The original book was not checked directly for this revision; the descriptions here draw on the papers and survey above.
 6. [TypeScript 2.6 release notes: strict function types](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-6.html). The checking exceptions for method and constructor declarations. This article's examples were separately checked with TypeScript 7.0.2.
 7. [Liskov substitution principle — Wikipedia](https://en.wikipedia.org/wiki/Liskov_substitution_principle). Supplementary explanation of general undecidability and the termination example. It is not used as a historical source or as evidence that no contracts can be checked automatically.
+8. [Java SE API — Collections.unmodifiableList](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Collections.html#unmodifiableList(java.util.List)). Documents that mutating methods on the read-only view throw `UnsupportedOperationException`. Calling it an "LSP violation" is a common characterisation in community discussions, not the JDK's own.
+9. [Erich Gamma, Richard Helm, Ralph Johnson and John Vlissides, *Design Patterns: Elements of Reusable Object-Oriented Software*, Addison-Wesley, 1994](https://dl.acm.org/doi/book/10.5555/186897). "Favour object composition" appears among the design principles of the introduction chapter; page numbers were not re-verified for this note, and the principle is stated per that chapter's wording.

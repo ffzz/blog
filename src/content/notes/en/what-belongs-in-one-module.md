@@ -1,7 +1,8 @@
 ---
-title: 'Cohesion: Six Levels, and Where Intuition Fails'
-description: "Cohesion is usually defined as how similar the elements inside a module look. That reading survives the obvious violations and fails on production code: handlers that branch by refund channel have near-identical names, and still land in the lower half of the 1974 scale."
-pubDate: 2026-08-20
+title: 'Cohesion: The Test Is "Must Change Together", Not "Looks Related"'
+description: "Cohesion measures what earns the elements inside a module the right to live together. The test is not \"looks related\" — handlers that branch by refund channel have near-identical names and still land on the second rung of the 1974 scale. This note walks a refund system from the utility class nobody defends to the logical cohesion that gets past review, then asks when splitting lowers cohesion, and how Parnas drew boundaries before the code existed."
+pubDate: 2026-08-31T10:00:00
+updatedDate: 2026-09-13
 tags: ['programming-thinking', 'design-principles', 'typescript']
 ---
 
@@ -9,7 +10,7 @@ tags: ['programming-thinking', 'design-principles', 'typescript']
 >
 > AI can write more of our code every month, which makes the judgement we have built up worth more, not less. This series is me taking these ageing principles back off the shelf, checking where each one came from, where it holds, and where it breaks. Reviewing the old to understand the new.
 
-This note is about cohesion: what earns a handful of elements the right to live in the same module. Start with the kind of code nobody defends.
+What code belongs in the same module? This note is about cohesion. Its test: elements belong together because they must change together, not because they look related. The test deserves a hard look because the cost of getting it wrong is concrete — unrelated things crammed into one place drag each other into every change, and anyone who wants one of them inherits the dependencies of the rest. Start with the kind of code nobody defends.
 
 ## A utility class nobody defends
 
@@ -29,9 +30,9 @@ Three unrelated jobs end up in one file. Change one and the other two are untouc
 
 The fix is not clever. Send each method back where it belongs: `formatCurrency` to the display formatter, `parseWebhookSignature` to the adapter for that channel, `logAuditEvent` to the audit module. After that the name `RefundUtils` should go as well. It was never a description of a responsibility, only a place to put things you had not thought through.
 
-**Cohesion measures how related the elements inside a module are.** Strong relatedness gives the module one reason to exist, which makes it easier to read and less likely to be dragged into changes that have nothing to do with it.
+**Cohesion measures what justifies the elements of a module living together.** The stronger and more singular that reason, the easier the module is to read and the less likely it is to be dragged into changes that have nothing to do with it.
 
-Code like this is rarer in real projects than you might expect, precisely because it is so easy to catch. **The violations that get past review look different.**
+Code like this is rarer in real projects than you might expect, because it is so easy to catch. **The violations that get past review look different.**
 
 ## Where the six levels come from
 
@@ -170,7 +171,7 @@ This criterion and the one used for grading land in the same place, approached f
 
 ## The scale measures reasons, not resemblance
 
-The [opening essay](/notes/programming-taste-in-the-agent-era/) cites a study [3] in which 163 students labelled cohesion and coupling levels for modules in the same mid-sized Fortran program and disagreed with each other at length. That is not a failure of the students. **The scale describes the reason things are together**, and that reason depends on which system the code lives in, who maintains it, and where it is heading next.
+The [opening essay](/notes/programming-taste-in-the-agent-era/) cites a study [3] in which 163 students labelled cohesion and coupling levels for modules in the same mid-sized Fortran program and disagreed widely. That is not a failure of the students. **The scale describes the reason things are together**, and that reason depends on which system the code lives in, who maintains it, and where it is heading next.
 
 I used to think of cohesion as a continuous quantity: higher is better, no steps in between. After reading the 1974 paper I changed that to six ordered levels, and code like `RefundHandler`, whose name similarity is about as high as it gets, lands in the lower half.
 
@@ -186,7 +187,7 @@ This is also why the 1974 paper is worth going back to. The scale was built as a
 - **The test is whether these things always change together.** Whether one change drags the others along is something you can check on the spot. Resemblance is not.
 - **The six levels are an ordered staircase, not a continuous dial where higher is better.** Level 6, joining forces on one job, is the top, and splitting moves you down: separate `add` from the currency check and each module is clear while the combination turns fragile.
 - **Splitting is not a goal that holds without conditions.** A split only counts if the things that always change together are still together once you are done.
-- **Draw boundaries along the decisions most likely to change, not along the flow of data.** Parnas wrote that counter-recommendation in 1972: cutting along processing steps is most people's first instinct.
+- **Draw boundaries along the decisions most likely to change, not along the flow of data.** Parnas wrote that counter-recommendation in 1972; cutting along processing steps is, in the note's words, most people's first instinct.
 - **The scale is a judgement scale, not an acceptance criterion.** 163 people can read the same code and land on different levels, because the answer depends on where the system is heading. Chasing the level can move you down the scale.
 - **Read the trouble off the system, not off the table.** The 1974 scale was a scorecard for cutting one Fortran program into modules. What changes together in your code is a fact about your business, and the table cannot answer for it.
 

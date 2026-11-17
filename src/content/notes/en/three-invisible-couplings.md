@@ -1,7 +1,8 @@
 ---
-title: 'Coupling: Three You Cannot See, and a Dependency That Moved House'
-description: "Coupling often gets reduced to counting imports. That holds up on the textbook violations and fails on production code. Replace a direct call with an event bus and two imports disappear, but the dependency has not gone anywhere. It has moved out of the compiler's sight."
-pubDate: 2026-08-20
+title: 'Coupling: It Measures Mutual Knowledge, Not Import Counts'
+description: "Coupling measures how much two modules have to know about each other, not how many imports there are. Replace a direct call with an event bus and two imports disappear, but the dependency has not gone anywhere — it has moved out of the compiler's sight. This note walks from control coupling in a parameter to the three connections that live outside imports — event buses, shared state, middle layers — and ends with checkable rules for dependency direction and cycles."
+pubDate: 2026-08-31T11:00:00
+updatedDate: 2026-09-13
 tags: ['programming-thinking', 'design-principles', 'typescript']
 ---
 
@@ -9,9 +10,11 @@ tags: ['programming-thinking', 'design-principles', 'typescript']
 >
 > AI can write more of our code every month, which makes the judgement we have built up worth more, not less. This series is me taking these ageing principles back off the shelf, checking where each one came from, where it holds, and where it breaks. Reviewing the old to understand the new.
 
+Coupling measures how much two modules have to know about each other. The more they know, the tighter they are tied, and the more likely a change in one pulls at the other. That definition is worth pinning down first, because it sees through a common proxy.
+
 I used to keep a cheap rule in my head: the more a module imports, the more coupled it is. Swap a direct call for an event and two imports disappear, the constructor gets shorter, and the result looks a lot like decoupling.
 
-Set that code against the 1974 coupling scale and the verdict flips. The direct call sat in the loosest band. After the switch, both ends start depending on the event name, the payload shape, the order of execution, and the failure semantics, and a few of those have left the type system entirely.
+Set that change against the coupling scale (its origin comes below) and the verdict flips. The direct call sat in the loosest band. After the switch, both ends start depending on the event name, the payload shape, the order of execution, and the failure semantics, and a few of those have left the type system entirely.
 
 The previous note asked whether the elements inside a module belong together. This one asks about the space between modules: once import counts stop being reliable, where else can you see how tightly two modules are tied?
 
@@ -38,7 +41,7 @@ async function previewRefund(req: RefundRequest): Promise<RefundPreview>
 async function submitRefund(req: RefundRequest): Promise<RefundResult>
 ```
 
-That is a reasonable place to pin the definition: **coupling measures how much two modules have to know about each other**. The more they know, the tighter they are tied, and the more likely a change in one pulls at the other. `dryRun` stands out because the caller is forced to know how `submitRefund` is arranged inside.
+The definition from the opening lands here: **`dryRun` stands out because the caller is forced to know how `submitRefund` is arranged inside.**
 
 One distinction is worth drawing, between a control parameter and plain configuration. `formatAmount(m, { showCurrency: true })` also takes a boolean, but it describes what the output should look like instead of asking the caller to pick a business process. The two sides still share the meaning of the argument, which is ordinary data coupling. **`dryRun` exposes the callee's control flow on top of that, which is what drops it into control coupling.**
 
@@ -115,7 +118,7 @@ export const refundCache = new Map<string, Refund>()
 
 The reconciliation job writes to it, risk reads from it. Both modules may well import `shared-cache.ts` without either referencing the other. A text search lists everyone who touches this `Map` and says nothing about which reads have to happen after which writes.
 
-Say risk reads a refund as `Submitted` and starts to clear it. Before the clearance finishes, the reconciliation job flips the same refund to `Failed`. The `Map` did not hand back a stale value; **the trouble is that reading the state and acting on it are two separate moments**. Risk carries on with a decision that has already expired.
+Say risk reads a refund as `Submitted` and starts to clear it. Before the clearance finishes, the reconciliation job flips the same refund to `Failed`. The `Map` returned the right value at the moment of the read; **the trouble is that reading the state and acting on it are two separate moments**. Risk carries on with a decision that has already expired.
 
 This kind of connection is common coupling at level 2, one notch looser than reading and writing the other module's internals directly. What makes it hard to find is equally specific: **tools can locate the shared object, but not who owns the writes, what order things must happen in, or which sequences need to be atomic.**
 
@@ -123,7 +126,7 @@ What risk needs is the ability to query. Give it a read-only interface, with the
 
 ## Why a middle layer is not decoupling
 
-Several forms calling several data-layer methods directly gives you a mesh. Put a controller in the middle and the graph becomes a star. The shape is clearer, but if the controller fills up with switches that branch by caller, the same amount of knowledge is now concentrated in one place.
+Consider a UI-layer example. Several forms calling several data-layer methods directly gives you a mesh. Put a controller in the middle and the graph becomes a star. The shape is clearer, but if the controller fills up with switches that branch by caller, the same amount of knowledge is now concentrated in one place.
 
 Change a data-layer method and the controller changes. A form grows one more case and the controller gains a branch. `Form1` and `Form3`, which had never heard of each other, now take turns editing the same file. **The amount of code you have to open and verify has not gone down. The dependency moved.**
 
@@ -151,7 +154,7 @@ flowchart TB
    end
 ```
 
-The star does have fewer lines. The price is that the controller becomes the only junction: every new case in any form, and every change to any data-layer method, lands in the same file. `Form1` and `Form3` never used to know about each other, and now they take turns editing one file.
+The star does have fewer lines. The price is that the controller becomes the only junction: every new case in any form, and every change to any data-layer method, lands in the same file.
 
 To tell whether the layer is a real boundary, try changing the implementation behind it. If callers are unaffected and the interface still describes the same thing in stable business words, the layer absorbed the change. **If every change means adding another caller branch to the switch, the layer is a clearing house for details.** That test comes back in note 7, on dependency inversion.
 
@@ -172,7 +175,7 @@ Last, visibility. The connections in this note can be reordered by how much a to
 | Global mutable object | Search finds the users, but who writes, in what order, and relative to which reads still has to be reconstructed by hand |
 | Event name as a string | The string can be found, and it is hard to prove the hits cover the full meaning |
 
-The later rows all have uses. **What they share is the cost of moving part of "who depends on whom" out of the compiler** and into tests, docs, runtime checks, or someone's memory. Every one of those you fail to build is one more thing a maintainer has to remember.
+The later rows all have uses. **What they share is the cost of moving part of "who depends on whom" out of the compiler** and into tests, docs, runtime checks, or someone's memory. Each of those supporting mechanisms left unbuilt is one more thing a maintainer has to remember.
 
 These three rules govern the shape, direction, and visibility of a dependency. **They cannot tell you whether the dependency should exist.** That goes back to the previous note: will these two modules change together because of the same change?
 
@@ -182,17 +185,17 @@ I used to treat "add an intermediate layer" as the standard answer to coupling. 
 
 I also treated direct-call-to-event as a coupling reduction, on the evidence of fewer imports. Checked line by line against the scale, `RefundService` and `RefundLedger` had been passing only the data the other side needed. After the switch both ends share a string, a payload, and a runtime convention. The change may still be worth making at some deployment boundaries, but "fewer imports, therefore lower coupling" does not hold.
 
-**Both mistakes came from the same convenient proxy.** Import counts measure symbols in a source file. The coupling table asks how much you have to know to understand and change a connection. Put an event bus, shared state, or a middle layer in front of them and the two give different answers.
+**Both mistakes came from the same convenient proxy.** Import counts measure symbols in a source file. The coupling table asks how much knowledge it takes to understand and change a connection. Put an event bus, shared state, or a middle layer in front of them and the two give different answers.
 
-Those two mistakes sent me back to where the table came from. What it was built to answer in 1974 was whether a change in one module drags another along. The levels describe how much the two sides know about each other, which was never the same question as how many import lines there are. Compressed down to "lower coupling is better", the first half disappeared and only the proxy was left. **That is what going back to the source buys you: a slogan turned back into the trouble it was written for, and a trouble is something you can check on the spot.**
+Those two mistakes sent me back to where the table came from. As far as I can tell, the 1974 work set out to answer whether a change in one module drags another along. The levels describe how much the two sides know about each other, which was never the same question as how many import lines there are. Compressed down to "lower coupling is better", the first half disappeared and only the proxy was left. **That is what going back to the source buys you: a slogan turned back into the trouble it was written for, and a trouble is something you can check on the spot.**
 
 These days, when I look at a dependency, I start by assuming its convention changes. Can the compiler list everything that breaks? Whatever has to be filled in by search, docs, and memory is the part of that connection the imports never showed.
 
 ## What this note concludes
 
-- **Coupling measures how much two modules know about each other, not how many imports there are.** Import counts measure symbols in a source file; the scale asks how much you have to know to understand and change a connection.
+- **Coupling measures how much two modules know about each other, not how many imports there are.** Import counts measure symbols in a source file; the scale asks how much knowledge it takes to understand and change a connection.
 - **A parameter like `dryRun` lands in control coupling**, because it exposes the callee's control flow on top of the data. `formatAmount(m, { showCurrency: true })` describes what the output should look like, which is ordinary data coupling.
-- **Swapping in an event bus moves you down the scale.** Passing only a `refundId` was data coupling; sharing an event name, a payload shape, and an execution order is external coupling. Worth doing across processes or teams, but it is not decoupling.
+- **Swapping in an event bus moves you down the scale.** Passing only a `refundId` was data coupling; sharing an event name, a payload shape, and an execution order is external coupling. It can be worth doing across processes or teams, but it is not decoupling.
 - **Shared mutable state is common coupling at level 2, one notch looser than reading the other module's internals.** Search lists the users. It cannot list who owns the writes, what order things must happen in, or which sequences need to be atomic.
 - **A middle layer does not decouple on its own.** Mesh to star only reshapes the graph. The knowledge that used to be spread around collects in the controller, and not one fewer file has to be open at the same time.
 - **Dependencies should point toward the more stable side, and must not cycle.** Three modules in a cycle behave like one module when it comes to change, and cycles are one of the few structural problems a tool can find for you.
