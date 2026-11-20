@@ -49,3 +49,5 @@ docs/
 .claude/
 .agents/
 .workbuddy/
+.codebuddy/
+.zcode/
