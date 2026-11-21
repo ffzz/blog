@@ -2,6 +2,7 @@
 title: 'Composite Reuse: Prefer Object Composition to Keep Invariants Private'
 description: "When four refund channels need to share batching and quota-checking logic, the textbook object-oriented instinct is to extract a BaseRefundChannel parent class. Yet one innocent internal refactoring inside that parent class can silently cause double-deductions in its subclasses. Tracing the Fragile Base Class Problem back to 1994 and 1998, this finale explains why inheritance publishes private details as public contracts—and brings all ten notes of the series together."
 pubDate: 2026-10-28
+updatedDate: 2026-11-18
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'architecture', 'typescript']
 ---

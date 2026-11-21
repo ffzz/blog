@@ -2,6 +2,7 @@
 title: 内聚：判断标准是修改代码时要一起改
 description: 到底什么样的代码才配住进同一个文件？把名字相似、干同一类活的代码塞进一个类，往往只会得到低档的逻辑内聚；而为了追求小函数去硬拆业务规则，又会把原本完整的功能内聚拆碎。本文从退款系统的真实代码出发，由浅入深讲透内聚的本质与三个常见误区。
 pubDate: 2026-09-06
+updatedDate: 2026-11-18
 category: software-design
 tags: ['programming-thinking', 'design-principles', 'software-engineering', 'architecture', 'typescript']
 ---

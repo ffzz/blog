@@ -2,6 +2,7 @@
 title: 'How AI Search Picks Its Sources: The Mechanics, Evidence, and Myths of GEO'
 description: Most GEO advice never separates getting found from getting cited. Here are the six gates a page passes before it lands in an AI answer, what the big AI companies have actually published, what the research really found, and which popular tips fall apart when you check them.
 pubDate: 2026-08-10
+updatedDate: 2026-11-17
 category: ai-engineering
 tags: ['ai', 'llm', 'seo']
 ---
